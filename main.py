@@ -1,34 +1,30 @@
+# main.py
 from net.sniffer import AlbionSniffer
 from scapy.all import dev_from_index, show_interfaces
 import sys
 
-# SET YOUR INTERFACE INDEX HERE
-# Run this script once to see the list, then change this number.
+# !!! IMPORTANT !!!
+# Run this once, find the INDEX of your Ethernet/Wi-Fi, and set it here.
 TARGET_INDEX = 14
 
 def main():
-    # 1. Print available interfaces so you can confirm the index
-    print("Available Interfaces:")
+    print("--- Network Interfaces ---")
     show_interfaces()
-    print("-" * 30)
-
+    print("--------------------------")
+    
     try:
-        # 2. Resolve the index to the actual interface object
-        # dev_from_index handles the conversion from '1' to '\Device\NPF_...'
         my_iface = dev_from_index(TARGET_INDEX)
     except Exception:
-        print(f"Error: Could not find interface with index {TARGET_INDEX}")
-        print("Please check the list above and update TARGET_INDEX in main.py")
+        print(f"Error: Interface Index {TARGET_INDEX} not found.")
         return
 
-    # 3. Start Sniffer
+    print(f"Launching Sniffer on: {my_iface}")
     sniffer = AlbionSniffer()
+    
     try:
         sniffer.start(interface=my_iface)
     except KeyboardInterrupt:
-        print("\nStopping...")
-    except Exception as e:
-        print(f"Error: {e}")
+        print("\nStopped.")
 
 if __name__ == "__main__":
     main()

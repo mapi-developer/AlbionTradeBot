@@ -1,3 +1,4 @@
+# net/photon_layer.py
 import struct
 
 class PhotonCommand:
@@ -15,6 +16,7 @@ class PhotonLayerDecoder:
             return []
 
         # Header: PeerID(2), Crc(1), CmdCount(1), Timestamp(4), Challenge(4)
+        # >HBBIi matches Go logic
         peer_id, crc, cmd_count, timestamp, challenge = struct.unpack(">HBBIi", data[:12])
         
         commands = []
@@ -27,12 +29,15 @@ class PhotonLayerDecoder:
             # Command Header: Type(1), Channel(1), Flags(1), Rsv(1), Len(4), Seq(4)
             cmd_type, channel, flags, rsv, length, seq = struct.unpack(">BBBBII", data[offset:offset+12])
             
-            # Extract Payload
-            # Length includes the 12 byte header, so actual data is length - 12
+            # The 'length' includes the 12-byte header
             payload_size = length - 12
+            
             start = offset + 12
             end = start + payload_size
             
+            if end > len(data):
+                break
+                
             command_payload = data[start:end]
             
             commands.append(PhotonCommand(cmd_type, channel, flags, length, seq, command_payload))
