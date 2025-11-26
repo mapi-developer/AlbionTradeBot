@@ -8,8 +8,10 @@ import struct
 import io
 
 class FragmentBuffer:
-    def __init__(self):
-        self.buffers = {}
+    def __init__(self, db_interface=None): # <--- Accept DB
+        self.layer_decoder = PhotonLayerDecoder()
+        self.frag_buffer = FragmentBuffer()
+        self.db = db_interface
 
     def handle_fragment(self, payload):
         # Ref: ReliableFragment in Go
@@ -130,9 +132,15 @@ class AlbionSniffer:
     def parse_json(self, json_str):
         try:
             data = json.loads(json_str)
-            # Verify it's a market order by checking specific keys
+            
             if "ItemTypeId" in data and "UnitPriceSilver" in data:
-                print(f"[MARKET] {data['ItemTypeId']} | Price: {data['UnitPriceSilver']} | Amt: {data['Amount']} | Loc: {data.get('LocationId')}")
+                # 1. Print to Console
+                print(f"[MARKET] {data['ItemTypeId']} | Price: {data['UnitPriceSilver']}")
+                
+                # 2. Send to Database (if connected)
+                if self.db:
+                    self.db.add_order(data)
+                    
         except json.JSONDecodeError:
             pass
 
