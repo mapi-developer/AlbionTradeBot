@@ -60,7 +60,13 @@ class AlbionSniffer:
         except json.JSONDecodeError:
             pass
 
-    def start(self):
+    def start(self, interface=None):
         print("Starting Albion Market Sniffer on UDP 5056...")
-        # 'store=0' prevents RAM issues by not keeping packet history
-        sniff(filter="udp port 5056", prn=self.packet_callback, store=0)
+        
+        if interface:
+            print(f"Listening on interface: {interface}")
+            # Pass the specific interface (can be an object or name)
+            sniff(filter="udp port 5056", prn=self.packet_callback, store=0, iface=interface)
+        else:
+            print("Listening on default interface...")
+            sniff(filter="udp port 5056", prn=self.packet_callback, store=0)
