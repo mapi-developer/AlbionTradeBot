@@ -21,7 +21,7 @@ class MarketHistory(Base):
     __tablename__ = 'market_history'
     
     # Composite Primary Key
-    item_db_name = Column(String, primary_key=True) # e.g. "T5_LEATHER"
+    item_db_name = Column(String, primary_key=True)
     quality = Column(Integer, primary_key=True)
     location_id = Column(Integer, primary_key=True)
     timestamp = Column(BigInteger, primary_key=True) 
