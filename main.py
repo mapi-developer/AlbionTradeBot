@@ -1,10 +1,10 @@
 from net.sniffer import AlbionSniffer
 from database.interface import DatabaseInterface
 from scapy.all import dev_from_index, show_interfaces
-import sys
-import time
+from core.capture import WindowCapture
+import os
 
-# Set your interface index here
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TARGET_INDEX = 14
 
 def main():
@@ -35,5 +35,9 @@ def main():
         db.running = False
         print("\nStopping...")
 
+def test():
+    cap = WindowCapture(base_dir=BASE_DIR, window_name="Albion Online Client", debugging=False)
+    print(cap.get_text_from_screenshot([]))
+
 if __name__ == "__main__":
-    main()
+    test()
