@@ -34,6 +34,10 @@ class AlbionSniffer:
         self.db = db_interface
         self.items = ItemManager()
         self.history_cache = {}
+        self.market_data_buffer = []
+
+    def clear_buffer(self):
+        self.market_data_buffer = []
 
     def start(self, interface=None):
         print(">>> Sniffer Started. Listening for Market Data...")
@@ -153,7 +157,8 @@ class AlbionSniffer:
     def process_market_order(self, data):
         try:
             data['item_db_name'] = data.get('ItemTypeId')
-            print(f"   >>> [MARKET] Found: {data['item_db_name']} | {data.get('UnitPriceSilver')} Silver")
+            # print(f"   >>> [MARKET] Found: {data['item_db_name']} | {data.get('UnitPriceSilver')} Silver")
+            self.market_data_buffer.append(data)
             if self.db: self.db.add_order(data)
         except: pass
 
@@ -183,6 +188,6 @@ class AlbionSniffer:
                 })
             
             if self.db:
-                print(f"   >>> [HISTORY] Captured {len(history_list)} records for {req['item_db_name']}")
+                # print(f"   >>> [HISTORY] Captured {len(history_list)} records for {req['item_db_name']}")
                 self.db.add_history(history_list)
         except: pass

@@ -17,7 +17,7 @@ class ItemManager:
 
     def load_items(self):
         # Check if we have a local cache
-        if not os.path.exists(CACHE_FILE):
+        if not os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', CACHE_FILE):
             print("Downloading Item Database (this happens once)...")
             try:
                 response = requests.get(ITEMS_JSON_URL)
@@ -30,7 +30,7 @@ class ItemManager:
 
         # Load into memory
         try:
-            with open(CACHE_FILE, 'r', encoding='utf-8') as f:
+            with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', CACHE_FILE), 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 for item in data:
                     # Map "Index" (int) to "UniqueName" (string)

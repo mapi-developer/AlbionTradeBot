@@ -8,6 +8,7 @@ class MarketOrder(Base):
     __tablename__ = 'market_orders'
     id = Column(BigInteger, primary_key=True)
     item_db_name = Column(String, index=True) # Changed from item_id
+    auction_type = Column(String)
     location_id = Column(Integer, index=True)
     quality = Column(Integer)
     enchantment = Column(Integer)

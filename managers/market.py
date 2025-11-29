@@ -35,7 +35,7 @@ class MarketManager(InputSender):
         self.click(self.mouse_positions["search_reset"])
         self.click(self.mouse_positions["search"])
         self.typewrite(name)
-        self.sleep(0.5)
+        self.sleep(0.8)
 
     def change_tab(self, name: str) -> None:
         self.click(self.mouse_positions["tab_"+name])
@@ -44,6 +44,10 @@ class MarketManager(InputSender):
     def open_item(self) -> None:
         self.click(self.mouse_positions["button_buy"])
         self.check_item_stats()
+        self.sleep(0.5)
+
+    def close_item(self) -> None:
+        self.click(self.mouse_positions["button_close_order_popup"])
         self.sleep(0.5)
 
     def buy_item(self, amount: int = 10, fast_buy: bool = False, fast_buy_price: int = 1) -> None:

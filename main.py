@@ -1,3 +1,4 @@
+import threading
 from net.sniffer import AlbionSniffer
 from database.interface import DatabaseInterface
 from scapy.all import dev_from_index, show_interfaces
@@ -9,7 +10,7 @@ TARGET_INDEX = 14
 
 def main():
     print("--- Network Interfaces ---")
-    show_interfaces()
+    # show_interfaces()
     
     # 1. Start Database
     try:
@@ -29,8 +30,11 @@ def main():
 
     # 3. Run Sniffer
     sniffer = AlbionSniffer(db_interface=db)
+    sniffer_thread = threading.Thread(target=sniffer.start, daemon=True)
     try:
-        sniffer.start(interface=my_iface)
+        sniffer_thread.start()
+        while True:
+            pass
     except KeyboardInterrupt:
         db.running = False
         print("\nStopping...")
@@ -40,4 +44,4 @@ def test():
     print(cap.get_text_from_screenshot([]))
 
 if __name__ == "__main__":
-    test()
+    main()

@@ -69,6 +69,7 @@ class DatabaseInterface:
                 {
                     'id': d.get('Id'),
                     'item_db_name': d.get('item_db_name'),
+                    'auction_type': d.get('AuctionType'),
                     'location_id': d.get('LocationId', 0),
                     'quality': d.get('QualityLevel'),
                     'enchantment': d.get('EnchantmentLevel'),
