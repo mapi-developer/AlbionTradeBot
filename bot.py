@@ -2,6 +2,7 @@ from managers.market import MarketManager
 from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
 import os
+import re
 import threading
 from config import ITEMS_TO_BUY, ITEMS_BLACK_MARKET
 
@@ -24,6 +25,38 @@ class TradeBot:
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()   
 
+    def parse_item_info(self, full_unique_name):
+        """
+        Parses a full unique name into (BaseName, Tier, Enchantment).
+        
+        Example: 
+        "T4_HEAD_CLOTH_ROYAL@1" -> ("HEAD_CLOTH_ROYAL", "T4", 1)
+        "T5_MAIN_SWORD"         -> ("MAIN_SWORD", "T5", 0)
+        """
+        # 1. Extract Enchantment
+        if "@" in full_unique_name:
+            parts = full_unique_name.split("@")
+            base_with_tier = parts[0]
+            try:
+                enchant = int(parts[1])
+            except:
+                enchant = 0
+        else:
+            base_with_tier = full_unique_name
+            enchant = 0
+
+        # 2. Extract Tier and Base Name
+        # Regex looks for T{number}_ at the start
+        match = re.match(r"(T\d+)_(.+)", base_with_tier)
+        if match:
+            tier = match.group(1)   # e.g. "T4"
+            base_name = match.group(2) # e.g. "HEAD_CLOTH_ROYAL"
+        else:
+            tier = "TX"
+            base_name = base_with_tier
+
+        return base_name, tier, enchant
+
     def check_price(self):
         self.market_manager.change_tab("buy")
 
@@ -40,20 +73,47 @@ class TradeBot:
                 if not current_market_orders:
                     print(f"No market data captured for item: {item_unique_name}")
 
-                highest_price = float(0)
-                best_quality = 0
+                found_prices = {}
                 
                 for order in current_market_orders:
-                    if order.get('AuctionType') == 'request':
-                        price = order.get('UnitPriceSilver', 0)
-                        quality = order.get('QualityLevel', 0)
-                        
-                        if price > highest_price and price > 0:
-                            highest_price = price
-                            best_quality = quality
+                    # --- A. Quality Check ---
+                    # QualityLevel: 1=Normal, 2=Good, 3=Outstanding, etc.
+                    # User requirement: Only quality < 3
+                    quality = order.get('QualityLevel', 1)
+                    if quality > 3:
+                        continue
 
-                #print(f"Captured {len(current_market_orders)} orders.")
-                print(f"Lowest Price found: {highest_price} (Quality: {best_quality})")
+                    # --- B. Parse Item Info ---
+                    full_name = order.get('ItemTypeId', 'Unknown')
+                    base_name, tier, enchant = self.parse_item_info(full_name)
+
+                    # --- C. Price Conversion ---
+                    raw_price = order.get('UnitPriceSilver', 0)
+                    # Check if sniffer already converted it, otherwise divide by 10000
+                    real_price = order.get('unit_price_real', raw_price / 10000)
+
+                    # --- D. Store Highest Price ---
+                    # Key includes Base Name to handle different items safely
+                    key = (base_name, tier, enchant)
+
+                    if key not in found_prices:
+                        found_prices[key] = real_price
+                    else:
+                        # We want the HIGHEST price (standard for Black Market flipping)
+                        if real_price > found_prices[key]:
+                            found_prices[key] = real_price
+
+                    # 5. Print Results for this search
+                    if not found_prices:
+                        print("   No valid orders found (Quality < 4).")
+                    else:
+                        # Sort for display: Name -> Tier -> Enchant
+                        sorted_keys = sorted(found_prices.keys(), key=lambda x: (x[0], x[1], x[2]))
+                        
+                        for base, tier, enc in sorted_keys:
+                            price = found_prices[(base, tier, enc)]
+                            enc_str = f"@{enc}" if enc > 0 else ""
+                            print(f"   Item: {base} | {tier}{enc_str} | Price: {int(price):,} Silver")
                 
         except KeyboardInterrupt:
             print("Stopping bot...")
@@ -79,7 +139,7 @@ class TradeBot:
                 
                 for order in current_market_orders:
                     if order.get('AuctionType') == 'offer':
-                        price = order.get('UnitPriceSilver', 0)
+                        price = order.get('UnitPriceSilver', 0) / 10000
                         quality = order.get('QualityLevel', 0)
                         
                         if price < lowest_price and price > 0:
