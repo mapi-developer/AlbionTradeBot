@@ -35,13 +35,25 @@ class AlbionSniffer:
         self.items = ItemManager()
         self.history_cache = {}
         self.market_data_buffer = []
+        self.running = False
 
     def clear_buffer(self):
         self.market_data_buffer = []
 
     def start(self, interface=None):
+        self.running = True
         print(">>> Sniffer Started. Listening for Market Data...")
-        sniff(filter="udp port 5056", prn=self.packet_callback, store=0, iface=interface)
+        sniff(
+            filter="udp port 5056",
+            prn=self.packet_callback,
+            store=0,
+            iface=interface,
+            stop_filter=lambda p: not self.running
+        )
+        print(">>> Sniffer Stopped.")
+
+    def stop(self):
+        self.running = False
 
     def packet_callback(self, packet):
         if not packet.haslayer(UDP): return

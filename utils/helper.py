@@ -14,7 +14,5 @@ MOUSE_POSITIONS = load_json_config('mouse_positions.json')
 ITEM_DATA = load_json_config('items.json')
 CAPTURE_POSITIONS = load_json_config('capture_positions.json')
 ITEMS_TO_BUY = load_json_config('items_to_buy.json')
-
-
-# Use it in GameInputManager
-# self.input.click(MOUSE_POSITIONS['city_A_market_btn'])
+ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
+LANGUAGE = "EN-US"

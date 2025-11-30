@@ -16,6 +16,10 @@ class MarketManager(InputSender):
     def __repr__(self) -> str:
         return f"MarketManager: {self.mouse_positions["search"]}"
     
+    def check_pages(self) -> None:
+        self.click(self.mouse_positions["next_page"], clicks=10, interval=0.2)
+        self.sleep(0.5)
+    
     def get_name_from_unique(self, unique_name) -> str | None:
         if unique_name in self.items:
             return self.items[unique_name]["LocalizedNames"].get(self.lang, "Language not found")

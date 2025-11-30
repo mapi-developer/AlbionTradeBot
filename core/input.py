@@ -15,5 +15,5 @@ class InputSender():
     def press(self, keycode: str) -> None:
         pyautogui.press(keycode)
 
-    def click(self, position: list[int], clicks: int = 1) -> None:
-        pyautogui.click(position, clicks=clicks, interval=0.02)
+    def click(self, position: list[int], clicks: int = 1, interval: float = 0.02) -> None:
+        pyautogui.click(position, clicks=clicks, interval=interval)

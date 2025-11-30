@@ -3,7 +3,7 @@ from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
 import os
 import threading
-from config import ITEMS_TO_BUY
+from config import ITEMS_TO_BUY, ITEMS_BLACK_MARKET
 
 class TradeBot:
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None):
@@ -14,19 +14,53 @@ class TradeBot:
         self.capture = capture
         capture.set_foreground_window()
 
-        if self.market_manager == None:
-            self.market_manager = MarketManager(capture=capture)
-        self.market_manager = self.market_manager
+        if market_manager == None:
+            market_manager = MarketManager(capture=capture)
+        self.market_manager = market_manager
 
-        if self.sniffer == None:
-            self.sniffer = AlbionSniffer()
-        self.sniffer = self.sniffer
+        if sniffer == None:
+            sniffer = AlbionSniffer()
+        self.sniffer = sniffer
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
-        self.sniffer_thread.start()
+        self.sniffer_thread.start()   
+
+    def check_price(self):
+        self.market_manager.change_tab("buy")
+
+        try:
+            for item_unique_name in ITEMS_BLACK_MARKET:
+                self.sniffer.clear_buffer()
+                self.market_manager.search_item(ITEMS_BLACK_MARKET[item_unique_name], from_db=True)
+                self.market_manager.sleep(.5)
+
+                self.market_manager.check_pages()
+
+                current_market_orders = self.sniffer.market_data_buffer
+
+                if not current_market_orders:
+                    print(f"No market data captured for item: {item_unique_name}")
+
+                highest_price = float(0)
+                best_quality = 0
+                
+                for order in current_market_orders:
+                    if order.get('AuctionType') == 'request':
+                        price = order.get('UnitPriceSilver', 0)
+                        quality = order.get('QualityLevel', 0)
+                        
+                        if price > highest_price and price > 0:
+                            highest_price = price
+                            best_quality = quality
+
+                #print(f"Captured {len(current_market_orders)} orders.")
+                print(f"Lowest Price found: {highest_price} (Quality: {best_quality})")
+                
+        except KeyboardInterrupt:
+            print("Stopping bot...")
 
     def buy_items(self):
         self.market_manager.change_tab("buy")
-
+            
         try:
             for item_unique_name in ITEMS_TO_BUY:
                 self.market_manager.search_item("T8_"+item_unique_name, from_db=True)
@@ -57,3 +91,7 @@ class TradeBot:
                 self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")
+
+if __name__ == "__main__":
+    bot = TradeBot()
+    bot.check_price()
