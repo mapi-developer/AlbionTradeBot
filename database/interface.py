@@ -51,8 +51,6 @@ class DatabaseInterface:
                         batch_orders.append(data)
                     elif dtype == 'history':
                         batch_history.extend(data)
-                    elif dtype == 'mail':
-                        batch_mail.append(data)
                     elif dtype == 'item_data':
                         batch_item_data.extend(data)
                 except queue.Empty:
@@ -65,10 +63,6 @@ class DatabaseInterface:
                 if len(batch_history) >= 5:
                     self._process_history(session, batch_history)
                     batch_history = []
-                
-                if len(batch_mail) >= 1: # Process mail immediately
-                    self._process_mail(session, batch_mail)
-                    batch_mail = []
 
                 if len(batch_item_data) >= 1:
                     self._process_item_data(session, batch_item_data)

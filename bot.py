@@ -1,13 +1,15 @@
 from managers.market import MarketManager
 from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
+from database.interface import DatabaseInterface
 import os
 import re
 import threading
+from datetime import datetime, timezone
 from config import ITEMS_TO_BUY, ITEMS_BLACK_MARKET
 
 class TradeBot:
-    def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None):
+    def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
         if capture == None:
@@ -18,6 +20,10 @@ class TradeBot:
         if market_manager == None:
             market_manager = MarketManager(capture=capture)
         self.market_manager = market_manager
+
+        if db == None:
+            db = DatabaseInterface()
+        self.db = db
 
         if sniffer == None:
             sniffer = AlbionSniffer()
@@ -90,31 +96,47 @@ class TradeBot:
                     # --- C. Price Conversion ---
                     raw_price = order.get('UnitPriceSilver', 0)
                     # Check if sniffer already converted it, otherwise divide by 10000
-                    real_price = order.get('unit_price_real', raw_price / 10000)
+                    real_price = order.get('unit_price_real', raw_price)
 
                     # --- D. Store Highest Price ---
                     # Key includes Base Name to handle different items safely
                     key = (base_name, tier, enchant)
 
-                    if key not in found_prices:
+                    if key not in found_prices: 
                         found_prices[key] = real_price
                     else:
                         # We want the HIGHEST price (standard for Black Market flipping)
                         if real_price > found_prices[key]:
                             found_prices[key] = real_price
 
-                    # 5. Print Results for this search
-                    if not found_prices:
-                        print("   No valid orders found (Quality < 4).")
-                    else:
-                        # Sort for display: Name -> Tier -> Enchant
-                        sorted_keys = sorted(found_prices.keys(), key=lambda x: (x[0], x[1], x[2]))
+                # 5. Print Results for this search
+                if not found_prices:
+                    print("   No valid orders found (Quality < 4).")
+                else:
+                    if found_prices:
+                        db_payload = []
                         
-                        for base, tier, enc in sorted_keys:
-                            price = found_prices[(base, tier, enc)]
-                            enc_str = f"@{enc}" if enc > 0 else ""
-                            print(f"   Item: {base} | {tier}{enc_str} | Price: {int(price):,} Silver")
-                
+                        for (base, tier, enc), price in found_prices.items():
+                            # Reconstruct UniqueName (e.g. T4_BAG or T4_BAG@1)
+                            if enc > 0:
+                                unique_name = f"{tier}_{base}@{enc}"
+                            else:
+                                unique_name = f"{tier}_{base}"
+
+                            # Create DB Entry
+                            # Mapping Black Market Price -> price_caerleon
+                            item_data = {
+                                'unique_name': unique_name,
+                                'price_black_market': int(price),
+                                'black_market_updated_at': datetime.now(timezone.utc)
+                            }
+                            db_payload.append(item_data)
+
+                        # C. Update Database
+                        if db_payload:
+                            self.db.update_item_prices(db_payload)
+                            #print(f"   [DB] Sent updates for {len(db_payload)} items.")
+                            self.market_manager.sleep(0.5)
         except KeyboardInterrupt:
             print("Stopping bot...")
 
