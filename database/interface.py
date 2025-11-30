@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
-from .models import Base, MarketOrder, MarketHistory
+from .models import Base, MarketOrder, MarketHistory, ItemData
 import threading
 import queue
 from datetime import datetime
@@ -29,11 +29,19 @@ class DatabaseInterface:
     def add_mail(self, mail_dict):
         self.write_queue.put(('mail', mail_dict))
 
+    def update_item_prices(self, price_data_list):
+        """
+        Accepts a list of dicts to update the items_data table.
+        Example: [{'unique_name': 'T4_BAG', 'price_caerleon': 50000}]
+        """
+        self.write_queue.put(('item_data', price_data_list))
+
     def _worker_loop(self):
         session = self.Session()
         batch_orders = []
         batch_history = []
         batch_mail = []
+        batch_item_data = []
         
         while self.running:
             try:
@@ -45,6 +53,8 @@ class DatabaseInterface:
                         batch_history.extend(data)
                     elif dtype == 'mail':
                         batch_mail.append(data)
+                    elif dtype == 'item_data':
+                        batch_item_data.extend(data)
                 except queue.Empty:
                     pass
 
@@ -59,6 +69,10 @@ class DatabaseInterface:
                 if len(batch_mail) >= 1: # Process mail immediately
                     self._process_mail(session, batch_mail)
                     batch_mail = []
+
+                if len(batch_item_data) >= 1:
+                    self._process_item_data(session, batch_item_data)
+                    batch_item_data = []
 
             except Exception as e:
                 print(f"[DB Loop Error] {e}")
@@ -103,4 +117,34 @@ class DatabaseInterface:
             print(f"[DB] Saved {len(batch)} history records")
         except Exception as e:
             print(f"[DB History Error] {e}")
+            session.rollback()
+
+    def _process_item_data(self, session, batch):
+        try:
+            for data in batch:
+                if 'unique_name' not in data:
+                    continue
+                
+                # Create the insert statement
+                stmt = insert(ItemData).values(data)
+                
+                # We dynamically construct the SET clause to only update columns provided in the input.
+                # This ensures if we send {'unique_name': 'X', 'price_caerleon': 1}, we don't wipe out 'price_lymhurst'.
+                update_cols = {
+                    col: getattr(stmt.excluded, col)
+                    for col in data.keys()
+                    if col != 'unique_name'
+                }
+                update_cols['updated_at'] = datetime.utcnow()
+
+                do_update = stmt.on_conflict_do_update(
+                    index_elements=['unique_name'],
+                    set_=update_cols
+                )
+                session.execute(do_update)
+
+            session.commit()
+            print(f"[DB] Updated item data for {len(batch)} items")
+        except Exception as e:
+            print(f"[DB ItemData Error] {e}")
             session.rollback()

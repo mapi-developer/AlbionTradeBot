@@ -7,7 +7,7 @@ Base = declarative_base()
 class MarketOrder(Base):
     __tablename__ = 'market_orders'
     id = Column(BigInteger, primary_key=True)
-    item_db_name = Column(String, index=True) # Changed from item_id
+    item_db_name = Column(String, index=True) 
     auction_type = Column(String)
     location_id = Column(Integer, index=True)
     quality = Column(Integer)
@@ -31,3 +31,16 @@ class MarketHistory(Base):
     item_amount = Column(BigInteger)
     silver_amount = Column(BigInteger)
     ingested_at = Column(DateTime, default=datetime.utcnow)
+
+class ItemData(Base):
+    __tablename__ = 'items_data'
+
+    unique_name = Column(String, primary_key=True)
+    price_black_market = Column(BigInteger, default=0)
+    price_caerleon = Column(BigInteger, default=0)
+    price_lymhurst = Column(BigInteger, default=0)
+    price_bridgewatch = Column(BigInteger, default=0)
+    price_fort_sterling = Column(BigInteger, default=0)
+    price_thetford = Column(BigInteger, default=0)
+    price_martlock = Column(BigInteger, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
