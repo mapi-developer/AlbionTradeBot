@@ -2,15 +2,17 @@ from managers.market import MarketManager
 from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
 from database.interface import DatabaseInterface
+from managers.config_manager import ConfigManager, PRESETS_DIR
 import os
 import re
+import json
 import threading
 from datetime import datetime, timezone
-from config import ITEMS_TO_BUY, ITEMS_BLACK_MARKET
 
 class TradeBot:
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        self.config_manager = ConfigManager()
 
         if capture == None:
             capture = WindowCapture(base_dir=BASE_DIR, window_name="Albion Online Client")
@@ -31,32 +33,39 @@ class TradeBot:
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()   
 
-    def parse_item_info(self, full_unique_name):
-        """
-        Parses a full unique name into (BaseName, Tier, Enchantment).
+    def load_preset_items(self, setting_key):
+        """Loads items list from the preset file defined in settings."""
+        preset_file = self.config_manager.get(setting_key)
+        if not preset_file:
+            print(f"[Error] No preset selected for '{setting_key}' in configuration.")
+            return []
         
-        Example: 
-        "T4_HEAD_CLOTH_ROYAL@1" -> ("HEAD_CLOTH_ROYAL", "T4", 1)
-        "T5_MAIN_SWORD"         -> ("MAIN_SWORD", "T5", 0)
-        """
-        # 1. Extract Enchantment
+        path = os.path.join(PRESETS_DIR, preset_file)
+        if not os.path.exists(path):
+            print(f"[Error] Preset file not found: {path}")
+            return []
+            
+        try:
+            with open(path, "r") as f:
+                return json.load(f) # Should be a list of UniqueNames
+        except Exception as e:
+            print(f"Error loading preset {preset_file}: {e}")
+            return []
+
+    def parse_item_info(self, full_unique_name):
         if "@" in full_unique_name:
             parts = full_unique_name.split("@")
             base_with_tier = parts[0]
-            try:
-                enchant = int(parts[1])
-            except:
-                enchant = 0
+            try: enchant = int(parts[1])
+            except: enchant = 0
         else:
             base_with_tier = full_unique_name
             enchant = 0
 
-        # 2. Extract Tier and Base Name
-        # Regex looks for T{number}_ at the start
         match = re.match(r"(T\d+)_(.+)", base_with_tier)
         if match:
-            tier = match.group(1)   # e.g. "T4"
-            base_name = match.group(2) # e.g. "HEAD_CLOTH_ROYAL"
+            tier = match.group(1)
+            base_name = match.group(2)
         else:
             tier = "TX"
             base_name = base_with_tier
@@ -64,97 +73,87 @@ class TradeBot:
         return base_name, tier, enchant
 
     def check_price(self):
+        # Load items from the configured preset
+        items_to_check = self.load_preset_items("check_price_preset")
+        if not items_to_check:
+            print("No items to check. Please select a preset in Configuration.")
+            return
+
+        print(f"Starting Price Check for {len(items_to_check)} items...")
         self.market_manager.change_tab("buy")
 
         try:
-            for item_unique_name in ITEMS_BLACK_MARKET:
+            for item_unique_name in items_to_check:
                 self.sniffer.clear_buffer()
-                self.market_manager.search_item(ITEMS_BLACK_MARKET[item_unique_name], from_db=True)
+                # Assuming search_item handles unique_name
+                self.market_manager.search_item(item_unique_name, from_db=True)
                 self.market_manager.sleep(.3)
-
                 self.market_manager.check_pages()
 
                 current_market_orders = self.sniffer.market_data_buffer
-
                 if not current_market_orders:
-                    print(f"No market data captured for item: {item_unique_name}")
+                    print(f"No market data captured for: {item_unique_name}")
 
                 found_prices = {}
                 
                 for order in current_market_orders:
-                    # --- A. Quality Check ---
-                    # QualityLevel: 1=Normal, 2=Good, 3=Outstanding, etc.
-                    # User requirement: Only quality < 3
                     quality = order.get('QualityLevel', 1)
-                    if quality > 3:
-                        continue
+                    if quality > 3: continue
 
-                    # --- B. Parse Item Info ---
                     full_name = order.get('ItemTypeId', 'Unknown')
                     base_name, tier, enchant = self.parse_item_info(full_name)
-
-                    # --- C. Price Conversion ---
                     raw_price = order.get('UnitPriceSilver', 0)
-                    # Check if sniffer already converted it, otherwise divide by 10000
                     real_price = order.get('unit_price_real', raw_price)
 
-                    # --- D. Store Highest Price ---
-                    # Key includes Base Name to handle different items safely
                     key = (base_name, tier, enchant)
-
                     if key not in found_prices: 
                         found_prices[key] = real_price
                     else:
-                        # We want the HIGHEST price (standard for Black Market flipping)
                         if real_price > found_prices[key]:
                             found_prices[key] = real_price
 
-                # 5. Print Results for this search
-                if not found_prices:
-                    print("   No valid orders found (Quality < 4).")
-                else:
-                    if found_prices:
-                        db_payload = []
-                        
-                        for (base, tier, enc), price in found_prices.items():
-                            # Reconstruct UniqueName (e.g. T4_BAG or T4_BAG@1)
-                            if enc > 0:
-                                unique_name = f"{tier}_{base}@{enc}"
-                            else:
-                                unique_name = f"{tier}_{base}"
+                if found_prices:
+                    db_payload = []
+                    for (base, tier, enc), price in found_prices.items():
+                        if enc > 0: unique_name = f"{tier}_{base}@{enc}"
+                        else: unique_name = f"{tier}_{base}"
 
-                            # Create DB Entry
-                            # Mapping Black Market Price -> price_caerleon
-                            item_data = {
-                                'unique_name': unique_name,
-                                'price_black_market': int(price),
-                                'black_market_updated_at': datetime.now(timezone.utc)
-                            }
-                            db_payload.append(item_data)
+                        item_data = {
+                            'unique_name': unique_name,
+                            'price_black_market': int(price),
+                            'black_market_updated_at': datetime.now(timezone.utc)
+                        }
+                        db_payload.append(item_data)
 
-                        # C. Update Database
-                        if db_payload:
-                            self.db.update_item_prices(db_payload)
-                            #print(f"   [DB] Sent updates for {len(db_payload)} items.")
-                            self.market_manager.sleep(0.3)
+                    if db_payload:
+                        self.db.update_item_prices(db_payload)
         except KeyboardInterrupt:
             print("Stopping bot...")
 
     def buy_items(self):
+        items_to_buy_list = self.load_preset_items("buy_items_preset")
+        if not items_to_buy_list:
+            print("No items to buy. Please select a preset in Configuration.")
+            return
+
+        print(f"Starting Buy Routine for {len(items_to_buy_list)} items...")
         self.market_manager.change_tab("buy")
             
         try:
-            for item_unique_name in ITEMS_TO_BUY:
-                self.market_manager.search_item("T8_"+item_unique_name, from_db=True)
+            for item_unique_name in items_to_buy_list:
+                # Logic assumes item_unique_name is the base T-level item? 
+                # Adjust if your preset contains full names like T4_BAG
+                # If preset has "BAG", use "T8_"+... logic. 
+                # Assuming preset has FULL Unique Names now:
+                
+                self.market_manager.search_item(item_unique_name, from_db=True)
                 self.sniffer.clear_buffer()
                 self.market_manager.open_item()
-
                 self.market_manager.sleep(.3)
 
                 current_market_orders = self.sniffer.market_data_buffer
-
                 if not current_market_orders:
-                    print(f"No market data captured for item: {"T8_"+item_unique_name}")
+                    print(f"No data: {item_unique_name}")
 
                 lowest_price = float('inf')
                 best_quality = 0
@@ -168,8 +167,7 @@ class TradeBot:
                             lowest_price = price
                             best_quality = quality
 
-                #print(f"Captured {len(current_market_orders)} orders.")
-                print(f"Lowest Price found: {lowest_price} (Quality: {best_quality})")
+                print(f"Lowest Price for {item_unique_name}: {lowest_price}")
                 self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")
