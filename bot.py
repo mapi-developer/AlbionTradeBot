@@ -73,31 +73,40 @@ class TradeBot:
 
         return base_name, tier, enchant
 
-    def check_price(self, isBlackMarket = True):
+    def check_price(self, isBlackMarket=True):
         self.capture.set_foreground_window()
-        # Load items from the configured preset
-        items_to_check = self.load_preset_items("check_price_preset")
-        if not items_to_check:
-            print("No items to check. Please select a preset in Configuration.")
-            return
-        
         if isBlackMarket:
-            items_to_check = ITEMS_BLACK_MARKET
+            # Use names from the Black Market dictionary values
+            items_to_check = list(ITEMS_BLACK_MARKET.values())
+            print(f"Starting Black Market Price Check for {len(items_to_check)} items from dictionary...")
+        else:
+            # Load items from the configured preset
+            items_to_check = self.load_preset_items("check_price_preset")
+            if not items_to_check:
+                print("No items to check. Please select a preset in Configuration.")
+                return
+            print(f"Starting Price Check for {len(items_to_check)} items...")
 
-        print(f"Starting Price Check for {len(items_to_check)} items...")
         self.market_manager.change_tab("buy")
 
         try:
-            for item_unique_name in items_to_check:
+            for item in items_to_check:
                 self.sniffer.clear_buffer()
-                # Assuming search_item handles unique_name
-                self.market_manager.search_item(item_unique_name, from_db=True)
+                
+                if isBlackMarket:
+                    # Search using the name directly (item is the value from dictionary)
+                    self.market_manager.search_item(item)
+                else:
+                    # Search using the unique name (item is the key/id from preset)
+                    self.market_manager.search_item(item, from_db=True)
+                    
                 self.market_manager.sleep(.3)
                 self.market_manager.check_pages()
 
                 current_market_orders = self.sniffer.market_data_buffer
                 if not current_market_orders:
-                    print(f"No market data captured for: {item_unique_name}")
+                    # Use item as the identifier in the log
+                    print(f"No market data captured for: {item}")
 
                 found_prices = {}
                 

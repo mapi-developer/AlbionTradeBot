@@ -141,7 +141,7 @@ class PresetManager(ft.Column):
         )
         self.update_preset_dropdown()
 
-        self.filename_input = ft.TextField(label="Save as", suffix_text=".json", text_size=12, expand=True, content_padding=8, dense=True, height=35)
+        self.filename_input = ft.TextField(label="Save as", suffix_text=".json", text_size=12, expand=True, dense=True, height=35)
         
         # Compact Filter Container with reduced internal padding
         filter_container = ft.Container(content=ft.Column([
@@ -378,7 +378,7 @@ def main(page: ft.Page):
     log_output = ft.TextField(value="--- Bot Logs ---\n", multiline=True, read_only=True, text_size=12, expand=True, bgcolor=ft.Colors.BLACK38, border_color=ft.Colors.GREY_800, text_style=ft.TextStyle(font_family="Consolas"))
     
     def log_msg(msg): 
-        if page: log_output.value += msg; page.update()
+        if page: log_output.value += "\n"+msg; page.update()
     
     sys.stdout = ConsoleRedirector(log_msg)
     sys.stderr = ConsoleRedirector(log_msg)

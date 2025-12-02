@@ -220,22 +220,33 @@ class WindowCapture:
     def get_window(self) -> int:
         return self.hwnd
 
-    def set_foreground_window(self) -> None:
-        try:
-            win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
-            win32gui.SetForegroundWindow(self.hwnd)
-            time.sleep(0.3)
-        except win32gui.error:
+    def set_foreground_window(self, max_wait_seconds=5) -> None:
+        """Repeatedly tries to set the window to the foreground for a specified duration."""
+        start_time = time.time()
+        while time.time() - start_time < max_wait_seconds:
+            if self.is_foreground_window():
+                return  # Success
+
             try:
-                fg_hwnd = win32gui.GetForegroundWindow()
-                cur_tid = win32api.GetCurrentThreadId()
-                fg_tid = win32process.GetWindowThreadProcessId(fg_hwnd)[0]
-                user32 = ctypes.windll.user32
-                user32.AttachThreadInput(cur_tid, fg_tid, True)
+                # Standard method to bring window to front
+                win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
                 win32gui.SetForegroundWindow(self.hwnd)
-                user32.AttachThreadInput(cur_tid, fg_tid, False)
-            except Exception:
-                pass
+            except win32gui.error:
+                # Fallback for when the above fails, often due to focus issues
+                try:
+                    fg_hwnd = win32gui.GetForegroundWindow()
+                    cur_tid = win32api.GetCurrentThreadId()
+                    fg_tid = win32process.GetWindowThreadProcessId(fg_hwnd)[0]
+                    ctypes.windll.user32.AttachThreadInput(cur_tid, fg_tid, True)
+                    win32gui.SetForegroundWindow(self.hwnd)
+                    ctypes.windll.user32.AttachThreadInput(cur_tid, fg_tid, False)
+                except Exception:
+                    pass  # Ignore errors in the fallback
+            time.sleep(0.5) # Wait before next attempt
+
+    def is_foreground_window(self) -> bool:
+        """Checks if the captured window is currently the foreground window."""
+        return win32gui.GetForegroundWindow() == self.hwnd
 
     @staticmethod
     def _safe_imwrite(path: str, img) -> bool:
