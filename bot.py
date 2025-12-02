@@ -3,6 +3,7 @@ from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
 from database.interface import DatabaseInterface
 from managers.config_manager import ConfigManager, PRESETS_DIR
+from utils.helper import ITEMS_BLACK_MARKET
 import os
 import re
 import json
@@ -72,12 +73,16 @@ class TradeBot:
 
         return base_name, tier, enchant
 
-    def check_price(self):
+    def check_price(self, isBlackMarket = True):
+        self.capture.set_foreground_window()
         # Load items from the configured preset
         items_to_check = self.load_preset_items("check_price_preset")
         if not items_to_check:
             print("No items to check. Please select a preset in Configuration.")
             return
+        
+        if isBlackMarket:
+            items_to_check = ITEMS_BLACK_MARKET
 
         print(f"Starting Price Check for {len(items_to_check)} items...")
         self.market_manager.change_tab("buy")
@@ -131,6 +136,7 @@ class TradeBot:
             print("Stopping bot...")
 
     def buy_items(self):
+        self.capture.set_foreground_window()
         items_to_buy_list = self.load_preset_items("buy_items_preset")
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Configuration.")
