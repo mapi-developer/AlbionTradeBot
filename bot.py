@@ -70,7 +70,7 @@ class TradeBot:
             for item_unique_name in ITEMS_BLACK_MARKET:
                 self.sniffer.clear_buffer()
                 self.market_manager.search_item(ITEMS_BLACK_MARKET[item_unique_name], from_db=True)
-                self.market_manager.sleep(.5)
+                self.market_manager.sleep(.3)
 
                 self.market_manager.check_pages()
 
@@ -136,7 +136,7 @@ class TradeBot:
                         if db_payload:
                             self.db.update_item_prices(db_payload)
                             #print(f"   [DB] Sent updates for {len(db_payload)} items.")
-                            self.market_manager.sleep(0.5)
+                            self.market_manager.sleep(0.3)
         except KeyboardInterrupt:
             print("Stopping bot...")
 
@@ -149,7 +149,7 @@ class TradeBot:
                 self.sniffer.clear_buffer()
                 self.market_manager.open_item()
 
-                self.market_manager.sleep(.5)
+                self.market_manager.sleep(.3)
 
                 current_market_orders = self.sniffer.market_data_buffer
 
