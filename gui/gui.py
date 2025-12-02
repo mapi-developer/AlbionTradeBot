@@ -1,16 +1,21 @@
-import flet as ft
-import sys
-import threading
 import io
 import json
 import os
 import re
+import sys
+import threading
+
+import flet as ft
+
 from bot import TradeBot
 from database.interface import DatabaseInterface
+from gui.modules.popup import Popup
 from managers.config_manager import ConfigManager, PRESETS_DIR
 
 # --- Constants ---
+# Assuming the script is run from the root directory (where main.py is)
 BOT_ITEMS_FILE = "config/bot_items.json"
+
 
 class ConsoleRedirector(io.StringIO):
     def __init__(self, update_callback):
@@ -117,16 +122,7 @@ class PresetManager(ft.Column):
         self.left_panel = ItemListPanel("Available", "Add Filtered", ft.Icons.ADD, ft.Colors.GREEN_700, self.add_items_bulk, self.add_single_item, ft.Icons.ADD_CIRCLE_OUTLINE)
         self.right_panel = ItemListPanel("In Preset", "Remove Filtered", ft.Icons.DELETE, ft.Colors.RED_700, self.remove_items_bulk, self.remove_single_item, ft.Icons.HIGHLIGHT_OFF)
 
-        self.preset_dropdown = ft.Dropdown(
-            label="Select Preset", 
-            width=250, 
-            text_size=14, 
-            content_padding=10, 
-            dense=True,
-            filled=True,
-            bgcolor=ft.Colors.BLACK26,
-            border_color=ft.Colors.GREY_800
-        )
+        self.preset_dropdown = ft.Dropdown(label="Select Preset", width=250, text_size=14, content_padding=10, dense=True, filled=True, bgcolor=ft.Colors.BLACK26, border_color=ft.Colors.GREY_800)
         self.update_preset_dropdown()
 
         self.filename_input = ft.TextField(label="Save as", suffix_text=".json", text_size=14, expand=True, content_padding=10, dense=True)
@@ -225,42 +221,57 @@ class PresetManager(ft.Column):
         self.left_panel.update_list([i for i in filtered if i.unique_name not in self.preset_set])
         self.right_panel.update_list([i for i in filtered if i.unique_name in self.preset_set])
 
-    def add_single_item(self, item): self.preset_set.add(item.unique_name); self.apply_filters()
-    def remove_single_item(self, item): self.preset_set.discard(item.unique_name); self.apply_filters()
+    def add_single_item(self, item): 
+        self.preset_set.add(item.unique_name)
+        self.apply_filters()
+
+    def remove_single_item(self, item): 
+        self.preset_set.discard(item.unique_name)
+        self.apply_filters()
+
     def add_items_bulk(self, items): 
         for i in items: self.preset_set.add(i.unique_name)
+        Popup.show_success(self.page, f"Added {len(items)} items")
         self.apply_filters()
+
     def remove_items_bulk(self, items): 
         for i in items: self.preset_set.discard(i.unique_name)
+        Popup.show_success(self.page, f"Removed {len(items)} items")
         self.apply_filters()
 
     def load_preset_click(self, e):
         fname = self.preset_dropdown.value
-        if not fname: return
+        if not fname: return Popup.show_error(self.page, "Please select a preset to load")
         try:
             with open(os.path.join(PRESETS_DIR, fname), "r") as f: self.preset_set = set(json.load(f))
             self.filename_input.value = fname.replace(".json", "")
             if self.filename_input.page: self.filename_input.update()
             self.apply_filters()
-        except Exception as ex: print(ex)
+            Popup.show_success(self.page, f"Loaded preset: {fname}")
+        except Exception as ex: 
+            Popup.show_error(self.page, f"Error loading preset: {ex}")
 
     def delete_preset_click(self, e):
         fname = self.preset_dropdown.value
-        if not fname: return
+        if not fname: return Popup.show_error(self.page, "Please select a preset to delete")
         try:
             os.remove(os.path.join(PRESETS_DIR, fname))
             self.update_preset_dropdown()
             self.preset_dropdown.value = None
             if self.preset_dropdown.page: self.preset_dropdown.update()
-        except: pass
+            Popup.show_success(self.page, f"Deleted preset: {fname}")
+        except: 
+            Popup.show_error(self.page, "Error deleting preset")
 
     def save_preset_click(self, e):
         name = self.filename_input.value
-        if not name: return
+        if not name: return Popup.show_error(self.page, "Please enter a name for the preset")
         try:
             with open(os.path.join(PRESETS_DIR, f"{name}.json"), "w") as f: json.dump(list(self.preset_set), f, indent=4)
             self.update_preset_dropdown()
-        except: pass
+            Popup.show_success(self.page, f"Preset saved as {name}.json")
+        except Exception as ex: 
+            Popup.show_error(self.page, f"Error saving preset: {ex}")
 
 class ConfigTab(ft.Column):
     def __init__(self, config_manager):
@@ -269,30 +280,16 @@ class ConfigTab(ft.Column):
         self.expand = True
         self.padding = 20
 
-        # Input Fields
-        self.min_profit = ft.TextField(
-            label="Min Profit Rate (%)", 
-            value=str(self.config.get("min_profit_rate")), 
-            keyboard_type=ft.KeyboardType.NUMBER,
-            bgcolor=ft.Colors.BLACK,
-            border_color=ft.Colors.GREY_800
-        )
-        self.stop_silver = ft.TextField(
-            label="Stop if Silver <", 
-            value=str(self.config.get("min_silver_to_stop")), 
-            keyboard_type=ft.KeyboardType.NUMBER,
-            bgcolor=ft.Colors.BLACK,
-            border_color=ft.Colors.GREY_800
-        )
+        self.min_profit = ft.TextField(label="Min Profit Rate (%)", value=str(self.config.get("min_profit_rate")), keyboard_type=ft.KeyboardType.NUMBER, bgcolor=ft.Colors.BLACK, border_color=ft.Colors.GREY_800)
+        self.stop_silver = ft.TextField(label="Stop if Silver <", value=str(self.config.get("min_silver_to_stop")), keyboard_type=ft.KeyboardType.NUMBER, bgcolor=ft.Colors.BLACK, border_color=ft.Colors.GREY_800)
         
-        # Preset Dropdowns
         presets = self.config.get_presets_list()
         
         self.check_preset = ft.Dropdown(
             label="Preset for Checking Prices", 
-            options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            options=[ft.dropdown.Option(f) for f in presets], 
             filled=True,
+            value=self.config.get("check_price_preset"),
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
@@ -300,9 +297,9 @@ class ConfigTab(ft.Column):
         )
         self.buy_preset = ft.Dropdown(
             label="Preset for Buying Items", 
-            options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("buy_items_preset"),
+            options=[ft.dropdown.Option(f) for f in presets], 
             filled=True,
+            value=self.config.get("buy_items_preset"),
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
@@ -341,12 +338,9 @@ class ConfigTab(ft.Column):
             self.config.set("min_silver_to_stop", int(self.stop_silver.value))
             self.config.set("check_price_preset", self.check_preset.value)
             self.config.set("buy_items_preset", self.buy_preset.value)
-            
-            self.page.snack_bar = ft.SnackBar(ft.Text("Configuration Saved!"))
-            self.page.snack_bar.open = True
-            self.page.update()
+            Popup.show_success(self.page, "Configuration Saved!")
         except Exception as ex:
-            print(ex)
+            Popup.show_error(self.page, f"Error saving config: {ex}")
 
 def main(page: ft.Page):
     page.title = "Albion Trade Bot Manager"
@@ -354,14 +348,16 @@ def main(page: ft.Page):
     page.window_width = 1200
     page.window_height = 900
     page.padding = 10
-
+    
     config_manager = ConfigManager()
 
     log_output = ft.TextField(value="--- Bot Logs ---\n", multiline=True, read_only=True, text_size=12, expand=True, bgcolor=ft.Colors.BLACK38, border_color=ft.Colors.GREY_800, text_style=ft.TextStyle(font_family="Consolas"))
     
-    def log_msg(msg): 
-        if page: log_output.value += msg; page.update()
-    
+    async def log_msg(msg):
+        if page:
+            log_output.value += msg
+            await page.update_async()
+
     sys.stdout = ConsoleRedirector(log_msg)
     sys.stderr = ConsoleRedirector(log_msg)
 
@@ -387,7 +383,6 @@ def main(page: ft.Page):
     config_tab = ConfigTab(config_manager)
     preset_manager = PresetManager(config_manager)
     
-    # Hook to refresh presets dropdown when switching tabs
     def on_tab_change(e):
         if e.control.selected_index == 2: # Config Tab
             config_tab.refresh_presets()
@@ -399,7 +394,17 @@ def main(page: ft.Page):
         ft.Tab(text="Items Presets", icon=ft.Icons.LIST_ALT, content=ft.Container(content=preset_manager, padding=5)),
         ft.Tab(text="Bot Configuration", icon=ft.Icons.SETTINGS, content=config_tab)
     ])
-    page.add(t)
 
-if __name__ == "__main__":
-    ft.app(target=main)
+    # Initialize the popup banner and add it to a Stack with the main content
+    notification_banner = Popup.init_popup(page)
+    page.add(
+        ft.Stack(
+            [
+                ft.Container(
+                    content=t,  # Main content
+                    padding=ft.padding.only(top=10)
+                ),
+                notification_banner,  # Popup overlay
+            ]
+        )
+    )
