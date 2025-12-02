@@ -1,82 +1,157 @@
-import json
-import re
-import os
+import flet as ft
+import sys
+import threading
+import io
+import time
+from bot import TradeBot
+from database.interface import DatabaseInterface
 
-def generate_readable_names_dict():
-    # Paths to your files
-    items_path = 'config/items.json'
-    base_names_path = 'config/black_market_base_names.json'
-    output_path = 'config/black_market_lookup.json'
+class ConsoleRedirector(io.StringIO):
+    def __init__(self, update_callback):
+        super().__init__()
+        self.update_callback = update_callback
 
-    if not os.path.exists(items_path) or not os.path.exists(base_names_path):
-        print("Error: Input files not found.")
-        return
+    def write(self, message):
+        if message.strip():
+            self.update_callback(message)
 
-    print("Loading data...")
-    with open(items_path, 'r', encoding='utf-8') as f:
-        all_items = json.load(f)
+    def flush(self):
+        pass
 
-    with open(base_names_path, 'r', encoding='utf-8') as f:
-        target_base_names = set(json.load(f))
+def main(page: ft.Page):
+    # --- App Configuration ---
+    page.title = "Albion Trade Bot GUI"
+    page.theme_mode = ft.ThemeMode.DARK
+    page.window_width = 600
+    page.window_height = 700
+    page.padding = 20
 
-    # Prefixes to strip from English names
-    # These correspond to T1 - T8
-    tier_prefixes = [
-        "Beginner's ", "Novice's ", "Journeyman's ", 
-        "Adept's ", "Expert's ", "Master's ", 
-        "Grandmaster's ", "Elder's "
-    ]
-
-    final_dict = {}
-
-    print("Processing items...")
+    # --- UI Elements ---
     
-    # We loop through all items to find a match for our base names
-    for item in all_items:
-        unique_name = item.get("UniqueName", "")
-        if not unique_name:
-            continue
+    header = ft.Text("Albion Trade Bot", size=30, weight=ft.FontWeight.BOLD)
+    # Fixed: Use ft.Colors (Uppercase)
+    status_text = ft.Text("Status: Ready", color=ft.Colors.GREEN)
 
-        # Skip enchanted items (@1, @2) to ensure we get the basic name
-        if "@" in unique_name:
-            continue
+    # Log/Console Output Area
+    log_output = ft.TextField(
+        value="--- Bot Logs will appear here ---\n",
+        multiline=True,
+        read_only=True,
+        text_size=12,
+        expand=True,
+        bgcolor=ft.Colors.BLACK38,      # Fixed: Use bgcolor for background
+        border_color=ft.Colors.GREY_800, # Fixed: Use ft.Colors
+    )
 
-        # Extract the base name from the current item (e.g., T4_HEAD_CLOTH -> HEAD_CLOTH)
-        # We look for the pattern "T" + digit + "_"
-        match = re.match(r"T\d+_(.+)", unique_name)
-        if not match:
-            continue
-        
-        current_base_name = match.group(1)
+    autoscroll_check = ft.Checkbox(label="Auto-scroll logs", value=True)
 
-        # If this item represents one of the base names we want
-        if current_base_name in target_base_names:
-            
-            # Get the English name
-            loc_names = item.get("LocalizedNames", {})
-            eng_name = None
-            if loc_names != None:
-                eng_name = loc_names.get("EN-US")
-            if not eng_name:
-                continue
+    bot_instance = None
 
-            # Strip the Tier prefix
-            clean_name = eng_name
-            for prefix in tier_prefixes:
-                if clean_name.startswith(prefix):
-                    clean_name = clean_name.replace(prefix, "")
-                    break # Stop after finding the matching prefix
+    # --- Logic Functions ---
 
-            # Add to dictionary
-            # We overwrite if it exists, which is fine because "Expert's X" and "Master's X" 
-            # both reduce to "X", so the value remains the same.
-            final_dict[current_base_name] = clean_name
+    def log_message(message):
+        current_val = log_output.value or ""
+        log_output.value = current_val + message
+        page.update()
 
-    # Save the new dictionary
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(final_dict, f, indent=2, sort_keys=True)
+    sys.stdout = ConsoleRedirector(log_message)
+    sys.stderr = ConsoleRedirector(log_message)
 
-    print(f"Success! Created dictionary with {len(final_dict)} items at {output_path}")
+    def init_bot():
+        nonlocal bot_instance
+        if bot_instance is None:
+            log_message("[GUI] Initializing Database & Bot...\n")
+            try:
+                db = DatabaseInterface()
+                bot_instance = TradeBot(db=db)
+                log_message("[GUI] Bot Initialized Successfully.\n")
+                return True
+            except Exception as e:
+                log_message(f"[GUI] Error Initializing Bot: {e}\n")
+                log_message("[GUI] Ensure Docker is running.\n")
+                return False
+        return True
+
+    def run_check_price(e):
+        if not init_bot(): return
+
+        start_btn.disabled = True
+        buy_btn.disabled = True
+        status_text.value = "Status: Checking Prices..."
+        status_text.color = ft.Colors.ORANGE # Fixed: ft.Colors
+        page.update()
+
+        def task():
+            try:
+                log_message("\n--- Starting Price Check ---\n")
+                bot_instance.check_price()
+                log_message("\n--- Price Check Complete ---\n")
+            except Exception as ex:
+                log_message(f"\n[Error] {ex}\n")
+            finally:
+                start_btn.disabled = False
+                buy_btn.disabled = False
+                status_text.value = "Status: Ready"
+                status_text.color = ft.Colors.GREEN
+                page.update()
+
+        threading.Thread(target=task, daemon=True).start()
+
+    def run_buy_items(e):
+        if not init_bot(): return
+
+        start_btn.disabled = True
+        buy_btn.disabled = True
+        status_text.value = "Status: Buying Items..."
+        status_text.color = ft.Colors.BLUE # Fixed: ft.Colors
+        page.update()
+
+        def task():
+            try:
+                log_message("\n--- Starting Buy Routine ---\n")
+                bot_instance.buy_items()
+                log_message("\n--- Buy Routine Complete ---\n")
+            except Exception as ex:
+                log_message(f"\n[Error] {ex}\n")
+            finally:
+                start_btn.disabled = False
+                buy_btn.disabled = False
+                status_text.value = "Status: Ready"
+                status_text.color = ft.Colors.GREEN
+                page.update()
+
+    # --- Buttons ---
+    start_btn = ft.ElevatedButton(
+        "Check Black Market Prices", 
+        icon=ft.Icons.SEARCH, 
+        on_click=run_check_price,
+        bgcolor=ft.Colors.INDIGO_600, # Fixed: ft.Colors
+        color=ft.Colors.WHITE         # Fixed: ft.Colors
+    )
+
+    buy_btn = ft.ElevatedButton(
+        "Buy Items", 
+        icon=ft.Icons.SHOPPING_CART, 
+        on_click=run_buy_items,
+        bgcolor=ft.Colors.TEAL_600,   # Fixed: ft.Colors
+        color=ft.Colors.WHITE         # Fixed: ft.Colors
+    )
+
+    # --- Layout ---
+    page.add(
+        header,
+        status_text,
+        ft.Divider(),
+        ft.Row([start_btn, buy_btn], alignment=ft.MainAxisAlignment.START),
+        ft.Divider(),
+        ft.Text("Console Output:", size=14, color=ft.Colors.GREY_400),
+        ft.Container(
+            content=log_output,
+            expand=True,
+            border_radius=10,
+        ),
+        autoscroll_check
+    )
 
 if __name__ == "__main__":
-    generate_readable_names_dict()
+    ft.app(target=main)
