@@ -59,13 +59,13 @@ class ItemListPanel(ft.Container):
             on_click=self.trigger_action, height=30, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5))
         )
         self.count_text = ft.Text("0 items", size=11, color=ft.Colors.GREY_400)
-        self.item_list = ft.ListView(expand=True, spacing=1, item_extent=35)
+        self.item_list = ft.ListView(expand=True, spacing=1, item_extent=35, auto_scroll=False)
 
         self.content = ft.Column([
             ft.Text(title, weight=ft.FontWeight.BOLD, size=14),
             ft.Divider(height=5, thickness=1),
             ft.Row([self.action_btn, self.count_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Container(content=self.item_list, expand=True, bgcolor=ft.Colors.BLACK26, border_radius=5, padding=2)
+            ft.Container(content=self.item_list, expand=True, bgcolor=ft.Colors.BLACK26, border_radius=5, padding=2, height=420) # 12 items * 35 extent
         ], spacing=5)
 
     def update_list(self, items):
@@ -99,8 +99,9 @@ class PresetManager(ft.Column):
         super().__init__()
         self.expand = True
         self.config = config_manager
-        self.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
+        self.horizontal_alignment = ft.CrossAxisAlignment.STRETCH # Make children stretch to width
         self.spacing = 3 # Tight spacing (outside padding equivalent)
+        self.padding = 20
         
         self.raw_json = self.load_json_data()
         self.all_item_objects = self.parse_items(self.raw_json)
@@ -156,7 +157,7 @@ class PresetManager(ft.Column):
             ft.Divider(height=2, color=ft.Colors.GREY_900),
             ft.Column([ft.Text("Category:", size=11, color=ft.Colors.GREY_500), self.cat_row], spacing=0),
             ft.Column([ft.Text("Sub-Cat:", size=11, color=ft.Colors.GREY_500), self.sub_row], spacing=0),
-        ], spacing=2), padding=3, bgcolor=ft.Colors.BLACK12, border_radius=5, border=ft.border.all(1, ft.Colors.GREY_800))
+        ], spacing=2), padding=5, bgcolor=ft.Colors.BLACK12, border_radius=5, border=ft.border.all(1, ft.Colors.GREY_800), margin=10)
 
         self.controls = [
             ft.Container(content=ft.Row([
@@ -166,8 +167,9 @@ class PresetManager(ft.Column):
                 ft.VerticalDivider(width=10, color=ft.Colors.GREY_700),
                 ft.Text("Save:", weight=ft.FontWeight.BOLD, size=12), self.filename_input,
                 ft.IconButton(icon=ft.Icons.SAVE, on_click=self.save_preset_click, icon_color=ft.Colors.GREEN_400, tooltip="Save")
-            ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER), padding=5, bgcolor=ft.Colors.BLACK26, border_radius=5),
+            ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER), padding=5, bgcolor=ft.Colors.BLACK26, border_radius=5, margin=10),
             filter_container,
+            ft.Divider(height=10, color=ft.Colors.TRANSPARENT), # Padding
             ft.Row([self.left_panel, ft.VerticalDivider(width=1, color=ft.Colors.GREY_800), self.right_panel], expand=True)
         ]
         self.apply_filters()
@@ -311,14 +313,16 @@ class ConfigTab(ft.Column):
             value=str(self.config.get("min_profit_rate")), 
             keyboard_type=ft.KeyboardType.NUMBER,
             bgcolor=ft.Colors.BLACK,
-            border_color=ft.Colors.GREY_800
+            border_color=ft.Colors.GREY_800,
+            width=200 # 15% of 1200 is 180, 200 looks better
         )
         self.stop_silver = ft.TextField(
             label="Stop if Silver <", 
             value=str(self.config.get("min_silver_to_stop")), 
             keyboard_type=ft.KeyboardType.NUMBER,
             bgcolor=ft.Colors.BLACK,
-            border_color=ft.Colors.GREY_800
+            border_color=ft.Colors.GREY_800,
+            width=200 # 15% of 1200 is 180, 200 looks better
         )
         
         # Preset Dropdowns
@@ -327,95 +331,129 @@ class ConfigTab(ft.Column):
         self.buy_fort_sterling = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_fort_sterling"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_lymhurst = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_lymhurst"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_bridgewatch = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_bridgewatch"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_martlock = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_martlock"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_thetford = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_thetford"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_caerleon = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_caerleon"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
         self.buy_brecilien = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("check_price_preset"),
+            value=self.config.get("buy_items_preset_brecilien"),
+            label_style=ft.TextStyle(size=12),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
             color=ft.Colors.WHITE,
-            width=400
+            width=300,
+            enable_filter=True,
+            editable=True,
         )
 
         self.save_btn = ft.ElevatedButton("Save Configuration", icon=ft.Icons.SAVE, on_click=self.save_config, bgcolor=ft.Colors.GREEN_700, color="white")
 
-        self.controls = [
-            ft.Text("Bot Configuration", size=24, weight=ft.FontWeight.BOLD),
-            ft.Divider(),
-            ft.Container(content=ft.Column([
+        # --- Layout ---
+        left_column = ft.Container(
+            content=ft.Column([
+                ft.Text("Active Presets", size=16, weight=ft.FontWeight.BOLD),
+                self.buy_fort_sterling, self.buy_lymhurst, self.buy_bridgewatch,
+                self.buy_martlock, self.buy_thetford, self.buy_caerleon, self.buy_brecilien,
+            ], spacing=15, scroll=ft.ScrollMode.AUTO),
+            padding=20,
+            border=ft.border.all(1, ft.Colors.GREY_800),
+            border_radius=10,
+            expand=1 # 20% width
+        )
+
+        right_column = ft.Container(
+            content=ft.Column([
                 ft.Text("General Settings", size=16, weight=ft.FontWeight.BOLD),
                 self.min_profit,
                 self.stop_silver,
-                ft.Divider(),
-                ft.Text("Active Presets", size=16, weight=ft.FontWeight.BOLD),
-                self.buy_fort_sterling,
-                self.buy_lymhurst,
-                self.buy_bridgewatch,
-                self.buy_martlock,
-                self.buy_thetford,
-                self.buy_caerleon,
-                self.buy_brecilien,
-                ft.Divider(),
-                self.save_btn
-            ], spacing=20), width=600)
+            ], spacing=20),
+            padding=20,
+            border=ft.border.all(1, ft.Colors.GREY_800),
+            border_radius=10,
+            expand=4 # 80% width
+        )
+
+        self.controls = [
+            ft.Text("Bot Configuration", size=24, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            ft.Column([
+                ft.Row([left_column, right_column], spacing=20, vertical_alignment=ft.CrossAxisAlignment.START),
+                ft.Row([self.save_btn], alignment=ft.MainAxisAlignment.START)
+            ], expand=True)
         ]
 
     def refresh_presets(self):
@@ -515,9 +553,9 @@ def main(page: ft.Page):
             preset_manager.update_preset_dropdown()
 
     t = ft.Tabs(selected_index=0, expand=True, on_change=on_tab_change, tabs=[
-        ft.Tab(text="Dashboard", icon=ft.Icons.DASHBOARD, content=dash),
-        ft.Tab(text="Items Presets", icon=ft.Icons.LIST_ALT, content=ft.Container(content=preset_manager, padding=5)),
-        ft.Tab(text="Bot Configuration", icon=ft.Icons.SETTINGS, content=config_tab)
+        ft.Tab(text="Dashboard", icon=ft.Icons.DASHBOARD, content=ft.Column([dash], scroll=ft.ScrollMode.AUTO, expand=True)),
+        ft.Tab(text="Items Presets", icon=ft.Icons.LIST_ALT, content=ft.Column([preset_manager], scroll=ft.ScrollMode.AUTO, expand=True)),
+        ft.Tab(text="Bot Configuration", icon=ft.Icons.SETTINGS, content=ft.Column([config_tab], scroll=ft.ScrollMode.AUTO, expand=True))
     ])
     page.add(t)
 

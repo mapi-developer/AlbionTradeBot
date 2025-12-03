@@ -16,6 +16,9 @@ class MarketManager(InputSender):
     def __repr__(self) -> str:
         return f"MarketManager: {self.mouse_positions["search"]}"
     
+    def get_market_title(self) -> str:
+        return self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "").strip().replace(" ", "_")
+
     def check_pages(self) -> None:
         self.click(self.mouse_positions["next_page"], clicks=5, interval=0.2)
         self.sleep(0.5)
@@ -31,6 +34,11 @@ class MarketManager(InputSender):
             self.sleep(0.5)
         
     def search_item(self, name: str, from_db: bool = False) -> None:
+        tier = name.split("_")[0][1]
+        enchant = "0"
+        if name.split("@")[-1][0] != "T":
+            enchant = name.split("@")[-1][0]
+
         if from_db == True:
             name_from_unique = self.get_name_from_unique(name)
             if name_from_unique != None:
@@ -38,8 +46,8 @@ class MarketManager(InputSender):
 
         self.click(self.mouse_positions["search_reset"])
         self.click(self.mouse_positions["search"])
-        self.typewrite(name)
-        self.sleep(0.8)
+        self.typewrite(name+f" {tier}_{enchant}")
+        self.sleep(0.3)
 
     def change_tab(self, name: str) -> None:
         self.click(self.mouse_positions["tab_"+name])

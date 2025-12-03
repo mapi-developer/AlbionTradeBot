@@ -146,13 +146,13 @@ class TradeBot:
 
     def buy_items(self):
         self.capture.set_foreground_window()
-        items_to_buy_list = self.load_preset_items("buy_items_preset")
+        items_to_buy_list = self.load_preset_items("buy_items_preset_"+self.market_manager.get_market_title())
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Configuration.")
             return
 
         print(f"Starting Buy Routine for {len(items_to_buy_list)} items...")
-        self.market_manager.change_tab("buy")
+        self.market_manager.change_tab("create_buy_order")
             
         try:
             for item_unique_name in items_to_buy_list:
@@ -183,10 +183,11 @@ class TradeBot:
                             best_quality = quality
 
                 print(f"Lowest Price for {item_unique_name}: {lowest_price}")
+
                 self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")
 
 if __name__ == "__main__":
     bot = TradeBot()
-    bot.check_price()
+    print(bot.market_manager.get_market_title())

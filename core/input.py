@@ -10,7 +10,7 @@ class InputSender():
             text = text if len(text) >= 10 else text + "          "
         else:
             text = str(text)
-        pyautogui.typewrite(text, 0.02)
+        pyautogui.typewrite(text, 0.03)
 
     def press(self, keycode: str) -> None:
         pyautogui.press(keycode)
