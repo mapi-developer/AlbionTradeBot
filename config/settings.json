@@ -1,6 +1,11 @@
 {
-    "min_profit_rate": 50.0,
-    "min_silver_to_stop": 500000,
-    "check_price_preset": "Buy Items Preset.json",
-    "buy_items_preset": "Fort Sterling Preset.json"
+    "min_profit_rate": 35.0,
+    "min_silver_to_stop": 450000,
+    "buy_items_preset_fort_sterling": "Fort Sterling.json",
+    "buy_items_preset_lymhurst": "",
+    "buy_items_preset_bridgewatch": "",
+    "buy_items_preset_martlock": "",
+    "buy_items_preset_thetford": "",
+    "buy_items_preset_caerleon": "",
+    "buy_items_preset_brecilien": ""
 }

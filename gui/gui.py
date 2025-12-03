@@ -8,6 +8,7 @@ import re
 from bot import TradeBot
 from database.interface import DatabaseInterface
 from managers.config_manager import ConfigManager, PRESETS_DIR
+from gui.modules.popup import show_popup
 
 # --- Constants ---
 BOT_ITEMS_FILE = "config/bot_items.json"
@@ -254,13 +255,38 @@ class PresetManager(ft.Column):
 
     def load_preset_click(self, e):
         fname = self.preset_dropdown.value
-        if not fname: return
+        if not fname:
+            show_popup(self.page, "Please select a preset to load.", is_error=True)
+            return
         try:
-            with open(os.path.join(PRESETS_DIR, fname), "r") as f: self.preset_set = set(json.load(f))
+            with open(os.path.join(PRESETS_DIR, fname), "r") as f: 
+                self.preset_set = set(json.load(f))
+            
             self.filename_input.value = fname.replace(".json", "")
-            if self.filename_input.page: self.filename_input.update()
+            if self.filename_input.page: 
+                self.filename_input.update()
+            
             self.apply_filters()
-        except Exception as ex: print(ex)
+            #
+            show_popup(self.page, f"Preset '{fname}' loaded successfully!")
+        except Exception as ex: 
+            print(ex)
+            show_popup(self.page, f"Error loading preset: {ex}", is_error=True)
+
+    def save_preset_click(self, e):
+        name = self.filename_input.value
+        if not name: 
+            show_popup(self.page, "Please enter a filename to save.", is_error=True)
+            return
+        try:
+            with open(os.path.join(PRESETS_DIR, f"{name}.json"), "w") as f: 
+                json.dump(list(self.preset_set), f, indent=4)
+            
+            self.update_preset_dropdown()
+            #
+            show_popup(self.page, f"Preset '{name}.json' saved successfully!")
+        except Exception as ex:
+            show_popup(self.page, f"Error saving preset: {ex}", is_error=True)
 
     def delete_preset_click(self, e):
         fname = self.preset_dropdown.value
@@ -270,14 +296,6 @@ class PresetManager(ft.Column):
             self.update_preset_dropdown()
             self.preset_dropdown.value = None
             if self.preset_dropdown.page: self.preset_dropdown.update()
-        except: pass
-
-    def save_preset_click(self, e):
-        name = self.filename_input.value
-        if not name: return
-        try:
-            with open(os.path.join(PRESETS_DIR, f"{name}.json"), "w") as f: json.dump(list(self.preset_set), f, indent=4)
-            self.update_preset_dropdown()
         except: pass
 
 class ConfigTab(ft.Column):
@@ -306,7 +324,7 @@ class ConfigTab(ft.Column):
         # Preset Dropdowns
         presets = self.config.get_presets_list()
         
-        self.check_preset = ft.Dropdown(
+        self.buy_fort_sterling = ft.Dropdown(
             label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("check_price_preset"),
@@ -316,10 +334,60 @@ class ConfigTab(ft.Column):
             color=ft.Colors.WHITE,
             width=400
         )
-        self.buy_preset = ft.Dropdown(
-            label="Preset for Buying Items", 
+        self.buy_lymhurst = ft.Dropdown(
+            label="Preset for Checking Prices", 
             options=[ft.dropdown.Option(f) for f in presets],
-            value=self.config.get("buy_items_preset"),
+            value=self.config.get("check_price_preset"),
+            filled=True,
+            bgcolor=ft.Colors.BLACK,
+            border_color=ft.Colors.GREY_800,
+            color=ft.Colors.WHITE,
+            width=400
+        )
+        self.buy_bridgewatch = ft.Dropdown(
+            label="Preset for Checking Prices", 
+            options=[ft.dropdown.Option(f) for f in presets],
+            value=self.config.get("check_price_preset"),
+            filled=True,
+            bgcolor=ft.Colors.BLACK,
+            border_color=ft.Colors.GREY_800,
+            color=ft.Colors.WHITE,
+            width=400
+        )
+        self.buy_martlock = ft.Dropdown(
+            label="Preset for Checking Prices", 
+            options=[ft.dropdown.Option(f) for f in presets],
+            value=self.config.get("check_price_preset"),
+            filled=True,
+            bgcolor=ft.Colors.BLACK,
+            border_color=ft.Colors.GREY_800,
+            color=ft.Colors.WHITE,
+            width=400
+        )
+        self.buy_thetford = ft.Dropdown(
+            label="Preset for Checking Prices", 
+            options=[ft.dropdown.Option(f) for f in presets],
+            value=self.config.get("check_price_preset"),
+            filled=True,
+            bgcolor=ft.Colors.BLACK,
+            border_color=ft.Colors.GREY_800,
+            color=ft.Colors.WHITE,
+            width=400
+        )
+        self.buy_caerleon = ft.Dropdown(
+            label="Preset for Checking Prices", 
+            options=[ft.dropdown.Option(f) for f in presets],
+            value=self.config.get("check_price_preset"),
+            filled=True,
+            bgcolor=ft.Colors.BLACK,
+            border_color=ft.Colors.GREY_800,
+            color=ft.Colors.WHITE,
+            width=400
+        )
+        self.buy_brecilien = ft.Dropdown(
+            label="Preset for Checking Prices", 
+            options=[ft.dropdown.Option(f) for f in presets],
+            value=self.config.get("check_price_preset"),
             filled=True,
             bgcolor=ft.Colors.BLACK,
             border_color=ft.Colors.GREY_800,
@@ -338,8 +406,13 @@ class ConfigTab(ft.Column):
                 self.stop_silver,
                 ft.Divider(),
                 ft.Text("Active Presets", size=16, weight=ft.FontWeight.BOLD),
-                self.check_preset,
-                self.buy_preset,
+                self.buy_fort_sterling,
+                self.buy_lymhurst,
+                self.buy_bridgewatch,
+                self.buy_martlock,
+                self.buy_thetford,
+                self.buy_caerleon,
+                self.buy_brecilien,
                 ft.Divider(),
                 self.save_btn
             ], spacing=20), width=600)
@@ -347,24 +420,44 @@ class ConfigTab(ft.Column):
 
     def refresh_presets(self):
         presets = self.config.get_presets_list()
-        self.check_preset.options = [ft.dropdown.Option(f) for f in presets]
-        self.buy_preset.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_fort_sterling.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_lymhurst.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_bridgewatch.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_martlock.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_thetford.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_caerleon.options = [ft.dropdown.Option(f) for f in presets]
+        self.buy_brecilien.options = [ft.dropdown.Option(f) for f in presets]
+        
         if self.page:
-            self.check_preset.update()
-            self.buy_preset.update()
+            self.buy_fort_sterling.update()
+            self.buy_lymhurst.update()
+            self.buy_bridgewatch.update()
+            self.buy_martlock.update()
+            self.buy_thetford.update()
+            self.buy_caerleon.update()
+            self.buy_brecilien.update()
 
     def save_config(self, e):
         try:
             self.config.set("min_profit_rate", float(self.min_profit.value))
             self.config.set("min_silver_to_stop", int(self.stop_silver.value))
-            self.config.set("check_price_preset", self.check_preset.value)
-            self.config.set("buy_items_preset", self.buy_preset.value)
+            self.config.set("buy_items_preset_fort_sterling", self.buy_fort_sterling.value)
+            self.config.set("buy_items_preset_lymhurst", self.buy_lymhurst.value)
+            self.config.set("buy_items_preset_bridgewatch", self.buy_bridgewatch.value)
+            self.config.set("buy_items_preset_martlock", self.buy_martlock.value)
+            self.config.set("buy_items_preset_thetford", self.buy_thetford.value)
+            self.config.set("buy_items_preset_caerleon", self.buy_caerleon.value)
+            self.config.set("buy_items_preset_brecilien", self.buy_brecilien.value)
             
-            self.page.snack_bar = ft.SnackBar(ft.Text("Configuration Saved!"))
-            self.page.snack_bar.open = True
+            # Replaced manual SnackBar with popup call
+            show_popup(self.page, "Configuration Saved Successfully!")
+            
             self.page.update()
+        except ValueError:
+            show_popup(self.page, "Invalid input: Please enter numbers for profit/silver.", is_error=True)
         except Exception as ex:
             print(ex)
+            show_popup(self.page, f"Error saving settings: {ex}", is_error=True)
 
 def main(page: ft.Page):
     page.title = "Albion Trade Bot Manager"

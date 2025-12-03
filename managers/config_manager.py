@@ -8,8 +8,13 @@ PRESETS_DIR = os.path.join("config", "presets")
 DEFAULT_SETTINGS = {
     "min_profit_rate": 15,
     "min_silver_to_stop": 500000,
-    "check_price_preset": "",
-    "buy_items_preset": ""
+    "buy_items_preset_fort_sterling": "",
+    "buy_items_preset_lymhurst": "",
+    "buy_items_preset_bridgewatch": "",
+    "buy_items_preset_martlock": "",
+    "buy_items_preset_thetford": "",
+    "buy_items_preset_caerleon": "",
+    "buy_items_preset_brecilien": "",
 }
 
 class ConfigManager:
