@@ -33,7 +33,7 @@ class MarketManager(InputSender):
             self.click(self.mouse_positions["button_extend_item_statistic"])
             self.sleep(0.5)
         
-    def search_item(self, name: str, from_db: bool = False) -> None:
+    def search_item(self, name: str, from_db: bool = False, black_market: bool = False) -> None:
         tier = name.split("_")[0][1]
         enchant = "0"
         if name.split("@")[-1][0] != "T":
@@ -46,7 +46,9 @@ class MarketManager(InputSender):
 
         self.click(self.mouse_positions["search_reset"])
         self.click(self.mouse_positions["search"])
-        self.typewrite(name+f" {tier}_{enchant}")
+        if black_market == False:
+            name = name+f" {tier}_{enchant}"
+        self.typewrite(name)
         self.sleep(0.3)
 
     def change_tab(self, name: str) -> None:

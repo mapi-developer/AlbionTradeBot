@@ -40,7 +40,6 @@ class DatabaseInterface:
         session = self.Session()
         batch_orders = []
         batch_history = []
-        batch_mail = []
         batch_item_data = []
         
         while self.running:
@@ -142,3 +141,25 @@ class DatabaseInterface:
         except Exception as e:
             print(f"[DB ItemData Error] {e}")
             session.rollback()
+
+    def get_all_prices_for_city(self, city: str) -> dict:
+        """
+        Retrieves all item prices for a specific city.
+        'city' should be a lowercase city name like 'caerleon', 'lymhurst', etc.
+        Returns a dictionary of {unique_name: price}.
+        """
+        session = self.Session()
+        try:
+            city_lower = city.lower().replace(" ", "_")
+            price_col_name = f"price_{city_lower}"
+
+            price_col = getattr(ItemData, price_col_name, None)
+
+            if not price_col:
+                print(f"[DB Error] Invalid city name '{city}' for price lookup.")
+                return {}
+
+            results = session.query(ItemData.unique_name, price_col).all()
+            return {unique_name: price for unique_name, price in results if price is not None}
+        finally:
+            session.close()

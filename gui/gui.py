@@ -79,8 +79,20 @@ class ItemListPanel(ft.Container):
             self.item_list.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(self.item_icon, size=14, color=ft.Colors.GREY_400),
-                    title=ft.Text(item.localized_name, size=12, weight=ft.FontWeight.BOLD),
-                    subtitle=ft.Text(item.unique_name, size=9, color=ft.Colors.GREY_500, font_family="Consolas"),
+                    title=ft.Row([
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Text(item.localized_name, size=12, weight=ft.FontWeight.BOLD, overflow=ft.TextOverflow.ELLIPSIS, no_wrap=True),
+                                ft.Text(item.unique_name, size=9, color=ft.Colors.GREY_500, font_family="Consolas", overflow=ft.TextOverflow.ELLIPSIS, no_wrap=True),
+                            ], spacing=2, alignment=ft.MainAxisAlignment.CENTER),
+                            width=250 # Set a fixed width for the text column
+                        ),
+                        ft.Image(
+                            src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
+                            width=40, height=40, fit=ft.ImageFit.CONTAIN,
+                            border_radius=ft.border_radius.all(5),
+                        )
+                    ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=10),
                     dense=True, hover_color=ft.Colors.GREY_900,
                     on_click=lambda e, it=item: self.on_item_click(it),
                     content_padding=ft.padding.symmetric(vertical=0, horizontal=5)
@@ -329,7 +341,7 @@ class ConfigTab(ft.Column):
         presets = self.config.get_presets_list()
         
         self.buy_fort_sterling = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Fort Sterling", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_fort_sterling"),
             label_style=ft.TextStyle(size=12),
@@ -342,7 +354,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_lymhurst = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Lymhurst", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_lymhurst"),
             label_style=ft.TextStyle(size=12),
@@ -355,7 +367,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_bridgewatch = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Bridgewatch", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_bridgewatch"),
             label_style=ft.TextStyle(size=12),
@@ -368,7 +380,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_martlock = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Martlock", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_martlock"),
             label_style=ft.TextStyle(size=12),
@@ -381,7 +393,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_thetford = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Thetford", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_thetford"),
             label_style=ft.TextStyle(size=12),
@@ -394,7 +406,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_caerleon = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Caerleon", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_caerleon"),
             label_style=ft.TextStyle(size=12),
@@ -407,7 +419,7 @@ class ConfigTab(ft.Column):
             editable=True,
         )
         self.buy_brecilien = ft.Dropdown(
-            label="Preset for Checking Prices", 
+            label="Brecilien", 
             options=[ft.dropdown.Option(f) for f in presets],
             value=self.config.get("buy_items_preset_brecilien"),
             label_style=ft.TextStyle(size=12),

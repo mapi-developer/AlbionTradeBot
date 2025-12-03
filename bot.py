@@ -95,10 +95,10 @@ class TradeBot:
                 
                 if isBlackMarket:
                     # Search using the name directly (item is the value from dictionary)
-                    self.market_manager.search_item(item)
+                    self.market_manager.search_item(item, black_market=True)
                 else:
                     # Search using the unique name (item is the key/id from preset)
-                    self.market_manager.search_item(item, from_db=True)
+                    self.market_manager.search_item(item, from_db=True, black_market=False)
                     
                 self.market_manager.sleep(.3)
                 self.market_manager.check_pages()
@@ -147,6 +147,7 @@ class TradeBot:
     def buy_items(self):
         self.capture.set_foreground_window()
         items_to_buy_list = self.load_preset_items("buy_items_preset_"+self.market_manager.get_market_title())
+        items_prices = self.db.get_all_prices_for_city("black_market")
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Configuration.")
             return
@@ -183,6 +184,27 @@ class TradeBot:
                             best_quality = quality
 
                 print(f"Lowest Price for {item_unique_name}: {lowest_price}")
+
+                # --- Profit Check Logic ---
+                if lowest_price != float('inf'):
+                    # 1. Get Black Market price from the database
+                    black_market_price = items_prices[item_unique_name] / 10000
+                        
+                    # 2. Get minimum profit rate from settings
+                    min_profit_rate = self.config_manager.get("min_profit_rate") or 0.0
+
+                    # 3. Calculate profit margin
+                    # The market fee is 1.5% and the setup fee is 2.5% (total 4%)
+                    # We calculate profit after these fees on the sell price.
+                    potential_sell_price = black_market_price * 0.96 
+                    profit = potential_sell_price - lowest_price
+                    profit_margin = (profit / lowest_price) * 100 if lowest_price > 0 else 0
+
+                    # 4. Compare and print success
+                    if profit_margin >= min_profit_rate:
+                        print(f"[SUCCESS] Profitable trade found for {item_unique_name}! Margin: {profit_margin:.2f}%")
+                    else:
+                        print(f"[INFO] Trade for {item_unique_name} not profitable. Margin: {profit_margin:.2f}%")
 
                 self.market_manager.close_item()
         except KeyboardInterrupt:
