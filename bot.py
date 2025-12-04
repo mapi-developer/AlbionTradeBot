@@ -144,7 +144,7 @@ class TradeBot:
         except KeyboardInterrupt:
             print("Stopping bot...")
 
-    def buy_items(self):
+    def buy_items(self, fast_buy: bool = False):
         self.capture.set_foreground_window()
         items_to_buy_list = self.load_preset_items("buy_items_preset_"+self.market_manager.get_market_title())
         items_prices = self.db.get_all_prices_for_city("black_market")
@@ -172,7 +172,7 @@ class TradeBot:
                     print(f"No data: {item_unique_name}")
 
                 lowest_price = float('inf')
-                best_quality = 0
+                order_price = 0
                 
                 for order in current_market_orders:
                     if order.get('AuctionType') == 'offer':
@@ -181,32 +181,56 @@ class TradeBot:
                         
                         if price < lowest_price and price > 0:
                             lowest_price = price
-                            best_quality = quality
+                
+                for order in current_market_orders:
+                    if order.get('AuctionType') == 'request':
+                        price = order.get('UnitPriceSilver', 0) / 10000
+                        quality = order.get('QualityLevel', 0)
+
+                        if price > order_price and price > 0:
+                            order_price = price
+
+                if fast_buy == False:
+                    lowest_price = order_price
 
                 print(f"Lowest Price for {item_unique_name}: {lowest_price}")
 
-                # --- Profit Check Logic ---
-                if lowest_price != float('inf'):
-                    # 1. Get Black Market price from the database
-                    black_market_price = items_prices[item_unique_name] / 10000
-                        
-                    # 2. Get minimum profit rate from settings
-                    min_profit_rate = self.config_manager.get("min_profit_rate") or 0.0
+                # 1. Get Black Market price from the database
+                black_market_price = items_prices[item_unique_name] / 10000
 
-                    # 3. Calculate profit margin
-                    # The market fee is 1.5% and the setup fee is 2.5% (total 4%)
-                    # We calculate profit after these fees on the sell price.
-                    potential_sell_price = black_market_price * 0.96 
-                    profit = potential_sell_price - lowest_price
-                    profit_margin = (profit / lowest_price) * 100 if lowest_price > 0 else 0
+                # 2. Get minimum profit rate from settings
+                min_profit_rate = self.config_manager.get("min_profit_rate") or 0.0
 
-                    # 4. Compare and print success
-                    if profit_margin >= min_profit_rate:
-                        print(f"[SUCCESS] Profitable trade found for {item_unique_name}! Margin: {profit_margin:.2f}%")
+                
+
+                potential_sell_price = black_market_price * 0.96 
+                profit = potential_sell_price - lowest_price
+                profit_margin = (profit / lowest_price) * 100 if lowest_price > 0 else 0
+
+                # 4. Compare and print success
+                if profit_margin >= min_profit_rate:
+                    # --- Determine Quantity to Buy based on price ---
+                    buy_quantities_config = self.config_manager.get("buy_quantities_by_price") or {}
+                    # Sort price thresholds from smallest to largest
+                    sorted_thresholds = sorted([int(k) for k in buy_quantities_config.keys()])
+                    
+                    quantity_to_buy = 0
+                    # Find the right quantity for the current price
+                    for threshold in sorted_thresholds:
+                        if lowest_price < threshold:
+                            quantity_to_buy = buy_quantities_config[str(threshold)]
+                            break
+                    
+                    if quantity_to_buy > 0:
+                        print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin:.2f}%. Buying {quantity_to_buy} units.")
+                        # Assuming buy_item can take a quantity. If not, this needs to be implemented in MarketManager.
+                        self.market_manager.buy_item(amount=quantity_to_buy) 
                     else:
-                        print(f"[INFO] Trade for {item_unique_name} not profitable. Margin: {profit_margin:.2f}%")
-
-                self.market_manager.close_item()
+                        print(f"Item {item_unique_name} is profitable, but its price ({lowest_price}) is above all configured buying thresholds. Skipping.")
+                        self.market_manager.close_item()
+                else:
+                    print(f"Item {item_unique_name} not profitable enough. Margin: {profit_margin:.2f}%, Required: {min_profit_rate}%. Skipping.")
+                    self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")
 

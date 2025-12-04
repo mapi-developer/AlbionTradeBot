@@ -337,6 +337,29 @@ class ConfigTab(ft.Column):
             width=200 # 15% of 1200 is 180, 200 looks better
         )
         
+        # --- Buy Quantities by Price ---
+        self.buy_quantity_fields = {}
+        buy_quantities_config = self.config.get("buy_quantities_by_price") or {}
+
+        # Define thresholds and labels
+        thresholds = {
+            "1000": "Buy amount if price < 1k",
+            "10000": "Buy amount if price < 10k",
+            "50000": "Buy amount if price < 50k",
+            "100000": "Buy amount if price < 100k",
+            "1000000": "Buy amount if price < 1m"
+        }
+
+        for threshold, label in thresholds.items():
+            self.buy_quantity_fields[threshold] = ft.TextField(
+                label=label,
+                value=str(buy_quantities_config.get(threshold, "0")),
+                keyboard_type=ft.KeyboardType.NUMBER,
+                bgcolor=ft.Colors.BLACK,
+                border_color=ft.Colors.GREY_800,
+                width=200
+            )
+
         # Preset Dropdowns
         presets = self.config.get_presets_list()
         
@@ -450,8 +473,15 @@ class ConfigTab(ft.Column):
         right_column = ft.Container(
             content=ft.Column([
                 ft.Text("General Settings", size=16, weight=ft.FontWeight.BOLD),
-                self.min_profit,
-                self.stop_silver,
+                ft.Row([
+                    ft.Column([
+                        self.min_profit,
+                        self.stop_silver,
+                    ], spacing=20, alignment=ft.MainAxisAlignment.START),
+                    ft.Column([
+                        *self.buy_quantity_fields.values()
+                    ], spacing=20, alignment=ft.MainAxisAlignment.START),
+                ], spacing=20, vertical_alignment=ft.CrossAxisAlignment.START)
             ], spacing=20),
             padding=20,
             border=ft.border.all(1, ft.Colors.GREY_800),
@@ -498,12 +528,17 @@ class ConfigTab(ft.Column):
             self.config.set("buy_items_preset_thetford", self.buy_thetford.value)
             self.config.set("buy_items_preset_caerleon", self.buy_caerleon.value)
             self.config.set("buy_items_preset_brecilien", self.buy_brecilien.value)
+
+            # Save the buy quantities as a dictionary
+            buy_quantities_to_save = {}
+            for threshold, field in self.buy_quantity_fields.items():
+                buy_quantities_to_save[threshold] = int(field.value) if field.value.isdigit() else 0
+            self.config.set("buy_quantities_by_price", buy_quantities_to_save)
             
             # Replaced manual SnackBar with popup call
             show_popup(self.page, "Configuration Saved Successfully!")
             
-            self.page.update()
-        except ValueError:
+        except (ValueError, TypeError):
             show_popup(self.page, "Invalid input: Please enter numbers for profit/silver.", is_error=True)
         except Exception as ex:
             print(ex)
@@ -554,15 +589,15 @@ def main(page: ft.Page):
         ft.Container(content=log_output, expand=True, border_radius=5)
     ]), padding=20, expand=True)
 
-    config_tab = ConfigTab(config_manager)
-    preset_manager = PresetManager(config_manager)
+    config_tab = ft.Container(content=ConfigTab(config_manager), padding=20, expand=True)
+    preset_manager = ft.Container(content=PresetManager(config_manager), padding=20, expand=True)
     
     # Hook to refresh presets dropdown when switching tabs
     def on_tab_change(e):
         if e.control.selected_index == 2: # Config Tab
-            config_tab.refresh_presets()
+            config_tab.content.refresh_presets()
         elif e.control.selected_index == 1: # Presets Tab
-            preset_manager.update_preset_dropdown()
+            preset_manager.content.update_preset_dropdown()
 
     t = ft.Tabs(selected_index=0, expand=True, on_change=on_tab_change, tabs=[
         ft.Tab(text="Dashboard", icon=ft.Icons.DASHBOARD, content=ft.Column([dash], scroll=ft.ScrollMode.AUTO, expand=True)),

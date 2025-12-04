@@ -15,6 +15,12 @@ DEFAULT_SETTINGS = {
     "buy_items_preset_thetford": "",
     "buy_items_preset_caerleon": "",
     "buy_items_preset_brecilien": "",
+    "buy_amount_under_1k": "",
+    "buy_amount_under_10k": "",
+    "buy_amount_under_50k": "",
+    "buy_amount_under_100k": "",
+    "buy_amount_under_200k": "",
+    "buy_amount_under_1m": "",
 }
 
 class ConfigManager:
