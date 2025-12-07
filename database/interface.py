@@ -5,9 +5,7 @@ from .models import Base, MarketOrder, MarketHistory, ItemData
 import threading
 import queue
 from datetime import datetime
-
-# Use port 5438 as configured previously
-DB_URL = "postgresql://albion_user:albion_password@127.0.0.1:5438/albion_market"
+from managers.config import DB_URL
 
 class DatabaseInterface:
     def __init__(self):

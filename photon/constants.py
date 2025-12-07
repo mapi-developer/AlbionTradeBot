@@ -1,4 +1,5 @@
-# photon/constants.py
+OP_AUCTION_GET_OFFERS = 236
+GAME_PORT = 5056
 
 # Protocol Types
 TYPE_NIL = 42

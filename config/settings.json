@@ -1,18 +1,32 @@
 {
-    "min_profit_rate": 35.0,
-    "min_silver_to_stop": 500000,
-    "buy_items_preset_fort_sterling": "TestFort.json",
-    "buy_items_preset_lymhurst": "Buy Items Preset.json",
-    "buy_items_preset_bridgewatch": "Buy Items Preset.json",
-    "buy_items_preset_martlock": "Buy Items Preset.json",
-    "buy_items_preset_thetford": "Buy Items Preset.json",
-    "buy_items_preset_caerleon": "Buy Items Preset.json",
-    "buy_items_preset_brecilien": "Buy Items Preset.json",
-    "buy_quantities_by_price": {
-        "1000": 5,
-        "10000": 4,
-        "50000": 3,
-        "100000": 2,
-        "1000000": 1
-    }
+    "general": {
+        "min_profit_rate_fast": 0.25,
+        "min_profit_rate_order": 0.35,
+        "default_buy_amount": 10,
+        "min_silver": 1000000,
+        "buy_mode": "order"
+    },
+    "city_presets": {
+        "fort_sterling": "TestPreset.json",
+        "lymhurst": "Preset_2.json",
+        "bridgewatch": "Preset_2.json",
+        "martlock": "TestPreset.json",
+        "thetford": "TestPreset.json",
+        "caerleon": "Preset_2.json",
+        "brecilien": "Preset_2.json"
+    },
+    "buy_logic": [
+        {
+            "amount_to_buy": "10",
+            "price_larger_then": "1500"
+        },
+        {
+            "amount_to_buy": "4",
+            "price_larger_then": "30000"
+        },
+        {
+            "amount_to_buy": "1",
+            "price_larger_then": "50000"
+        }
+    ]
 }

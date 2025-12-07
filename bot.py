@@ -2,8 +2,7 @@ from managers.market import MarketManager
 from core.capture import WindowCapture
 from net.sniffer import AlbionSniffer
 from database.interface import DatabaseInterface
-from managers.config_manager import ConfigManager, PRESETS_DIR
-from utils.helper import ITEMS_BLACK_MARKET
+from managers.config import ConfigManager, PRESETS_DIR, ITEMS_BLACK_MARKET
 import os
 import re
 import json
@@ -209,22 +208,27 @@ class TradeBot:
 
                 # 4. Compare and print success
                 if profit_margin >= min_profit_rate:
-                    # --- Determine Quantity to Buy based on price ---
-                    buy_quantities_config = self.config_manager.get("buy_quantities_by_price") or {}
-                    # Sort price thresholds from smallest to largest
-                    sorted_thresholds = sorted([int(k) for k in buy_quantities_config.keys()])
+                    # --- Determine Quantity to Buy using new Buy Logic ---
+                    buy_logic_rules = self.config_manager.get("buy_logic") or []
+                    # Sort rules by price, from highest to lowest, to check most specific rule first
+                    sorted_rules = sorted(buy_logic_rules, key=lambda x: int(x.get('price', 0)), reverse=True)
                     
                     quantity_to_buy = 0
-                    # Find the right quantity for the current price
-                    for threshold in sorted_thresholds:
-                        if lowest_price < threshold:
-                            quantity_to_buy = buy_quantities_config[str(threshold)]
+                    
+                    # Find the first rule that matches the item's price
+                    for rule in sorted_rules:
+                        price_threshold = int(rule.get('price', 0))
+                        if lowest_price > price_threshold:
+                            quantity_to_buy = int(rule.get('amount', 0))
                             break
                     
+                    # If no rule matched, use the default amount
+                    if quantity_to_buy == 0:
+                        quantity_to_buy = int(self.config_manager.get("default_buy_amount", 1))
+
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin:.2f}%. Buying {quantity_to_buy} units.")
-                        # Assuming buy_item can take a quantity. If not, this needs to be implemented in MarketManager.
-                        self.market_manager.buy_item(amount=quantity_to_buy) 
+                        self.market_manager.buy_item(amount=quantity_to_buy)
                     else:
                         print(f"Item {item_unique_name} is profitable, but its price ({lowest_price}) is above all configured buying thresholds. Skipping.")
                         self.market_manager.close_item()

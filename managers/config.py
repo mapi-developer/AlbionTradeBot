@@ -1,27 +1,52 @@
 import json
 import os
+import flet as ft
 
+def load_json_config(filename):
+    """Loads a JSON file from the config directory."""
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', filename)
+    with open(config_path, 'r', encoding="utf-8") as f:
+        return json.load(f)
+
+ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json"
+CACHE_FILE = "items.json"
+
+BOT_ITEMS_FILE = "config/bot_items.json"
+DB_URL = "postgresql://albion_user:albion_password@127.0.0.1:5438/albion_market"
 CONFIG_FILE = os.path.join("config", "settings.json")
 PRESETS_DIR = os.path.join("config", "presets")
 
-# Default Settings Structure
 DEFAULT_SETTINGS = {
-    "min_profit_rate": 15,
-    "min_silver_to_stop": 500000,
-    "buy_items_preset_fort_sterling": "",
-    "buy_items_preset_lymhurst": "",
-    "buy_items_preset_bridgewatch": "",
-    "buy_items_preset_martlock": "",
-    "buy_items_preset_thetford": "",
-    "buy_items_preset_caerleon": "",
-    "buy_items_preset_brecilien": "",
-    "buy_amount_under_1k": "",
-    "buy_amount_under_10k": "",
-    "buy_amount_under_50k": "",
-    "buy_amount_under_100k": "",
-    "buy_amount_under_200k": "",
-    "buy_amount_under_1m": "",
+    "general": {
+        "min_profit_rate_fast": 0.5,
+        "min_profit_rate_order": 0.2,
+        "default_but_amount": 1,
+        "min_silver": 500000,
+        "buy_mode": "order"
+    },
+    "city_presets": {
+        "fort_sterling": "",
+        "lymhurst": "",
+        "bridgewatch": "",
+        "martlock": "",
+        "thetford": "",
+        "caerleon": "",
+        "brecilien": ""
+    },
+    "buy_logic": []
 }
+
+MOUSE_POSITIONS = load_json_config('mouse_positions.json')
+ITEM_DATA = load_json_config('items.json')
+CAPTURE_POSITIONS = load_json_config('capture_positions.json')
+ITEMS_TO_BUY = load_json_config('items_to_buy.json')
+ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
+LANGUAGE = "EN-US"
+
+BUY_MODES = [
+    ft.dropdown.Option("fast", "Fast Buy"),
+    ft.dropdown.Option("order", "Order Buy"),
+]
 
 class ConfigManager:
     def __init__(self):

@@ -1,9 +1,7 @@
 import requests
 import json
 import os
-
-ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json"
-CACHE_FILE = "items.json"
+from managers.config import CACHE_FILE, ITEMS_JSON_URL
 
 class ItemManager:
     _instance = None

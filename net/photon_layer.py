@@ -1,4 +1,3 @@
-# net/photon_layer.py
 import struct
 
 class PhotonCommand:
