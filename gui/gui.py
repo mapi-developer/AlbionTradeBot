@@ -8,7 +8,7 @@ import re
 from bot import TradeBot
 from database.interface import DatabaseInterface
 from managers.config import ConfigManager, PRESETS_DIR, BOT_ITEMS_FILE
-from gui.modules.popup import show_popup
+from components.popup import show_popup
 
 class ConsoleRedirector(io.StringIO):
     def __init__(self, update_callback):

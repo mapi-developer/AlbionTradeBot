@@ -1,4 +1,3 @@
-# photon/decoder.py
 import io
 import struct
 from .constants import *

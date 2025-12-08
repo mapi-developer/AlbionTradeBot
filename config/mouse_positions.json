@@ -12,6 +12,7 @@
             "tier_all": [1260, 440],
             "enchantment_all": [1445, 440],
             "quality_all": [1700, 440],
+            "quality_good": [1700, 520],
             "next_page": [1328, 1313],
             "previous_page": [1231, 1317],
             "tab_buy": [1900, 500],

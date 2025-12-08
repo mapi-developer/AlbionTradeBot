@@ -1,5 +1,5 @@
 import flet as ft
-from gui.gui import main as gui_main
+from gui.app import main as gui_main
 
 def main():
     try:

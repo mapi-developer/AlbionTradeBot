@@ -1,32 +1,44 @@
 {
     "general": {
-        "min_profit_rate_fast": 0.25,
-        "min_profit_rate_order": 0.35,
-        "default_buy_amount": 10,
+        "min_profit_rate_fast": 0.3,
+        "min_profit_rate_order": 0.6,
+        "default_buy_amount": 25,
         "min_silver": 1000000,
         "buy_mode": "order"
     },
     "city_presets": {
-        "fort_sterling": "TestPreset.json",
-        "lymhurst": "Preset_2.json",
-        "bridgewatch": "Preset_2.json",
-        "martlock": "TestPreset.json",
-        "thetford": "TestPreset.json",
-        "caerleon": "Preset_2.json",
-        "brecilien": "Preset_2.json"
+        "fort_sterling": "Fort Sterling Main.json",
+        "lymhurst": "Fort Sterling Main.json",
+        "bridgewatch": "Fort Sterling Main.json",
+        "martlock": "Fort Sterling Main.json",
+        "thetford": "Fort Sterling Main.json",
+        "caerleon": "Fort Sterling Main.json",
+        "brecilien": "Fort Sterling Main.json"
     },
     "buy_logic": [
         {
-            "amount_to_buy": "10",
-            "price_larger_then": "1500"
+            "amount_to_buy": "20",
+            "price_larger_then": "1000"
         },
         {
-            "amount_to_buy": "4",
-            "price_larger_then": "30000"
+            "amount_to_buy": "15",
+            "price_larger_then": "5000"
+        },
+        {
+            "amount_to_buy": "10",
+            "price_larger_then": "10000"
+        },
+        {
+            "amount_to_buy": "3",
+            "price_larger_then": "20000"
+        },
+        {
+            "amount_to_buy": "2",
+            "price_larger_then": "50000"
         },
         {
             "amount_to_buy": "1",
-            "price_larger_then": "50000"
+            "price_larger_then": "80000"
         }
     ]
 }

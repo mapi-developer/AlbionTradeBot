@@ -80,3 +80,9 @@ class MarketManager(InputSender):
         self.click(self.mouse_positions["button_crate_order_confirmation"])
 
         self.sleep(0.5)
+
+    def prepare(self):
+        self.change_tab("buy")
+        self.click(self.mouse_positions["quality"])
+        self.click(self.mouse_positions["quality_good"])
+        self.change_tab("create_buy_order")

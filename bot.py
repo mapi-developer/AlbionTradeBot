@@ -10,6 +10,8 @@ import threading
 from datetime import datetime, timezone
 
 class TradeBot:
+    db: DatabaseInterface
+
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         self.config_manager = ConfigManager()
@@ -17,7 +19,6 @@ class TradeBot:
         if capture == None:
             capture = WindowCapture(base_dir=BASE_DIR, window_name="Albion Online Client")
         self.capture = capture
-        capture.set_foreground_window()
 
         if market_manager == None:
             market_manager = MarketManager(capture=capture)
@@ -35,7 +36,7 @@ class TradeBot:
 
     def load_preset_items(self, setting_key):
         """Loads items list from the preset file defined in settings."""
-        preset_file = self.config_manager.get(setting_key)
+        preset_file = self.config_manager.get("city_presets")[setting_key]
         if not preset_file:
             print(f"[Error] No preset selected for '{setting_key}' in configuration.")
             return []
@@ -80,7 +81,7 @@ class TradeBot:
             print(f"Starting Black Market Price Check for {len(items_to_check)} items from dictionary...")
         else:
             # Load items from the configured preset
-            items_to_check = self.load_preset_items("check_price_preset")
+            items_to_check = self.load_preset_items(self.market_manager.get_market_title())
             if not items_to_check:
                 print("No items to check. Please select a preset in Configuration.")
                 return
@@ -145,14 +146,14 @@ class TradeBot:
 
     def buy_items(self, fast_buy: bool = False):
         self.capture.set_foreground_window()
-        items_to_buy_list = self.load_preset_items("buy_items_preset_"+self.market_manager.get_market_title())
+        items_to_buy_list = self.load_preset_items(self.market_manager.get_market_title())
         items_prices = self.db.get_all_prices_for_city("black_market")
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Configuration.")
             return
 
         print(f"Starting Buy Routine for {len(items_to_buy_list)} items...")
-        self.market_manager.change_tab("create_buy_order")
+        self.market_manager.prepare()
             
         try:
             for item_unique_name in items_to_buy_list:
@@ -189,51 +190,49 @@ class TradeBot:
                         if price > order_price and price > 0:
                             order_price = price
 
+                min_profit_rate = self.config_manager.get("general")["min_profit_rate_order"] or 0.0
+
                 if fast_buy == False:
                     lowest_price = order_price
+                    min_profit_rate = self.config_manager.get("general")["min_profit_rate_fast"] or 0.0
 
                 print(f"Lowest Price for {item_unique_name}: {lowest_price}")
 
-                # 1. Get Black Market price from the database
-                black_market_price = items_prices[item_unique_name] / 10000
-
-                # 2. Get minimum profit rate from settings
-                min_profit_rate = self.config_manager.get("min_profit_rate") or 0.0
-
-                
+                black_market_price = 0
+                try:
+                    black_market_price = items_prices[item_unique_name] / 10000
+                except:
+                    self.market_manager.close_item()
+                    print(f"No BM price for item {item_unique_name}")
+                    continue
 
                 potential_sell_price = black_market_price * 0.96 
                 profit = potential_sell_price - lowest_price
-                profit_margin = (profit / lowest_price) * 100 if lowest_price > 0 else 0
+                profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
 
                 # 4. Compare and print success
                 if profit_margin >= min_profit_rate:
-                    # --- Determine Quantity to Buy using new Buy Logic ---
                     buy_logic_rules = self.config_manager.get("buy_logic") or []
-                    # Sort rules by price, from highest to lowest, to check most specific rule first
                     sorted_rules = sorted(buy_logic_rules, key=lambda x: int(x.get('price', 0)), reverse=True)
                     
                     quantity_to_buy = 0
                     
-                    # Find the first rule that matches the item's price
                     for rule in sorted_rules:
-                        price_threshold = int(rule.get('price', 0))
-                        if lowest_price > price_threshold:
-                            quantity_to_buy = int(rule.get('amount', 0))
-                            break
+                        price_threshold = int(rule['price_larger_then'])
+                        if int(lowest_price) > price_threshold:
+                            quantity_to_buy = int(rule['amount_to_buy'])
                     
-                    # If no rule matched, use the default amount
                     if quantity_to_buy == 0:
-                        quantity_to_buy = int(self.config_manager.get("default_buy_amount", 1))
+                        quantity_to_buy = int(self.config_manager.get("general")["default_buy_amount"])
 
                     if quantity_to_buy > 0:
-                        print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin:.2f}%. Buying {quantity_to_buy} units.")
+                        print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin*100:.2f}%. Buying {quantity_to_buy} units.")
                         self.market_manager.buy_item(amount=quantity_to_buy)
                     else:
                         print(f"Item {item_unique_name} is profitable, but its price ({lowest_price}) is above all configured buying thresholds. Skipping.")
                         self.market_manager.close_item()
                 else:
-                    print(f"Item {item_unique_name} not profitable enough. Margin: {profit_margin:.2f}%, Required: {min_profit_rate}%. Skipping.")
+                    print(f"Item {item_unique_name} not profitable enough. Margin: {profit_margin*100:.2f}%, Required: {min_profit_rate*100}%. Skipping.")
                     self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")

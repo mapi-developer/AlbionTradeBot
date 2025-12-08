@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine
+from sqlite3 import InterfaceError, OperationalError
+from sqlalchemy import create_engine, text, func
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.dialects.postgresql import insert
 from .models import Base, MarketOrder, MarketHistory, ItemData
@@ -6,10 +7,14 @@ import threading
 import queue
 from datetime import datetime
 from managers.config import DB_URL
+import os
+
+from dotenv import load_dotenv
 
 class DatabaseInterface:
     def __init__(self):
-        self.engine = create_engine(DB_URL)
+        load_dotenv()
+        self.engine = create_engine(os.getenv('DATABASE_URL'))
         Base.metadata.create_all(self.engine)
         self.Session = sessionmaker(bind=self.engine)
         self.write_queue = queue.Queue()
@@ -17,6 +22,33 @@ class DatabaseInterface:
         
         self.writer_thread = threading.Thread(target=self._worker_loop, daemon=True)
         self.writer_thread.start()
+
+    def get_last_update_at(self) -> datetime:
+        session = self.Session()
+        try:
+            query = session.query(func.max(ItemData.updated_at))
+            latest_time = query.scalar() 
+            
+            if latest_time:
+                last_updated_time = latest_time
+                return last_updated_time
+        finally:
+            session.close()
+
+    def check_connection_status(self) -> bool:
+        try:
+            with self.engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+                
+            print("✅ Database connection is successful.")
+            return True
+            
+        except (OperationalError, InterfaceError) as e:
+            print(f"❌ Database connection failed. Error: {e}")
+            return False
+        except Exception as e:
+            print(f"⚠️ An unexpected error occurred: {e}")
+            return False
 
     def add_order(self, order_dict):
         self.write_queue.put(('order', order_dict))
@@ -161,3 +193,10 @@ class DatabaseInterface:
             return {unique_name: price for unique_name, price in results if price is not None}
         finally:
             session.close()
+
+def main():
+    inteface = DatabaseInterface()
+    print(inteface.check_connection_status())
+
+if __name__ == "__main__":
+    main()
