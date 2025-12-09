@@ -1,9 +1,12 @@
 import flet as ft
 from typing import Callable
+from .subscription import Subscription
+from .login import Login
 
 class Header(ft.Container):
-    def __init__(self, on_nav_click: Callable):
+    def __init__(self, page: ft.Page, on_nav_click: Callable, login: Login):
         super().__init__()
+        self.page = page
 
         self.nav_rows = ft.Row(
             controls=[
@@ -48,31 +51,10 @@ class Header(ft.Container):
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
-        self.user_info = ft.Row(
-            controls=[
-                ft.Column(
-                    [
-                        ft.Row(
-                            controls=[
-                                ft.Text("Matvey4a", size=18),
-                            ]
-                        ),
-                    ]
-                ),
-                ft.Column(
-                    [
-                        ft.CircleAvatar(
-                            bgcolor=ft.Colors.BLUE_GREY_700,
-                            radius=24,
-                            foreground_image_src="https://render.albiononline.com/v1/item/UNIQUE_MOUNT_JUGGERNAUT_CRYSTAL",
-                        )
-                    ]
-                ),
-            ]
-        )
+        self.subscription = Subscription(self.page, login)
 
         self.content = ft.Row(
-            controls=[self.nav_rows, self.user_info],
+            controls=[self.nav_rows, self.subscription],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
         self.bgcolor = "#15181F"

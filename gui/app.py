@@ -5,6 +5,7 @@ from gui.components.header import Header
 from gui.components.presets import Presets
 from gui.components.settings import Settings
 from gui.components.dashboard import Dashboard
+from gui.components.login import Login
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -19,7 +20,7 @@ class GuiApp:
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.padding = 0
         self.page.bgcolor = "#131415"
-        self.page.on_resize = self.on_page_resize
+        self.page.on_resized = self.on_page_resize
         self.page.fonts = {
             "Roboto Mono": "https://github.com/google/fonts/raw/main/apache/robotomono/RobotoMono-Regular.ttf"
         }
@@ -28,7 +29,8 @@ class GuiApp:
         self.bot = TradeBot(db=DatabaseInterface())
 
         self.presets = self.config.get_presets_list()
-        self.header = Header(on_nav_click=self.on_nav_click)
+        self.login = Login(self.page, on_login_success=self.show_main_app)
+        self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
         self.settings = Settings(self.config, self.page)
         self.presets = ft.Container(content=Presets(self.config, self.page))
         self.dashboard = ft.Container(
@@ -39,8 +41,14 @@ class GuiApp:
         self.body = ft.Container(content=self.dashboard, expand=True)
 
         self.main_column = ft.Column([self.header, self.body], expand=True)
-        self.page.add(self.main_column)
+        self.page.add(self.login)
 
+        self.page.update()
+
+    def show_main_app(self):
+        self.header.subscription.check_subscription()
+        self.page.controls.clear()
+        self.page.add(self.main_column)
         self.page.update()
 
     def run_bot(self, task_name: str):
