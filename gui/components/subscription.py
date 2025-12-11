@@ -2,6 +2,9 @@ import flet as ft
 import requests
 from .login import Login
 from datetime import datetime, timezone
+import threading
+import webbrowser
+import time
 
 API_URL = "https://crypto-backend-736893217724.europe-west3.run.app"
 
@@ -16,7 +19,8 @@ class Subscription(ft.Container):
             text="Buy Sibscribtion", 
             #on_click=pay_click, 
             icon=ft.Icons.CURRENCY_BITCOIN,
-            style=ft.ButtonStyle(bgcolor="#ce7a13", color=ft.Colors.WHITE)
+            style=ft.ButtonStyle(bgcolor="#ce7a13", color=ft.Colors.WHITE),
+            on_click=self.pay_click
         )
 
         self.status = ft.Container(
@@ -75,3 +79,37 @@ class Subscription(ft.Container):
         except Exception as e:
             print(f"Connection error during status check: {e}")
             self.page.update()
+
+    def pay_click(self, e):
+        """Starts payment flow"""
+        if not self.state.user_id or not self.state.token: 
+            self.page.snack_bar = ft.SnackBar(content=ft.Text("Log in first to initiate payment!"))
+            self.page.snack_bar.open = True
+            self.page.update()
+            return
+
+        self.page.update()
+
+        try:
+            res = requests.post(f"{API_URL}/payments/create", 
+                                params={"user_id": self.state.user_id, "plan_id": "1_week"})
+            
+            if res.status_code == 200:
+                data = res.json()
+                webbrowser.open(data.get("invoice_url"))
+                threading.Thread(target=self.poll_payment_status, daemon=True).start()
+            else:
+                print(res.text)
+
+        except Exception as ex:
+            print(ex)
+        self.page.update()
+
+    def poll_payment_status(self):
+        """Checks subscription status every 5 seconds (runs in background thread)."""
+        for _ in range(60): 
+            time.sleep(5)
+            # Safe to call because check_subscription calls page.update() which is thread-safe
+            self.check_subscription() 
+            if self.status.content.value == "Subscription active":
+                break
