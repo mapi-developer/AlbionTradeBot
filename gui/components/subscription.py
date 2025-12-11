@@ -43,6 +43,32 @@ class Subscription(ft.Container):
             ]
         )
 
+    def subscribed_until(self) -> str:
+        self.state = self.login.state
+        if not self.state.user_id or not self.state.token:
+            return
+        
+        headers = {"Authorization": f"Bearer {self.state.token}"}
+        try:
+            res = requests.get(f"{API_URL}/users/{self.state.user_id}", headers=headers)
+            
+            if res.status_code == 200:
+                data = res.json()
+                sub_date = data.get("subscribed_until")
+                
+                if sub_date:
+                    if datetime.strptime(sub_date, '%Y-%m-%dT%H:%M:%S.%f%z') < datetime.now(timezone.utc):
+                        return "Expired!"
+                    else:
+                        return datetime.strptime(sub_date, '%Y-%m-%dT%H:%M:%S.%f%z').strftime()
+                else:
+                    return "No Subscribtion"
+            elif res.status_code == 404:
+                return "Error"
+            
+        except Exception as e:
+            print(f"Connection error during status check: {e}")
+
     def check_subscription(self):
         self.state = self.login.state
         if not self.state.user_id or not self.state.token: 
@@ -83,8 +109,6 @@ class Subscription(ft.Container):
     def pay_click(self, e):
         """Starts payment flow"""
         if not self.state.user_id or not self.state.token: 
-            self.page.snack_bar = ft.SnackBar(content=ft.Text("Log in first to initiate payment!"))
-            self.page.snack_bar.open = True
             self.page.update()
             return
 

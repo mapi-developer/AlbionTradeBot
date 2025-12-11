@@ -15,7 +15,7 @@ class TradeBot:
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         self.config_manager = ConfigManager()
-
+            
         if capture == None:
             capture = WindowCapture(base_dir=BASE_DIR, window_name="Albion Online Client")
         self.capture = capture

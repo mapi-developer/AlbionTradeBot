@@ -1,12 +1,15 @@
 import flet as ft
 from managers.config import ConfigManager
 from bot import TradeBot
+from gui.components.header import Header
 
 class Dashboard(ft.Column):
     bot: TradeBot
 
-    def __init__(self, app, config: ConfigManager, page: ft.Page, bot: TradeBot):
+    def __init__(self, app, config: ConfigManager, page: ft.Page, bot: TradeBot, header: Header):
         super().__init__()
+        self.app = app
+        self.header = header
         self.config = config
         self.page = page
         self.bot = bot
@@ -232,14 +235,20 @@ class Dashboard(ft.Column):
             padding=5,
         )
 
+    def update_overview(self):
+        self.home_page_tab.content.controls[2] = self._create_overview_cards()
+        self.update()
+
     def _create_overview_cards(self) -> ft.ResponsiveRow:
         db_connected = self.bot.db.check_connection_status()
         last_update = self.bot.db.get_last_update_at().strftime("%d.%m.%y | %H:%M") 
+        subscribed_until = self.header.subscription.subscribed_until()
+
         data = {
             "Last Prices Update (UTC)": (last_update, ft.Icons.UPDATE, ft.Colors.WHITE),
             "Database Status": ("Connected" if db_connected else "Connection Error", ft.Icons.ACCOUNT_TREE, "#089E28" if db_connected else "#9A2D08"),
             "Bot Status": ("Ready", ft.Icons.ADB, "#089E28"),
-            "Orders made last 24h": ("42", ft.Icons.SHOPPING_CART, ft.Colors.WHITE),
+            "Subscribed until": (subscribed_until, ft.Icons.ADD_TASK, ft.Colors.WHITE),
         }
 
         cards = []

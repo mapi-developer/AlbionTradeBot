@@ -26,15 +26,16 @@ class GuiApp:
         }
 
         self.config = ConfigManager()
+        self.login = Login(self.page, on_login_success=self.show_main_app)
+
         self.bot = TradeBot(db=DatabaseInterface())
 
         self.presets = self.config.get_presets_list()
-        self.login = Login(self.page, on_login_success=self.show_main_app)
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
         self.settings = Settings(self.config, self.page)
         self.presets = ft.Container(content=Presets(self.config, self.page))
         self.dashboard = ft.Container(
-            content=Dashboard(self, self.config, self.page, self.bot),
+            content=Dashboard(self, self.config, self.page, self.bot, self.header),
             expand=True,
         )
 
@@ -50,6 +51,7 @@ class GuiApp:
         self.page.controls.clear()
         self.page.add(self.main_column)
         self.page.update()
+        self.dashboard.content.update_overview()
 
     def run_bot(self, task_name: str):
             if not self.bot:
