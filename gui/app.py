@@ -6,6 +6,7 @@ from gui.components.presets import Presets
 from gui.components.settings import Settings
 from gui.components.dashboard import Dashboard
 from gui.components.login import Login
+from gui.components.subscription import SubscriptionTab
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -32,12 +33,23 @@ class GuiApp:
 
         self.presets = self.config.get_presets_list()
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
+        
+        # Initialize views
         self.settings = Settings(self.config, self.page)
         self.presets = ft.Container(content=Presets(self.config, self.page))
         self.dashboard = ft.Container(
             content=Dashboard(self, self.config, self.page, self.bot, self.header),
             expand=True,
         )
+        
+        # Pass the Header's subscription widget to the Tab so it can update status after purchase
+        self.subscription_tab = SubscriptionTab(
+            self.page, 
+            self.login, 
+            status_widget=self.header.subscription
+        )
+
+        self.header.subscription.open_subscriptions_offer.on_click = lambda e: self.go_to_subscription()
 
         self.body = ft.Container(content=self.dashboard, expand=True)
 
@@ -67,6 +79,11 @@ class GuiApp:
                 task_to_run = getattr(self.bot, task_name, None)
                 if callable(task_to_run):
                     threading.Thread(target=task_to_run, daemon=True).start()
+
+    def go_to_subscription(self):
+        """Switches the view to the Subscription Tab."""
+        self.body.content = self.subscription_tab
+        self.page.update()
 
     def on_nav_click(self, event):
         for control in self.header.nav_rows.controls:

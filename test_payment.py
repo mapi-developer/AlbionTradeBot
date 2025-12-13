@@ -11,7 +11,7 @@ WEBHOOK_URL = "https://crypto-backend-736893217724.europe-west3.run.app/payments
 IPN_SECRET = "njOn360PKnEiScgzGTgA2cHbR9vsSsCE" 
 
 # 3. The User ID you want to upgrade
-USER_ID = 2  
+USER_ID = 2
 DAYS_TO_ADD = 30 # Simulate a 1-month plan
 
 def force_payment_success():
@@ -27,7 +27,7 @@ def force_payment_success():
         "pay_amount": 10.0,
         "pay_currency": "usdttrc20",
         "order_id": f"{USER_ID}::{DAYS_TO_ADD}", # Crucial: Matches your backend logic
-        "created_at": "2024-12-09T12:00:00.000Z"
+        "created_at": "2024-12-14T12:00:00.000Z"
     }
 
     # Generate the Security Signature (HMAC)

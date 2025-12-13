@@ -17,22 +17,18 @@ class Dashboard(ft.Column):
 
         # --- Tab Logic ---
         def on_tab_change(event):
+            # Reset button styles
             self.info_button.controls[0].content.style = ft.ButtonStyle(
-                color="#ffffff",
-                shape=ft.RoundedRectangleBorder(radius=0),
-                bgcolor="#294D7C",
+                color="#ffffff", shape=ft.RoundedRectangleBorder(radius=0), bgcolor="#294D7C",
             )
             for _, control in enumerate(self.left_panel_upper_buttons.controls):
                 control.content.style = ft.ButtonStyle(
-                    color="#ffffff",
-                    shape=ft.RoundedRectangleBorder(radius=0),
-                    bgcolor="#294D7C",
+                    color="#ffffff", shape=ft.RoundedRectangleBorder(radius=0), bgcolor="#294D7C",
                 )
 
+            # Set active button style
             event.control.style = ft.ButtonStyle(
-                color="#ffffff",
-                shape=ft.RoundedRectangleBorder(radius=0),
-                bgcolor="#3E6DB3",
+                color="#ffffff", shape=ft.RoundedRectangleBorder(radius=0), bgcolor="#3E6DB3",
             )
 
             if event.control.data == "home":
@@ -41,25 +37,32 @@ class Dashboard(ft.Column):
                         controls=[self.left_panel, self.home_page_tab], expand=True
                     )
                 ]
+                self.home_page_tab.content.controls[2] = self._create_overview_cards()
+
             elif event.control.data == "commands":
-                self.controls = [
-                    ft.ResponsiveRow(
-                        controls=[self.left_panel, self.bot_commands_tab], expand=True
-                    )
-                ]
+                # CHECK SUBSCRIPTION HERE
+                if self.header.subscription.is_active:
+                    self.controls = [
+                        ft.ResponsiveRow(
+                            controls=[self.left_panel, self.bot_commands_tab], expand=True
+                        )
+                    ]
+                else:
+                    self.controls = [
+                        ft.ResponsiveRow(
+                            controls=[self.left_panel, self._create_restricted_view()], expand=True
+                        )
+                    ]
+
             elif event.control.data == "activity":
                 self.controls = [
                     ft.ResponsiveRow(
                         controls=[self.left_panel, self.activity_log_tab], expand=True
                     )
                 ]
-            else:
-                print(f"No Tab found: {event.control.data}")
-            
-            self.home_page_tab.content.controls[2] = self._create_overview_cards()
 
             self.update()
-
+          
         self.page.update()
 
         # --- Sidebar Buttons ---
@@ -91,7 +94,7 @@ class Dashboard(ft.Column):
                 ),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            spacing=0,  # Spacing removed between buttons
+            spacing=0,
         )
 
         self.info_button = ft.Column(
@@ -174,11 +177,11 @@ class Dashboard(ft.Column):
                     ft.Divider(
                         height=2, color=ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
                     ),
-                    self._create_overview_cards(),  # The key metrics cards
+                    self._create_overview_cards(),
                     ft.Divider(
                         height=2, color=ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
                     ),
-                    self._create_best_orders_card(),  # The list of best orders
+                    self._create_best_orders_card(),
                 ],
                 scroll=ft.ScrollMode.AUTO,
                 expand=True,
@@ -189,7 +192,7 @@ class Dashboard(ft.Column):
         )
 
         self.bot_commands_tab = ft.Container(
-            content=self.bot_buttons, expand=True, col={"md": 10.5}
+            content=self.bot_buttons, expand=True, col={"md": 10.5}, padding=20
         )
 
         self.activity_log_tab = ft.Container(
@@ -202,10 +205,44 @@ class Dashboard(ft.Column):
             )
         ]
 
-    def _create_metric_card(
-        self, title: str, value: str, icon: str, color
-    ) -> ft.Container:
-        """Helper to create a single consistent metric card."""
+    def _create_restricted_view(self) -> ft.Container:
+        """Creates the overlay for non-subscribed users."""
+        return ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Icon(ft.Icons.LOCK_OUTLINE, size=80, color=ft.Colors.GREY_500),
+                    ft.Text(
+                        "Bot Commands Locked", 
+                        size=24, 
+                        weight=ft.FontWeight.BOLD,
+                        color=ft.Colors.GREY_400
+                    ),
+                    ft.Text(
+                        "Please buy a subscription to access automated trading features.",
+                        size=14,
+                        color=ft.Colors.GREY_500
+                    ),
+                    ft.Container(height=20),
+                    ft.ElevatedButton(
+                        text="Get Subscription",
+                        icon=ft.Icons.DIAMOND_OUTLINED,
+                        style=ft.ButtonStyle(
+                            bgcolor="#ce7a13",
+                            color=ft.Colors.WHITE,
+                            padding=20
+                        ),
+                        on_click=lambda e: self.app.go_to_subscription()
+                    )
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            expand=True,
+            col={"md": 10.5},
+            alignment=ft.alignment.center
+        )
+
+    def _create_metric_card(self, title: str, value: str, icon: str, color) -> ft.Container:
         return ft.Container(
             content=ft.Card(
                 content=ft.Container(
@@ -229,7 +266,7 @@ class Dashboard(ft.Column):
                         ]
                     ),
                 ),
-                color="#203064",  # Darker color for the card background
+                color="#203064",
             ),
             col={"xs": 12, "sm": 6, "md": 3},
             padding=5,
@@ -258,7 +295,7 @@ class Dashboard(ft.Column):
         return ft.ResponsiveRow(controls=cards, run_spacing={"xs": 0}, spacing=10)
 
     def _create_best_orders_card(self) -> ft.Card:
-        # Placeholder Data
+        # Placeholder Data (Same as original)
         best_orders_data = [
             {
                 "name": "Epic Sword",
@@ -278,7 +315,6 @@ class Dashboard(ft.Column):
             },
         ]
 
-        # Convert data into DataTable format
         rows = []
         for item in best_orders_data:
             rows.append(
