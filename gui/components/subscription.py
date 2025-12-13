@@ -142,8 +142,8 @@ class SubscriptionTab(ft.Container):
                 ft.ResponsiveRow(
                     controls=[
                         self._create_plan_card("1 Week", "1_week", "0.001 BTC", ft.Icons.CALENDAR_VIEW_WEEK),
-                        self._create_plan_card("1 Month", "1_month", "0.003 BTC", ft.Icons.CALENDAR_MONTH),
-                        self._create_plan_card("3 Months", "3_months", "0.008 BTC", ft.Icons.DATE_RANGE),
+                        self._create_plan_card("1 Month", "1_month", "0.003 BTC", ft.Icons.DATE_RANGE),
+                        self._create_plan_card("3 Months", "3_months", "0.008 BTC", ft.Icons.CALENDAR_MONTH),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER
                 )

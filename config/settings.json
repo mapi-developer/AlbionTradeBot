@@ -4,7 +4,7 @@
         "min_profit_rate_order": 0.8,
         "default_buy_amount": 25,
         "min_silver": 1000000,
-        "buy_mode": "fast"
+        "buy_mode": "order"
     },
     "city_presets": {
         "fort_sterling": "Fast Buy Test.json",

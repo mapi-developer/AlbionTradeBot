@@ -16,7 +16,7 @@ class TradeBot:
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         self.config_manager = ConfigManager()
-        
+        self.status = "Initializing"
         self.paused = False # Pause state flag
 
         if capture == None:
@@ -35,13 +35,18 @@ class TradeBot:
             sniffer = AlbionSniffer()
         self.sniffer = sniffer
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
-        self.sniffer_thread.start()   
+        self.sniffer_thread.start()
+        self.status = "Ready"
 
     def toggle_pause(self):
         """Toggles the pause state of the bot."""
         self.paused = not self.paused
-        state = "PAUSED" if self.paused else "RESUMED"
-        print(f"Bot state: {state}")
+        if self.paused:
+            self.status = "Paused"
+        else:
+            self.status = "Running"
+
+        print(f"Bot state: {self.status}")
         return self.paused
 
     def _wait_if_paused(self):
@@ -89,6 +94,7 @@ class TradeBot:
         return base_name, tier, enchant
 
     def check_price(self, isBlackMarket=True):
+        self.status = "Running"
         self.capture.set_foreground_window()
         if isBlackMarket:
             items_to_check = list(ITEMS_BLACK_MARKET.values())
@@ -156,17 +162,24 @@ class TradeBot:
         except KeyboardInterrupt:
             print("Stopping bot...")
 
+        self.status = "Ready"
+
     def remove_orders(self):
+        self.status = "Running"
+        self.market_manager.change_tab("my_orders_tab")
         while self.market_manager.order_exists():
             self._wait_if_paused() # Check pause
             self.market_manager.remove_order(25)
             self.market_manager.scroll()
 
+        self.status = "Ready"
+
     def buy_items(self, fast_buy: bool = False):
+        self.status = "Running"
         self.capture.set_foreground_window()
-        self.market_manager.change_tab("my_orders_tab")
-        if self.market_manager.order_exists():
-            self.remove_orders()
+        # self.market_manager.change_tab("my_orders_tab")
+        # if self.market_manager.order_exists():
+        #     self.remove_orders()
         items_to_buy_list = self.load_preset_items(self.market_manager.get_market_title())
         items_prices = self.db.get_all_prices_for_city("black_market")
         if self.config_manager.get("general")["buy_mode"] == "fast":
@@ -251,6 +264,8 @@ class TradeBot:
                     self.market_manager.close_item()
         except KeyboardInterrupt:
             print("Stopping bot...")
+
+        self.status = "Ready"
 
 if __name__ == "__main__":
     bot = TradeBot()

@@ -5,7 +5,7 @@ import keyboard
 from managers.config import ConfigManager
 from bot import TradeBot
 from gui.components.header import Header
-from database.interface import DatabaseInterface  # Added import
+from database.interface import DatabaseInterface
 
 class Dashboard(ft.Column):
     bot: TradeBot
@@ -31,7 +31,8 @@ class Dashboard(ft.Column):
             pass
         
         try:
-            keyboard.add_hotkey('ctrl+p', self._on_global_hotkey)
+            # Note: We use a lambda or wrapper to ensure 'self' context is preserved safely
+            keyboard.add_hotkey('ctrl+p', lambda: self._on_global_hotkey())
         except Exception as e:
             print(f"Failed to register global hotkey: {e}")
 
@@ -286,6 +287,7 @@ class Dashboard(ft.Column):
         try:
             is_paused = self.bot.toggle_pause()
             
+            # UI Updates need to be thread-safe
             if self.status_text.page:
                 if is_paused:
                     self.status_text.value = "⚠️ BOT PAUSED (Press Ctrl+P to Resume)"
@@ -349,15 +351,36 @@ class Dashboard(ft.Column):
             self.sequence_list_view.update()
 
     def _stop_sequence(self, e):
+        # 1. Flag running as False immediately to break worker loops
         self.is_running_sequence = False
+        
         self.status_text.value = "Stopping..."
+        
+        # 2. Reset UI buttons
+        self.run_btn.disabled = False
+        self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE) # Reset color
+        self.stop_btn.disabled = True
+        self.available_commands_view.disabled = False
+        
         if self.status_text.page:
             self.status_text.update()
+        if self.run_btn.page:
+            self.run_btn.update()
+            self.stop_btn.update()
+            self.available_commands_view.update()
             
-        # Delete the bot object as requested
-        self.bot = None
-        if self.app:
-            self.app.bot = None
+        # 3. IMMEDIATELY delete old bot and create new one (as requested)
+        print("Stopping: Replacing Bot instance...")
+        try:
+            self.bot = TradeBot(db=DatabaseInterface())
+            if self.app:
+                self.app.bot = self.bot
+            self.status_text.value = "Bot Stopped & Reset."
+        except Exception as ex:
+            self.status_text.value = f"Error resetting bot: {ex}"
+            
+        if self.status_text.page:
+            self.status_text.update()
 
     def _run_sequence(self, e):
         if not self.bot_sequence:
@@ -371,6 +394,9 @@ class Dashboard(ft.Column):
 
         self.is_running_sequence = True
         self.run_btn.disabled = True
+        # Change color to Dark Green when running (disabled state)
+        self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_900, color=ft.Colors.WHITE70)
+        
         self.stop_btn.disabled = False
         self.available_commands_view.disabled = True
         self.status_text.value = "Initializing Bot..."
@@ -379,7 +405,7 @@ class Dashboard(ft.Column):
 
         # Create new bot object to apply settings
         try:
-            print("Initializing new bot instance...")
+            print("Running: Initializing new bot instance...")
             self.bot = TradeBot(db=DatabaseInterface())
             if self.app:
                 self.app.bot = self.bot
@@ -389,6 +415,7 @@ class Dashboard(ft.Column):
             self.status_text.update()
             self.is_running_sequence = False
             self.run_btn.disabled = False
+            self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE)
             self.stop_btn.disabled = True
             self.available_commands_view.disabled = False
             return
@@ -401,6 +428,7 @@ class Dashboard(ft.Column):
                         if not self.bot: break 
                         
                         self._wait_if_bot_paused() 
+                        if not self.is_running_sequence: break # Double check after wait
                         
                         self.status_text.value = f"Executing: {item['name']}..."
                         self.status_text.color = ft.Colors.WHITE
@@ -443,25 +471,30 @@ class Dashboard(ft.Column):
                 time.sleep(3)
 
             finally:
-                self.is_running_sequence = False
-                self.run_btn.disabled = False
-                self.stop_btn.disabled = True
-                self.available_commands_view.disabled = False
-                self.status_text.value = "Sequence finished/stopped."
-                self.status_text.color = ft.Colors.GREY_400
-                if self.status_text.page:
-                    self.status_text.update()
-                try:
-                    self.update()
-                except:
-                    pass
+                # Cleanup if thread finishes naturally
+                if self.is_running_sequence:
+                    self.is_running_sequence = False
+                    self.run_btn.disabled = False
+                    self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE)
+                    self.stop_btn.disabled = True
+                    self.available_commands_view.disabled = False
+                    self.status_text.value = "Sequence finished."
+                    self.status_text.color = ft.Colors.GREY_400
+                    if self.status_text.page:
+                        self.status_text.update()
+                    try:
+                        self.update()
+                    except:
+                        pass
 
         threading.Thread(target=sequence_worker, daemon=True).start()
 
     def _wait_if_bot_paused(self):
         """Helper to pause the sequence runner itself between tasks."""
-        while self.bot and self.bot.paused:
-            time.sleep(0.5)
+        # Loop while paused AND sequence is still technically running.
+        # If is_running_sequence becomes False (via Stop), we break immediately.
+        while self.is_running_sequence and self.bot and self.bot.paused:
+            time.sleep(0.1)
 
     # --- Restricted View and Metrics (Existing code) ---
 
@@ -523,7 +556,7 @@ class Dashboard(ft.Column):
         data = {
             "Last Prices Update (UTC)": (last_update, ft.Icons.UPDATE, ft.Colors.WHITE),
             "Database Status": ("Connected" if db_connected else "Connection Error", ft.Icons.ACCOUNT_TREE, "#089E28" if db_connected else "#9A2D08"),
-            "Bot Status": ("Ready", ft.Icons.ADB, "#089E28"),
+            "Bot Status": (self.bot.status, ft.Icons.ADB, "#089E28"),
             "Subscribed until": (subscribed_until, ft.Icons.ADD_TASK, ft.Colors.WHITE),
         }
 
