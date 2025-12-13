@@ -144,10 +144,21 @@ class TradeBot:
         except KeyboardInterrupt:
             print("Stopping bot...")
 
+    def remove_orders(self):
+        while self.market_manager.order_exists():
+            self.market_manager.remove_order(25)
+            self.market_manager.scroll()
+
     def buy_items(self, fast_buy: bool = False):
         self.capture.set_foreground_window()
+        self.market_manager.change_tab("my_orders_tab")
+        if self.market_manager.order_exists():
+            self.remove_orders()
         items_to_buy_list = self.load_preset_items(self.market_manager.get_market_title())
         items_prices = self.db.get_all_prices_for_city("black_market")
+        if self.config_manager.get("general")["buy_mode"] == "fast":
+            fast_buy = True
+
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Configuration.")
             return
@@ -189,21 +200,18 @@ class TradeBot:
 
                         if price > order_price and price > 0:
                             order_price = price
-
                 min_profit_rate = self.config_manager.get("general")["min_profit_rate_order"] or 0.0
 
                 if fast_buy == False:
                     lowest_price = order_price
+                if fast_buy == True:
                     min_profit_rate = self.config_manager.get("general")["min_profit_rate_fast"] or 0.0
-
-                print(f"Lowest Price for {item_unique_name}: {lowest_price}")
 
                 black_market_price = 0
                 try:
                     black_market_price = items_prices[item_unique_name] / 10000
                 except:
                     self.market_manager.close_item()
-                    print(f"No BM price for item {item_unique_name}")
                     continue
 
                 potential_sell_price = black_market_price * 0.96 
@@ -227,7 +235,7 @@ class TradeBot:
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin*100:.2f}%. Buying {quantity_to_buy} units.")
-                        self.market_manager.buy_item(amount=quantity_to_buy)
+                        self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=fast_buy, fast_buy_price=int(lowest_price*1.05))
                     else:
                         print(f"Item {item_unique_name} is profitable, but its price ({lowest_price}) is above all configured buying thresholds. Skipping.")
                         self.market_manager.close_item()

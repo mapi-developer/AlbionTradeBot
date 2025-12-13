@@ -19,6 +19,12 @@ class MarketManager(InputSender):
     def get_market_title(self) -> str:
         return self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "").strip().replace(" ", "_")
 
+    def order_exists(self) -> bool:
+        return self.capture.get_text_from_screenshot(self.capture_positions["order_exists"]) == "edit"
+
+    def remove_order(self, amount: int = 10):
+        self.click(self.mouse_positions["button_remove_order"], amount, interval=0.1)
+
     def check_pages(self) -> None:
         self.click(self.mouse_positions["next_page"], clicks=5, interval=0.2)
         self.sleep(0.5)

@@ -38,7 +38,8 @@
             "button_logout": [2309, 247],
             "button_email": [1172, 691],
             "button_enter_world": [1569, 1367],
-            "button_password": [1172, 749]
+            "button_password": [1172, 749],
+            "button_remove_order": [1804, 591]
         },
         "travel": {
             "guild_island_to_travaler": [1092, 450],

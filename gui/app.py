@@ -36,7 +36,7 @@ class GuiApp:
         
         # Initialize views
         self.settings = Settings(self.config, self.page)
-        self.presets = ft.Container(content=Presets(self.config, self.page))
+        self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
         self.dashboard = ft.Container(
             content=Dashboard(self, self.config, self.page, self.bot, self.header),
             expand=True,

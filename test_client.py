@@ -1,273 +1,249 @@
 import flet as ft
-import requests
-import webbrowser
-import threading
 import time
-import http.server
-import socketserver
-from urllib.parse import urlparse, parse_qs
-import urllib.parse
-from typing import Optional
 
-# --- CONFIGURATION (FILL THESE IN) ---
-# 1. Your Cloud Run URL (No trailing slash)
-API_URL = "https://crypto-backend-736893217724.europe-west3.run.app" 
+# --- 1. The Actual Logic Functions ---
+# These are the backend functions that will be executed based on the UI configuration.
 
-# 2. Your OAuth Client IDs 
-GOOGLE_CLIENT_ID = "736893217724-2q2tqloh51meq7c6oklt7apk9jqfm5vt.apps.googleusercontent.com"
-DISCORD_CLIENT_ID = "1447721013260456058"
+def execute_buy_items(item_name, quantity, log_callback):
+    """Simulates buying an item."""
+    log_callback(f"b... Buying {quantity}x '{item_name}'...", ft.Colors.GREEN)
+    time.sleep(0.5) # Simulate network request
+    log_callback(f"SUCCESS: Purchased {quantity}x {item_name}", ft.Colors.GREEN_ACCENT)
 
-# LOCAL SERVER SETUP
-LOCAL_AUTH_PORT = 5000 
-LOCAL_REDIRECT_URI = f"http://127.0.0.1:{LOCAL_AUTH_PORT}/oauth/callback" 
+def execute_remove_orders(order_id, log_callback):
+    """Simulates removing an order."""
+    log_callback(f"... Finding Order ID: {order_id}", ft.Colors.ORANGE)
+    time.sleep(0.5)
+    log_callback(f"SUCCESS: Order {order_id} removed.", ft.Colors.ORANGE_ACCENT)
+
+def execute_check_prices(item_name, log_callback):
+    """Simulates checking a price."""
+    log_callback(f"... Checking price for '{item_name}'", ft.Colors.BLUE)
+    import random
+    price = random.randint(10, 500)
+    time.sleep(0.5)
+    log_callback(f"INFO: Price for {item_name} is ${price}", ft.Colors.BLUE_ACCENT)
 
 
-class State:
-    token: Optional[str] = None
-    user_id: Optional[str] = None
+# --- 2. The Visual Block Component ---
+# This class represents a single 'block' in your Scratch-like list.
 
-state = State()
-
-# --- LOCAL SERVER HANDLER ---
-
-class OAuthHandler(http.server.SimpleHTTPRequestHandler):    
-    def do_GET(self):
-        query = urlparse(self.path).query
-        params = parse_qs(query)
+class FunctionBlock(ft.Container):
+    def __init__(self, func_type, remove_callback):
+        super().__init__()
+        self.func_type = func_type
+        self.remove_callback = remove_callback
         
-        if 'access_token' in params and 'user_id' in params:
-            self.server.token = params.get('access_token')[0]
-            self.server.user_id = params.get('user_id')[0]
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(b'<p>Login successful! You can close this window now.</p><script>window.close();</script>')
-            
-            threading.Thread(target=self.server.shutdown).start()
-        else:
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(b'Login failed or token not found.')
-
-
-def start_local_server(page, check_subscription_func):
-    try:
-        socketserver.TCPServer.allow_reuse_address = True
+        # Style settings based on function type (Scratch-like color coding)
+        self.block_color = ft.Colors.GREY_800
+        self.icon = ft.Icons.CIRCLE
         
-        with socketserver.TCPServer(("127.0.0.1", LOCAL_AUTH_PORT), OAuthHandler) as httpd:
-            httpd.token = None
-            httpd.user_id = None
+        # Inputs storage
+        self.inputs = {} 
+
+        if func_type == "Buy Items":
+            self.block_color = ft.Colors.INDIGO_600
+            self.icon = ft.Icons.SHOPPING_CART
+        elif func_type == "Remove Orders":
+            self.block_color = ft.Colors.RED_700
+            self.icon = ft.Icons.DELETE_FOREVER
+        elif func_type == "Check Prices":
+            self.block_color = ft.Colors.TEAL_600
+            self.icon = ft.Icons.PRICE_CHECK
+
+        # Setup the UI structure of the block
+        self.border_radius = 10
+        self.padding = 10
+        self.margin = ft.margin.only(bottom=10)
+        self.bgcolor = self.block_color
+        
+        self.content = self._build_content()
+
+    def _build_content(self):
+        """Creates the internal input fields based on the function type."""
+        
+        # Common elements: Icon and Title
+        controls_row = [
+            ft.Icon(self.icon, color=ft.Colors.WHITE),
+            ft.Text(self.func_type, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE, size=16),
+        ]
+
+        # Dynamic Inputs
+        if self.func_type == "Buy Items":
+            self.inputs['item_name'] = ft.TextField(hint_text="Item Name", height=40, text_size=14, expand=True, bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
+            self.inputs['quantity'] = ft.TextField(hint_text="Qty", width=60, height=40, text_size=14, keyboard_type=ft.KeyboardType.NUMBER, bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
             
-            httpd.serve_forever()
+            controls_row.append(self.inputs['item_name'])
+            controls_row.append(self.inputs['quantity'])
+
+        elif self.func_type == "Remove Orders":
+            self.inputs['order_id'] = ft.TextField(hint_text="Order ID", height=40, text_size=14, expand=True, bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
             
-            if httpd.token and httpd.user_id:
-                state.token = httpd.token
-                state.user_id = httpd.user_id
-                
-                page.snack_bar = ft.SnackBar(content=ft.Text("✅ Login successful! Checking subscription..."))
-                page.snack_bar.open = True
-                page.update()
-                
-                check_subscription_func()
-            else:
-                page.snack_bar = ft.SnackBar(content=ft.Text("❌ Login failed or timed out."))
-                page.snack_bar.open = True
-                page.update()
+            controls_row.append(self.inputs['order_id'])
+
+        elif self.func_type == "Check Prices":
+            self.inputs['item_name'] = ft.TextField(hint_text="Item to Check", height=40, text_size=14, expand=True, bgcolor=ft.Colors.WHITE, color=ft.Colors.BLACK)
             
-    except OSError as e:
-        page.snack_bar = ft.SnackBar(content=ft.Text(f"Server error: {e}. Port {LOCAL_AUTH_PORT} in use."))
-        page.snack_bar.open = True
-        page.update()
+            controls_row.append(self.inputs['item_name'])
+
+        # Delete Button (X)
+        controls_row.append(
+            ft.IconButton(
+                icon=ft.Icons.CLOSE, 
+                icon_color=ft.Colors.WHITE54, 
+                tooltip="Remove Block",
+                on_click=lambda _: self.remove_callback(self)
+            )
+        )
+
+        return ft.Row(controls=controls_row, alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+
+    def get_configuration(self):
+        """Extracts the values from the text fields."""
+        data = {"type": self.func_type}
+        for key, field in self.inputs.items():
+            data[key] = field.value
+        return data
 
 
-# --- FLET APPLICATION ---
+# --- 3. Main Application ---
 
 def main(page: ft.Page):
-    page.title = "Crypto Subscription App"
+    page.title = "Flet Visual Scripter"
     page.theme_mode = ft.ThemeMode.DARK
-    page.window_width = 450
-    page.window_height = 800
     page.padding = 20
 
-    # --- UI ELEMENTS ---
-    txt_status = ft.Text("Not Logged In", color=ft.Colors.RED, weight=ft.FontWeight.BOLD)
-    txt_sub_status = ft.Text("Subscription: Unknown")
+    # -- UI Components --
+
+    # 1. The Workspace (Where blocks go)
+    workspace_column = ft.Column(scroll=ft.ScrollMode.AUTO, expand=True)
     
-    def check_subscription():
-        """Calls the backend to see if user is premium."""
-        if not state.user_id or not state.token: 
-            txt_status.value = "Not Logged In"
-            txt_status.color = ft.Colors.RED
-            page.update()
-            return
-        
-        headers = {"Authorization": f"Bearer {state.token}"}
-        try:
-            res = requests.get(f"{API_URL}/users/{state.user_id}", headers=headers)
-            
-            if res.status_code == 200:
-                data = res.json()
-                sub_date = data.get("subscribed_until")
-                
-                if sub_date:
-                    clean_date = sub_date.split("T")[0]
-                    txt_sub_status.value = f"✅ PREMIUM until: {clean_date}"
-                    txt_sub_status.color = ft.Colors.GREEN
-                    btn_pay.visible = False
-                    container_premium.visible = True
-                else:
-                    txt_sub_status.value = "⚠️ Free Plan (Expired)"
-                    txt_sub_status.color = ft.Colors.YELLOW
-                    btn_pay.visible = True
-                    container_premium.visible = False
-                
-                txt_status.value = f"Logged in as User {state.user_id}"
-                page.update()
-            
-            elif res.status_code == 404:
-                 txt_status.value = f"Token invalid or User not found."
-            
-            page.update()
-            
-        except Exception as e:
-            txt_status.value = "Connection Error"
-            print(f"Connection error during status check: {e}")
-            page.update()
-
-
-    def login_click(e, provider):
-        """Starts local server and opens browser."""
-        # Start the local server listener in a background thread
-        threading.Thread(target=start_local_server, args=(page, check_subscription), daemon=True).start()
-
-        redirect_uri = f"{API_URL}/auth/login/{provider}"
-        state_param = urllib.parse.quote(LOCAL_REDIRECT_URI)
-
-        if provider == "google":
-            params = {
-                "client_id": GOOGLE_CLIENT_ID,
-                "redirect_uri": redirect_uri,
-                "response_type": "code",
-                "scope": "openid email profile",
-                "access_type": "offline",
-                "state": state_param 
-            }
-            query_string = urllib.parse.urlencode(params)
-            auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{query_string}"
-            
-        elif provider == "discord":
-            params = {
-                "client_id": DISCORD_CLIENT_ID,
-                "redirect_uri": redirect_uri,
-                "response_type": "code",
-                "scope": "identify email",
-                "state": state_param
-            }
-            query_string = urllib.parse.urlencode(params)
-            auth_url = f"https://discord.com/api/oauth2/authorize?{query_string}"
-
-        webbrowser.open(auth_url)
-        
-        page.snack_bar = ft.SnackBar(content=ft.Text(f"Waiting for login via {provider.capitalize()}..."))
-        page.snack_bar.open = True
-        page.update()
-
-
-    def pay_click(e):
-        """Starts payment flow"""
-        if not state.user_id or not state.token: 
-            page.snack_bar = ft.SnackBar(content=ft.Text("Log in first to initiate payment!"))
-            page.snack_bar.open = True
-            page.update()
-            return
-
-        btn_pay.text = "Generating Link..."
-        btn_pay.disabled = True
-        page.update()
-
-        try:
-            res = requests.post(f"{API_URL}/payments/create", 
-                                params={"user_id": state.user_id, "plan_id": "1_month"})
-            
-            if res.status_code == 200:
-                data = res.json()
-                webbrowser.open(data.get("invoice_url"))
-                btn_pay.text = "Waiting for Payment..."
-                threading.Thread(target=poll_payment_status, daemon=True).start()
-            else:
-                btn_pay.text = "Failed"
-                print(res.text)
-
-        except Exception as ex:
-            btn_pay.text = "Error"
-            print(ex)
-        page.update()
-
-    def poll_payment_status():
-        """Checks subscription status every 5 seconds (runs in background thread)."""
-        for _ in range(60): 
-            time.sleep(5)
-            # Safe to call because check_subscription calls page.update() which is thread-safe
-            check_subscription() 
-            if "PREMIUM" in txt_sub_status.value:
-                break
-
-
-    # --- LAYOUT COMPONENTS ---
-    
-    btn_google = ft.ElevatedButton(
-        "Login with Google", 
-        icon=ft.Icons.LOGIN, 
-        on_click=lambda e: login_click(e, "google"),
-        width=200
-    )
-    
-    btn_discord = ft.ElevatedButton(
-        "Login with Discord", 
-        icon=ft.Icons.DISCORD, 
-        on_click=lambda e: login_click(e, "discord"),
-        width=200,
-        style=ft.ButtonStyle(bgcolor=ft.Colors.INDIGO)
-    )
-
-    btn_pay = ft.ElevatedButton(
-        "Subscribe ($10/mo)", 
-        on_click=pay_click, 
-        icon=ft.Icons.CURRENCY_BITCOIN,
-        style=ft.ButtonStyle(bgcolor=ft.Colors.GREEN_700, color=ft.Colors.WHITE),
-        height=50
-    )
-
-    container_premium = ft.Container(
-        content=ft.Column([
-            ft.Icon(ft.Icons.LOCK_OPEN, size=40, color=ft.Colors.GREEN),
-            ft.Text("Premium Features Unlocked!", size=20, weight=ft.FontWeight.BOLD),
-            ft.Text("You can now use the trade bot functions."),
-            ft.ElevatedButton("Start Bot", icon=ft.Icons.PLAY_ARROW)
-        ]),
-        visible=False,
-        bgcolor=ft.Colors.BLUE_GREY_900,
+    workspace_container = ft.Container(
+        content=workspace_column,
+        expand=True,
+        bgcolor=ft.Colors.GREY_900,
+        border_radius=15,
         padding=20,
-        border_radius=10
+        border=ft.border.all(1, ft.Colors.WHITE10)
     )
 
-    page.add(
-        ft.Column([
-            ft.Text("Step 1: Automatic Authentication", size=16, weight=ft.FontWeight.BOLD),
-            ft.Row([btn_google, btn_discord], alignment=ft.MainAxisAlignment.CENTER),
-            
-            ft.Divider(),
-            
-            ft.Text("Status", size=16, weight=ft.FontWeight.BOLD),
-            txt_status,
-            txt_sub_status,
-            ft.Container(height=10),
-            
-            btn_pay,
-            ft.Container(height=20),
-            container_premium
-        ], alignment=ft.MainAxisAlignment.START)
+    # 2. The Log Console (To see output)
+    log_column = ft.Column(scroll=ft.ScrollMode.ALWAYS, auto_scroll=True)
+    
+    def log_message(message, color=ft.Colors.WHITE):
+        log_column.controls.append(ft.Text(f"> {message}", color=color, font_family="Consolas"))
+        log_column.update()
+
+    log_container = ft.Container(
+        content=log_column,
+        height=150,
+        bgcolor=ft.Colors.BLACK,
+        border_radius=10,
+        padding=10,
+        margin=ft.margin.only(top=10)
     )
+
+    # 3. Helpers to manage blocks
+    def remove_block(block_instance):
+        workspace_column.controls.remove(block_instance)
+        workspace_column.update()
+
+    def add_block(func_type):
+        block = FunctionBlock(func_type, remove_block)
+        workspace_column.controls.append(block)
+        workspace_column.update()
+
+    # 4. The Runner Logic
+    def run_preset(e):
+        log_column.controls.clear()
+        log_message("--- STARTED PRESET EXECUTION ---", ft.Colors.CYAN)
+        
+        # Loop through visual blocks
+        for control in workspace_column.controls:
+            if isinstance(control, FunctionBlock):
+                config = control.get_configuration()
+                
+                # Dispatch execution
+                try:
+                    if config['type'] == "Buy Items":
+                        qty = int(config.get('quantity', 0))
+                        item = config.get('item_name', "Unknown")
+                        execute_buy_items(item, qty, log_message)
+                        
+                    elif config['type'] == "Remove Orders":
+                        oid = config.get('order_id', "Unknown")
+                        execute_remove_orders(oid, log_message)
+                        
+                    elif config['type'] == "Check Prices":
+                        item = config.get('item_name', "Unknown")
+                        execute_check_prices(item, log_message)
+                except Exception as ex:
+                    log_message(f"ERROR: {str(ex)}", ft.Colors.RED)
+        
+        log_message("--- EXECUTION FINISHED ---", ft.Colors.CYAN)
+
+    # -- Layout Assembly --
+
+    # Sidebar Buttons
+    sidebar = ft.Column(
+        width=200,
+        controls=[
+            ft.Text("Palette", size=20, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            ft.ElevatedButton(
+                "Buy Items", 
+                icon=ft.Icons.ADD, 
+                bgcolor=ft.Colors.INDIGO_600, 
+                color=ft.Colors.WHITE,
+                on_click=lambda _: add_block("Buy Items"),
+                width=180
+            ),
+            ft.ElevatedButton(
+                "Remove Orders", 
+                icon=ft.Icons.ADD, 
+                bgcolor=ft.Colors.RED_700, 
+                color=ft.Colors.WHITE,
+                on_click=lambda _: add_block("Remove Orders"),
+                width=180
+            ),
+            ft.ElevatedButton(
+                "Check Prices", 
+                icon=ft.Icons.ADD, 
+                bgcolor=ft.Colors.TEAL_600, 
+                color=ft.Colors.WHITE,
+                on_click=lambda _: add_block("Check Prices"),
+                width=180
+            ),
+            ft.Container(height=20),
+            ft.Divider(),
+            ft.FloatingActionButton(
+                text="RUN PRESET",
+                icon=ft.Icons.PLAY_ARROW,
+                bgcolor=ft.Colors.GREEN,
+                width=180,
+                on_click=run_preset
+            )
+        ]
+    )
+
+    # Main Layout
+    layout = ft.Row(
+        controls=[
+            sidebar,
+            ft.VerticalDivider(width=1, color=ft.Colors.WHITE10),
+            ft.Column(
+                expand=True,
+                controls=[
+                    ft.Text("Workspace", size=20, weight=ft.FontWeight.BOLD),
+                    workspace_container,
+                    ft.Text("Console Log", size=14, color=ft.Colors.GREY_500),
+                    log_container
+                ]
+            )
+        ],
+        expand=True
+    )
+
+    page.add(layout)
 
 ft.app(target=main)

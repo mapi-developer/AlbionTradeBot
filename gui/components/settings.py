@@ -304,6 +304,14 @@ class Settings(ft.Container):
 
         self.content = self.scrollable_content
 
+    def update_settings(self):
+        self.update_preset_dropdown()
+        for item in self.city_items:
+            dropdown = item.controls[0]
+            dropdown.options = self.preset_options
+        if self.page:
+            self.page.update()
+
     def save_settings(self, e):
         settings_to_save = {
             "general": {

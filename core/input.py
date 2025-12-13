@@ -17,3 +17,6 @@ class InputSender():
 
     def click(self, position: list[int], clicks: int = 1, interval: float = 0.02) -> None:
         pyautogui.click(position, clicks=clicks, interval=interval)
+
+    def scroll(self, clicks: int = 15) -> None:
+        pyautogui.scroll(clicks)

@@ -1,6 +1,7 @@
 import flet as ft
 import re, os, json
 from managers.config import ConfigManager, PRESETS_DIR, BOT_ITEMS_FILE
+from .settings import Settings
 from .popup import show_popup
 
 THEME_PANEL_BG = "#294D7C"  # Main container color
@@ -168,8 +169,9 @@ class ItemListPanel(ft.Container):
 
 
 class Presets(ft.Column):
-    def __init__(self, config: ConfigManager, page: ft.Page):
+    def __init__(self, config: ConfigManager, page: ft.Page, settings: Settings):
         super().__init__()
+        self.settings = settings
         self.expand = True
         self.config = config
         self.page = page
@@ -607,7 +609,8 @@ class Presets(ft.Column):
                 json.dump(list(self.preset_set), f, indent=4)
 
             self.update_preset_dropdown()
-            #
+            self.settings.update_settings()
+
             show_popup(self.page, f"Preset '{name}.json' saved successfully!")
         except Exception as ex:
             show_popup(self.page, f"Error saving preset: {ex}", is_error=True)
@@ -615,12 +618,13 @@ class Presets(ft.Column):
     def delete_preset_click(self, e):
         fname = self.preset_dropdown.value
         if not fname:
+            show_popup(self.page, "Please select a preset to delete.", is_error=True)
             return
         try:
             os.remove(os.path.join(PRESETS_DIR, fname))
-            self.update_preset_dropdown()
             self.preset_dropdown.value = None
-            if self.preset_dropdown.page:
-                self.preset_dropdown.update()
-        except:
-            pass
+            self.update_preset_dropdown()
+            self.settings.update_settings()
+            show_popup(self.page, f"Preset '{fname}' deleted successfully!")
+        except Exception as ex:
+            show_popup(self.page, f"Error deleting preset: {ex}", is_error=True)

@@ -4,10 +4,10 @@
         "min_profit_rate_order": 0.8,
         "default_buy_amount": 25,
         "min_silver": 1000000,
-        "buy_mode": "order"
+        "buy_mode": "fast"
     },
     "city_presets": {
-        "fort_sterling": "Fort Sterling Main.json",
+        "fort_sterling": "Fast Buy Test.json",
         "lymhurst": "Fort Sterling Main.json",
         "bridgewatch": "Fort Sterling Main.json",
         "martlock": "Fort Sterling Main.json",
