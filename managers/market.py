@@ -7,8 +7,8 @@ class MarketManager(InputSender):
         super().__init__()
         if capture == None:
             capture = WindowCapture(window_name="Albion Online Client")
-        self.mouse_positions = MOUSE_POSITIONS["2560x1600"]["market"]
-        self.capture_positions = CAPTURE_POSITIONS["2560x1600"]["market"]
+        self.mouse_positions = MOUSE_POSITIONS[capture.get_window_resolution()]["market"]
+        self.capture_positions = CAPTURE_POSITIONS[capture.get_window_resolution()]["market"]
         self.items = { item["UniqueName"]: item for item in ITEM_DATA }
         self.capture = capture
         self.lang = LANGUAGE
@@ -17,7 +17,21 @@ class MarketManager(InputSender):
         return f"MarketManager: {self.mouse_positions["search"]}"
     
     def get_market_title(self) -> str:
-        return self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "").strip().replace(" ", "_")
+        raw_title = self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "")
+        if "fort" in raw_title:
+            return "fort_sterling"
+        elif "lymhurst" in raw_title:
+            return "lymhurst"
+        elif "bridgewatch" in raw_title:
+            return "bridgewatch"
+        elif "martlock" in raw_title:
+            return "martlock"
+        elif "thetford" in raw_title:
+            return "thetford"
+        elif "brecilien" in raw_title:
+            return "brecilien"
+        else:
+            return "Error To Check Market"
 
     def order_exists(self) -> bool:
         return self.capture.get_text_from_screenshot(self.capture_positions["order_exists"]) == "edit"
