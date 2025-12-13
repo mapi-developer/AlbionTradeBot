@@ -9,12 +9,18 @@ import json
 import threading
 import time
 from datetime import datetime, timezone
+import sys
 
 class TradeBot:
     db: DatabaseInterface
 
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
-        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        if getattr(sys, 'frozen', False):
+            # If the application is run as a bundle (compiled .exe)
+            BASE_DIR = os.getcwd()
+        else:
+            # If the application is run as a standard python script
+            BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         self.config_manager = ConfigManager()
         self.status = "Initializing"
         self.paused = False # Pause state flag

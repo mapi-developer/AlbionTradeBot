@@ -1,21 +1,29 @@
 import json
 import os
+import sys
 import flet as ft
+
+if getattr(sys, 'frozen', False):
+    # If running as a compiled .exe, use the executable's directory
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # If running as a script, use the project root relative to this file
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_json_config(filename):
     """Loads a JSON file from the config directory."""
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', filename)
+    config_path = os.path.join(BASE_DIR, 'config', filename) 
     with open(config_path, 'r', encoding="utf-8") as f:
         return json.load(f)
 
 ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json"
 CACHE_FILE = "items.json"
 
-BOT_ITEMS_FILE = "config/bot_items.json"
-BOT_LOOP_FILE = os.path.join("config", "bot_loop.json") # New file for storing the sequence
+BOT_ITEMS_FILE = os.path.join(BASE_DIR, "config", "bot_items.json")
+BOT_LOOP_FILE = os.path.join(BASE_DIR, "config", "bot_loop.json") # New file for storing the sequence
 DB_URL = "postgresql://albion_user:albion_password@127.0.0.1:5438/albion_market"
-CONFIG_FILE = os.path.join("config", "settings.json")
-PRESETS_DIR = os.path.join("config", "presets")
+CONFIG_FILE = os.path.join(BASE_DIR, "config", "settings.json")
+PRESETS_DIR = os.path.join(BASE_DIR, "config", "presets")
 
 DEFAULT_SETTINGS = {
     "general": {
