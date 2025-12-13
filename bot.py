@@ -16,11 +16,12 @@ class TradeBot:
 
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         if getattr(sys, 'frozen', False):
-            # If the application is run as a bundle (compiled .exe)
-            BASE_DIR = os.getcwd()
+            # CORRECT: Use the executable's directory
+            BASE_DIR = os.path.dirname(sys.executable)
         else:
-            # If the application is run as a standard python script
+            # Standard script run
             BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+            
         self.config_manager = ConfigManager()
         self.status = "Initializing"
         self.paused = False # Pause state flag
