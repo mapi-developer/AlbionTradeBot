@@ -1,0 +1,6 @@
+[
+    {
+        "name": "Price Check",
+        "func": "check_price"
+    }
+]

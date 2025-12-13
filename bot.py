@@ -7,6 +7,7 @@ import os
 import re
 import json
 import threading
+import time
 from datetime import datetime, timezone
 
 class TradeBot:
@@ -15,7 +16,9 @@ class TradeBot:
     def __init__(self, capture: WindowCapture = None, sniffer: AlbionSniffer = None, market_manager: MarketManager = None, db: DatabaseInterface = None):
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         self.config_manager = ConfigManager()
-            
+        
+        self.paused = False # Pause state flag
+
         if capture == None:
             capture = WindowCapture(base_dir=BASE_DIR, window_name="Albion Online Client")
         self.capture = capture
@@ -34,6 +37,18 @@ class TradeBot:
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()   
 
+    def toggle_pause(self):
+        """Toggles the pause state of the bot."""
+        self.paused = not self.paused
+        state = "PAUSED" if self.paused else "RESUMED"
+        print(f"Bot state: {state}")
+        return self.paused
+
+    def _wait_if_paused(self):
+        """Blocks execution if the bot is paused."""
+        while self.paused:
+            time.sleep(0.5)
+
     def load_preset_items(self, setting_key):
         """Loads items list from the preset file defined in settings."""
         preset_file = self.config_manager.get("city_presets")[setting_key]
@@ -48,7 +63,7 @@ class TradeBot:
             
         try:
             with open(path, "r") as f:
-                return json.load(f) # Should be a list of UniqueNames
+                return json.load(f) 
         except Exception as e:
             print(f"Error loading preset {preset_file}: {e}")
             return []
@@ -76,11 +91,9 @@ class TradeBot:
     def check_price(self, isBlackMarket=True):
         self.capture.set_foreground_window()
         if isBlackMarket:
-            # Use names from the Black Market dictionary values
             items_to_check = list(ITEMS_BLACK_MARKET.values())
             print(f"Starting Black Market Price Check for {len(items_to_check)} items from dictionary...")
         else:
-            # Load items from the configured preset
             items_to_check = self.load_preset_items(self.market_manager.get_market_title())
             if not items_to_check:
                 print("No items to check. Please select a preset in Configuration.")
@@ -91,13 +104,13 @@ class TradeBot:
 
         try:
             for item in items_to_check:
+                self._wait_if_paused() # Check pause
+                
                 self.sniffer.clear_buffer()
                 
                 if isBlackMarket:
-                    # Search using the name directly (item is the value from dictionary)
                     self.market_manager.search_item(item, black_market=True)
                 else:
-                    # Search using the unique name (item is the key/id from preset)
                     self.market_manager.search_item(item, from_db=True, black_market=False)
                     
                 self.market_manager.sleep(.3)
@@ -105,7 +118,6 @@ class TradeBot:
 
                 current_market_orders = self.sniffer.market_data_buffer
                 if not current_market_orders:
-                    # Use item as the identifier in the log
                     print(f"No market data captured for: {item}")
 
                 found_prices = {}
@@ -146,6 +158,7 @@ class TradeBot:
 
     def remove_orders(self):
         while self.market_manager.order_exists():
+            self._wait_if_paused() # Check pause
             self.market_manager.remove_order(25)
             self.market_manager.scroll()
 
@@ -168,10 +181,7 @@ class TradeBot:
             
         try:
             for item_unique_name in items_to_buy_list:
-                # Logic assumes item_unique_name is the base T-level item? 
-                # Adjust if your preset contains full names like T4_BAG
-                # If preset has "BAG", use "T8_"+... logic. 
-                # Assuming preset has FULL Unique Names now:
+                self._wait_if_paused() # Check pause
                 
                 self.market_manager.search_item(item_unique_name, from_db=True)
                 self.sniffer.clear_buffer()
@@ -188,7 +198,6 @@ class TradeBot:
                 for order in current_market_orders:
                     if order.get('AuctionType') == 'offer':
                         price = order.get('UnitPriceSilver', 0) / 10000
-                        quality = order.get('QualityLevel', 0)
                         
                         if price < lowest_price and price > 0:
                             lowest_price = price
@@ -196,7 +205,6 @@ class TradeBot:
                 for order in current_market_orders:
                     if order.get('AuctionType') == 'request':
                         price = order.get('UnitPriceSilver', 0) / 10000
-                        quality = order.get('QualityLevel', 0)
 
                         if price > order_price and price > 0:
                             order_price = price
@@ -218,7 +226,6 @@ class TradeBot:
                 profit = potential_sell_price - lowest_price
                 profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
 
-                # 4. Compare and print success
                 if profit_margin >= min_profit_rate:
                     buy_logic_rules = self.config_manager.get("buy_logic") or []
                     sorted_rules = sorted(buy_logic_rules, key=lambda x: int(x.get('price', 0)), reverse=True)

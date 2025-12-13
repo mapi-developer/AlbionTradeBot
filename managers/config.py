@@ -12,6 +12,7 @@ ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/
 CACHE_FILE = "items.json"
 
 BOT_ITEMS_FILE = "config/bot_items.json"
+BOT_LOOP_FILE = os.path.join("config", "bot_loop.json") # New file for storing the sequence
 DB_URL = "postgresql://albion_user:albion_password@127.0.0.1:5438/albion_market"
 CONFIG_FILE = os.path.join("config", "settings.json")
 PRESETS_DIR = os.path.join("config", "presets")
@@ -90,3 +91,20 @@ class ConfigManager:
         if not os.path.exists(PRESETS_DIR):
             return []
         return [f for f in os.listdir(PRESETS_DIR) if f.endswith(".json")]
+
+    # --- New Methods for Bot Loop ---
+    def load_bot_loop(self):
+        if not os.path.exists(BOT_LOOP_FILE):
+            return []
+        try:
+            with open(BOT_LOOP_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return []
+
+    def save_bot_loop(self, loop_data):
+        try:
+            with open(BOT_LOOP_FILE, "w") as f:
+                json.dump(loop_data, f, indent=4)
+        except Exception as e:
+            print(f"Error saving bot loop: {e}")
