@@ -4,7 +4,7 @@ import traceback
 
 def main():
     try:
-        ft.app(target=gui_main, port=5000)
+        ft.app(target=gui_main)
     except Exception:
         # Log unexpected crashes to a file next to the exe
         error_path = "crash_log.txt"

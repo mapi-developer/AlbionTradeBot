@@ -1,8 +1,6 @@
 import flet as ft
-import requests
 import webbrowser
 import threading
-import time
 import http.server
 import socketserver
 from urllib.parse import urlparse, parse_qs
@@ -23,39 +21,65 @@ class OAuthHandler(http.server.SimpleHTTPRequestHandler):
     """Handles the final callback from the Cloud Backend."""
     
     def do_GET(self):
+        # Silence the console logs for requests
+        pass
+
         query = urlparse(self.path).query
         params = parse_qs(query)
         
-        # Check if we received the token and user ID
         if 'access_token' in params and 'user_id' in params:
             self.server.token = params.get('access_token')[0]
             self.server.user_id = params.get('user_id')[0]
             
+            # Send a nice HTML response to the browser
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            self.wfile.write(b'<p>Login successful! You can close this window now.</p><script>window.close();</script>')
+            self.wfile.write(b"""
+                <html>
+                <body style='background-color:#131415; color:white; font-family:sans-serif; text-align:center; padding-top:50px;'>
+                    <h1>Login Successful!</h1>
+                    <p>You can close this window and return to the bot.</p>
+                    <script>window.close();</script>
+                </body>
+                </html>
+            """)
             
-            # Stop the local server
-            threading.Thread(target=self.server.shutdown).start()
+            # Stop the server in a separate thread to avoid deadlock
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
         else:
             self.send_response(400)
             self.end_headers()
-            self.wfile.write(b'Login failed or token not found.')
+            self.wfile.write(b'Login failed: Missing token.')
+
+    def log_message(self, format, *args):
+        # Override to prevent printing to stdout/console
+        return
 
 class Login(ft.Container):
     def __init__(self, page: ft.Page, on_login_success):
         super().__init__()
-        self.page=page
+        self.page = page
         self.expand = True
         self.bgcolor = "#174e7e"
         self.state = State()
         self.on_login_success = on_login_success
+        self.server_running = False
+
+        self.error_text = ft.Text("", color=ft.Colors.RED, size=12, visible=False)
 
         def on_login_click(event):
-            provider = event.control.data
-            threading.Thread(target=self.start_local_server, args=(), daemon=True).start()
+            # Reset error text
+            self.error_text.visible = False
+            self.error_text.value = ""
+            self.page.update()
 
+            provider = event.control.data
+            
+            # Start the local server in a background thread
+            threading.Thread(target=self.start_local_server, daemon=True).start()
+
+            # Construct Auth URL
             redirect_uri = f"{API_URL}/auth/login/{provider}"
             state_param = urllib.parse.quote(LOCAL_REDIRECT_URI)
 
@@ -82,9 +106,8 @@ class Login(ft.Container):
                 query_string = urllib.parse.urlencode(params)
                 auth_url = f"https://discord.com/api/oauth2/authorize?{query_string}"
 
+            print(f"Opening browser for {provider} login...")
             webbrowser.open(auth_url)
-            
-            page.update()
 
         self.login_card = ft.Container(
             content=ft.Column(
@@ -97,14 +120,13 @@ class Login(ft.Container):
                         color=ft.Colors.BLACK,
                     ),
                     ft.Text("Log in to continue", size=12, color=ft.Colors.GREY),
+                    self.error_text, # Error message area
                     ft.ElevatedButton(
                         text="LogIn with Google",
                         width=280,
                         bgcolor=ft.Colors.BLUE,
                         color=ft.Colors.WHITE,
-                        style=ft.ButtonStyle(
-                            padding=ft.padding.only(0, 20, 0, 20)
-                        ),
+                        style=ft.ButtonStyle(padding=20),
                         expand=True,
                         data="google",
                         on_click=on_login_click
@@ -114,9 +136,7 @@ class Login(ft.Container):
                         width=280,
                         bgcolor="#4334ca",
                         color=ft.Colors.WHITE,
-                        style=ft.ButtonStyle(
-                            padding=ft.padding.only(0, 20, 0, 20)
-                        ),
+                        style=ft.ButtonStyle(padding=20),
                         expand=True,
                         data="discord",
                         on_click=on_login_click
@@ -141,35 +161,47 @@ class Login(ft.Container):
         )
 
         self.content = ft.Container(
-            content=ft.Column(
-                controls=[self.login_card], alignment=ft.alignment.center
-            ),
+            content=ft.Column(controls=[self.login_card], alignment=ft.alignment.center),
             alignment=ft.alignment.center,
             bgcolor=ft.Colors.TRANSPARENT,
-            padding=ft.padding.only(50, 50, 50, 50),
-            margin=ft.margin.only(50, 50, 50, 50),
+            padding=50,
+            margin=50,
             expand=True
         )
 
     def start_local_server(self):
+        """Starts a temporary HTTP server to listen for the OAuth callback."""
+        if self.server_running:
+            print("Server already running.")
+            return
+
+        self.server_running = True
         try:
             socketserver.TCPServer.allow_reuse_address = True
-            
+            # Attempt to bind to port 5000
             with socketserver.TCPServer(("127.0.0.1", LOCAL_AUTH_PORT), OAuthHandler) as httpd:
+                print(f"Local auth server listening on port {LOCAL_AUTH_PORT}...")
                 httpd.token = None
                 httpd.user_id = None
                 
+                # Block here until shutdown() is called in do_GET
                 httpd.serve_forever()
                 
+                # Logic after server stops
                 if httpd.token and httpd.user_id:
+                    print("Token received!")
                     self.state.token = httpd.token
                     self.state.user_id = httpd.user_id
                     
+                    # Call the success callback
                     if self.on_login_success:
                         self.on_login_success()
-
-                else:
-                    self.page.update()
-                
         except OSError as e:
+            print(f"Failed to start auth server: {e}")
+            self.error_text.value = f"Error: Port {LOCAL_AUTH_PORT} is busy. Close other bot instances."
+            self.error_text.visible = True
             self.page.update()
+        except Exception as e:
+            print(f"Unexpected server error: {e}")
+        finally:
+            self.server_running = False

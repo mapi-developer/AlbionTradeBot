@@ -7,7 +7,7 @@
         "buy_mode": "order"
     },
     "city_presets": {
-        "fort_sterling": "Fast Buy Test.json",
+        "fort_sterling": "Fort Sterling Main.json",
         "lymhurst": "Fort Sterling Main.json",
         "bridgewatch": "Fort Sterling Main.json",
         "martlock": "Fort Sterling Main.json",
@@ -29,16 +29,20 @@
             "price_larger_then": "10000"
         },
         {
-            "amount_to_buy": "3",
+            "amount_to_buy": "5",
             "price_larger_then": "20000"
         },
         {
-            "amount_to_buy": "2",
+            "amount_to_buy": "3",
             "price_larger_then": "50000"
         },
         {
-            "amount_to_buy": "1",
+            "amount_to_buy": "2",
             "price_larger_then": "80000"
+        },
+        {
+            "amount_to_buy": "1",
+            "price_larger_then": "100000"
         }
     ]
 }

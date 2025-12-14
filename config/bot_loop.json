@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "name": "Remove Orders",
+        "func": "remove_orders"
+    },
+    {
+        "name": "Buy Items",
+        "func": "buy_items"
+    }
+]
