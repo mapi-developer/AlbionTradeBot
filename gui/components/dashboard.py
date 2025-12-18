@@ -5,6 +5,7 @@ import keyboard
 from managers.config import ConfigManager
 from bot import TradeBot
 from gui.components.header import Header
+from gui.components.overlay import BotOverlay
 from database.interface import DatabaseInterface
 
 class Dashboard(ft.Column):
@@ -287,7 +288,13 @@ class Dashboard(ft.Column):
         try:
             is_paused = self.bot.toggle_pause()
             
-            # UI Updates need to be thread-safe
+            if self.app.overlay:
+                self.app.overlay.send_update(
+                    status=self.bot.status,
+                    task="Paused by User" if is_paused else "Resuming...",
+                    paused=is_paused
+                )
+
             if self.status_text.page:
                 if is_paused:
                     self.status_text.value = "⚠️ BOT PAUSED (Press Ctrl+P to Resume)"
@@ -368,6 +375,8 @@ class Dashboard(ft.Column):
             self.run_btn.update()
             self.stop_btn.update()
             self.available_commands_view.update()
+        if hasattr(self.app, 'overlay') and self.app.overlay:
+            self.app.overlay.stop()
             
         # 3. IMMEDIATELY delete old bot and create new one (as requested)
         print("Stopping: Replacing Bot instance...")
@@ -396,6 +405,11 @@ class Dashboard(ft.Column):
         self.run_btn.disabled = True
         # Change color to Dark Green when running (disabled state)
         self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_900, color=ft.Colors.WHITE70)
+
+        if not self.app.overlay:
+            self.app.overlay = BotOverlay()
+        
+        self.app.overlay.start()
         
         self.stop_btn.disabled = False
         self.available_commands_view.disabled = True
@@ -427,8 +441,17 @@ class Dashboard(ft.Column):
                         if not self.is_running_sequence: break
                         if not self.bot: break 
                         
+                        if self.app.overlay:
+                            self.app.overlay.send_update(
+                                status=self.bot.status,
+                                task=f"Task: {item['name']}",
+                                paused=self.bot.paused
+                            )
+
                         self._wait_if_bot_paused() 
                         if not self.is_running_sequence: break # Double check after wait
+
+                        self.bot.current_task_name = f"Task: {item['name']}"
                         
                         self.status_text.value = f"Executing: {item['name']}..."
                         self.status_text.color = ft.Colors.WHITE
@@ -480,6 +503,8 @@ class Dashboard(ft.Column):
                     self.available_commands_view.disabled = False
                     self.status_text.value = "Sequence finished."
                     self.status_text.color = ft.Colors.GREY_400
+                    if hasattr(self.app, 'overlay') and self.app.overlay:
+                        self.app.overlay.stop()
                     if self.status_text.page:
                         self.status_text.update()
                     try:

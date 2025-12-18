@@ -7,6 +7,7 @@ from gui.components.settings import Settings
 from gui.components.dashboard import Dashboard
 from gui.components.login import Login
 from gui.components.subscription import SubscriptionTab
+from gui.components.overlay import BotOverlay
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -30,6 +31,7 @@ class GuiApp:
         self.login = Login(self.page, on_login_success=self.show_main_app)
 
         self.bot = TradeBot(db=DatabaseInterface())
+        self.overlay = BotOverlay()
 
         self.presets = self.config.get_presets_list()
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
@@ -134,6 +136,16 @@ class GuiApp:
 
 def main(page: ft.Page):
     app = GuiApp(page=page)
+    page.window.prevent_close = True
+
+    def on_window_event(e):
+        if e.data == "close":
+            if hasattr(app, 'overlay') and app.overlay:
+                app.overlay.stop()
+            
+            page.window.destroy()
+
+    page.window.on_event = on_window_event
     app.page.update()
 
 

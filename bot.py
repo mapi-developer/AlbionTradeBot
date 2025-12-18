@@ -44,14 +44,13 @@ class TradeBot:
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()
         self.status = "Ready"
+        self.current_task_name = "Ready"
+        self.current_item_name = ""
 
     def toggle_pause(self):
         """Toggles the pause state of the bot."""
         self.paused = not self.paused
-        if self.paused:
-            self.status = "Paused"
-        else:
-            self.status = "Running"
+        self.status = "Paused" if self.paused else "Running"
 
         print(f"Bot state: {self.status}")
         return self.paused
@@ -102,6 +101,7 @@ class TradeBot:
 
     def check_price(self, isBlackMarket=True):
         self.status = "Running"
+        self.current_task_name = "Price Check"
         self.capture.set_foreground_window()
         if isBlackMarket:
             items_to_check = list(ITEMS_BLACK_MARKET.values())
@@ -118,6 +118,7 @@ class TradeBot:
         try:
             for item in items_to_check:
                 self._wait_if_paused() # Check pause
+                self.current_item_name = f"Scanning: {item}"
                 
                 self.sniffer.clear_buffer()
                 
