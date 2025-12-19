@@ -1,9 +1,14 @@
 import flet as ft
 
 class GuiStyle:
+    class Colors:
+        WHITE = "#ffffff"
+        LIGHT_GREEN = "#0d962b"
+        GRAY_BLUE = "#1c2f4d"
+
     SETTINGS_SAVE_BUTTON = ft.ButtonStyle(
         color=ft.Colors.WHITE,
-        bgcolor="#0d962b",
+        bgcolor=Colors.LIGHT_GREEN,
         shape=ft.RoundedRectangleBorder(radius=8),
     )
 
