@@ -60,16 +60,30 @@ class BotOverlay:
         self.process.start()
 
     def stop(self):
-        """Sends a stop signal and then kills the process as a backup."""
+        """Forces the overlay to close and clears any pending updates."""
         if self.process and self.process.is_alive():
-            # Send the poison pill
-            self.status_queue.put("STOP")
-            # Wait a moment for graceful exit, then force kill if stuck
-            time.sleep(0.2)
-            if self.process.is_alive():
-                self.process.terminate()
-            self.process = None
+            try:
+                # 1. Clear the queue so the process doesn't try to process old data
+                while not self.status_queue.empty():
+                    self.status_queue.get_nowait()
+                
+                # 2. Send the poison pill
+                self.status_queue.put("STOP")
+                
+                # 3. Give it a tiny moment to self-destruct
+                self.process.join(timeout=0.2)
+                
+                # 4. If it's still stubborn, kill it
+                if self.process.is_alive():
+                    self.process.terminate()
+            except Exception as e:
+                print(f"Error stopping overlay: {e}")
+            finally:
+                self.process = None
 
     def send_update(self, status, task, paused):
         if self.process and self.process.is_alive():
-            self.status_queue.put({"status": status, "task": task, "paused": paused})
+            try:
+                self.status_queue.put_nowait({"status": status, "task": task, "paused": paused})
+            except:
+                pass
