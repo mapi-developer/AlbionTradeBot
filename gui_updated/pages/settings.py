@@ -1,29 +1,27 @@
 import flet as ft
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from components.style import GuiStyle
 
 class UpperRow(ft.ResponsiveRow):
     def __init__(self):
         super().__init__()
-
-        button_style = ft.ButtonStyle(
-            color=ft.Colors.WHITE,
-            shape=ft.RoundedRectangleBorder(radius=8),
-        )
-
         self.fast_buy_button = ft.ElevatedButton(
             text="Fast Buy",
-            style=button_style,
+            style=GuiStyle.SETTINGS_TOP_BAR_BUTTON,
         )
         self.order_buy_button = ft.ElevatedButton(
             text="Order Buy",
-            style=button_style,
+            style=GuiStyle.SETTINGS_TOP_BAR_BUTTON,
         )
 
         self.save_button = ft.ElevatedButton(
             icon=ft.Icons.SAVE,
             text="Save Settings",
-            style=GuiStyle.SAVE_SETTINGS_BUTTON,
+            style=GuiStyle.SETTINGS_SAVE_BUTTON,
         )
 
         self.controls = [  
