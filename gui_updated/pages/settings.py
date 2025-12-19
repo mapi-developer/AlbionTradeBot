@@ -3,8 +3,10 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from components.style import GuiStyle
+from managers.config import AVALIABLE_LANGUAGES
 
 class UpperRow(ft.Container):
     def __init__(self):
@@ -60,23 +62,36 @@ class UpperRow(ft.Container):
 class GeneralTab(ft.Container):
     def __init__(self):
         super().__init__()
+        self.bgcolor = "#5b0d0d"
+
+        def get_languages_options():
+            return [ft.DropdownOption(key=language, text=language) for language in AVALIABLE_LANGUAGES]
 
         self.buy_mode = ft.Dropdown(
             label="Buy Mode Strategy",
-            hint_text="Choose strategy for bot",
+            tooltip="Choose strategy for bot",
             value="",
             options=[
                 ft.DropdownOption(text="Order Buy"),
                 ft.DropdownOption(text="Fast Buy")
             ],
             dense=True,
-            col={"md": 6}
+        )
+
+        self.game_language = ft.Dropdown(
+            label="Language in Game",
+            tooltip="Choose your in game Language",
+            value="",
+            options = get_languages_options(),
+            dense=True
         )
 
         self.content = ft.ResponsiveRow(
             controls=[
-                self.buy_mode
-            ]
+                self.buy_mode,
+                self.game_language
+            ],
+            col={"md": 6}
         )
 
 

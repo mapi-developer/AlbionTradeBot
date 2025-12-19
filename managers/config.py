@@ -25,6 +25,24 @@ DB_URL = "postgresql://albion_user:albion_password@127.0.0.1:5438/albion_market"
 CONFIG_FILE = os.path.join(BASE_DIR, "config", "settings.json")
 PRESETS_DIR = os.path.join(BASE_DIR, "config", "presets")
 
+AVALIABLE_LANGUAGES = [
+    "EN-US",
+    "DE-DE",
+    "FR-FR",
+    "RU-RU",
+    "PL-PL",
+    "ES-ES",
+    "PT-BR",
+    "IT-IT",
+    "ZH-CN",
+    "KO-KR",
+    "JA-JP",
+    "ZH-TW",
+    "ID-ID",
+    "TR-TR",
+    "AR-SA"
+]
+
 DEFAULT_SETTINGS = {
     "general": {
         "min_profit_rate_fast": 0.5,
