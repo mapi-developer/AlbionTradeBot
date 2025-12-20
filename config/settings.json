@@ -4,7 +4,65 @@
         "min_profit_rate_order": 0.8,
         "default_buy_amount": 25,
         "min_silver": 1000000,
-        "buy_mode": "order"
+        "buy_mode": "order",
+        "game_language": "EN-US"
+    },
+    "fast_buy": {
+        "min_profit_rate": 50,
+        "default_buy_amount": 15,
+        "presets": {
+            "fort_sterling": "Fort Sterling Main.json",
+            "lymhurst": "Fort Sterling Main.json",
+            "bridgewatch": "",
+            "martlock": "",
+            "thetford": "",
+            "caerleon": "",
+            "brecilien": ""
+        },
+        "buy_logic": [
+            {
+                "amount_to_buy": "20",
+                "price_larger_then": "1000"
+            },
+            {
+                "amount_to_buy": "15",
+                "price_larger_then": "5000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "10000"
+            },
+            {
+                "amount_to_buy": "5",
+                "price_larger_then": "20000"
+            },
+            {
+                "amount_to_buy": "3",
+                "price_larger_then": "50000"
+            },
+            {
+                "amount_to_buy": "2",
+                "price_larger_then": "80000"
+            },
+            {
+                "amount_to_buy": "1",
+                "price_larger_then": "100000"
+            }
+        ]
+    },
+    "order_buy": {
+        "min_profit_rate": 80,
+        "default_buy_amount": 25,
+        "presets": {
+            "fort_sterling": "",
+            "lymhurst": "",
+            "bridgewatch": "",
+            "martlock": "",
+            "thetford": "",
+            "caerleon": "Fort Sterling Main.json",
+            "brecilien": "Fort Sterling Main.json"
+        },
+        "buy_logic": []
     },
     "city_presets": {
         "fort_sterling": "Fort Sterling Main.json",

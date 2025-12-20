@@ -43,24 +43,52 @@ AVALIABLE_LANGUAGES = [
     "AR-SA"
 ]
 
+CITIES = {
+    "caerleon": "Caerleon",
+    "martlock": "Martlock",
+    "lymhurst": "Lymhurst",
+    "fort_sterling": "Fort Sterling",
+    "bridgewatch": "Bridgewatch",
+    "thetford": "Thetford",
+    "brecilien": "Brecilien",
+}
+
 DEFAULT_SETTINGS = {
     "general": {
-        "min_profit_rate_fast": 0.5,
-        "min_profit_rate_order": 0.2,
-        "default_but_amount": 1,
-        "min_silver": 500000,
+        "min_profit_rate_fast": 0.3,
+        "min_profit_rate_order": 0.8,
+        "default_buy_amount": 25,
+        "min_silver": 1000000,
         "buy_mode": "order"
     },
-    "city_presets": {
-        "fort_sterling": "",
-        "lymhurst": "",
-        "bridgewatch": "",
-        "martlock": "",
-        "thetford": "",
-        "caerleon": "",
-        "brecilien": ""
+    "fast_buy": {
+        "min_profit_rate": 25,
+        "default_build_amount": 15,
+        "presets": {
+            "fort_sterling": "",
+            "lymhurst": "",
+            "bridgewatch": "",
+            "martlock": "",
+            "thetford": "",
+            "caerleon": "",
+            "brecilien": ""
+        },
+        "buy_logic": []
     },
-    "buy_logic": []
+    "order_buy": {
+        "min_profit_rate": 60,
+        "default_build_amount": 25,
+        "presets": {
+            "fort_sterling": "",
+            "lymhurst": "",
+            "bridgewatch": "",
+            "martlock": "",
+            "thetford": "",
+            "caerleon": "",
+            "brecilien": ""
+        },
+        "buy_logic": []
+    },
 }
 
 MOUSE_POSITIONS = load_json_config('mouse_positions.json')
