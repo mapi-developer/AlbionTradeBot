@@ -11,7 +11,16 @@ from managers.config import ConfigManager, AVALIABLE_LANGUAGES, CITIES, BUY_MODE
 
 
 class SettingsDropdown(ft.Dropdown):
-    def __init__(self, label: str, tooltip: str, options: list[ft.DropdownOption], filter: bool = False, value: str = "", data = None):
+    def __init__(
+            self, 
+            label: str, 
+            tooltip: str, 
+            options: list[ft.DropdownOption], 
+            filter: bool = False, 
+            value: str = "", 
+            data = None, 
+            save_callback: Callable = None
+        ):
         super().__init__(
             label = label,
             tooltip = tooltip,
@@ -31,13 +40,15 @@ class SettingsDropdown(ft.Dropdown):
             focused_border_color=ft.Colors.WHITE,
             focused_border_width=2,
             value=value,
-            data=data
+            data=data,
+            on_change=save_callback
         )
 
 
 class GeneralSettings(ft.Container):
-    def __init__(self, config: ConfigManager):
+    def __init__(self, config: ConfigManager, save_callback: Callable):
         super().__init__()
+        self.save_callback = save_callback
         general_settings = config.get("general")
 
         self.padding = 20
@@ -48,7 +59,8 @@ class GeneralSettings(ft.Container):
             data="buy_mode",
             label="Buy Mode Strategy", 
             tooltip="Choose strategy for bot",
-            options=BUY_MODES
+            options=BUY_MODES,
+            save_callback=save_callback
         )
 
         self.game_language = SettingsDropdown(
@@ -57,6 +69,7 @@ class GeneralSettings(ft.Container):
             label="Language in Game",
             tooltip="Choose your in game Language",
             options = [ft.DropdownOption(key=language, text=language) for language in AVALIABLE_LANGUAGES],
+            save_callback=save_callback
         )
 
         self.stop_silver_threshold = ft.TextField(
@@ -67,6 +80,7 @@ class GeneralSettings(ft.Container):
             color=ft.Colors.WHITE,
             label_style=ft.TextStyle(color=ft.Colors.WHITE),
             fill_color=GuiStyle.Colors.DARK_BLUE,
+            on_change=save_callback
         )
 
         self.content = ft.ResponsiveRow(
@@ -84,7 +98,7 @@ class GeneralSettings(ft.Container):
 
 
 class BuyLogicItem(ft.Container):
-    def __init__(self, index, on_remove):
+    def __init__(self, index, on_remove, save_callback: Callable):
         super().__init__()
         self.bgcolor = GuiStyle.Colors.DARK_BLUE
         self.border = ft.border.all(1, GuiStyle.Colors.BLUE)
@@ -99,7 +113,8 @@ class BuyLogicItem(ft.Container):
             text_size=15,
             content_padding=10,
             border_color="#87afc1ff",
-            col={"sm": 2, "md": 2, "xl": 2}
+            col={"sm": 2, "md": 2, "xl": 2},
+            on_change=save_callback
         )
         
         self.price_input = ft.TextField(
@@ -109,7 +124,8 @@ class BuyLogicItem(ft.Container):
             text_size=15,
             content_padding=10,
             border_color="#87afc1ff",
-            col={"sm": 4, "md": 4, "xl": 4}
+            col={"sm": 4, "md": 4, "xl": 4},
+            on_change=save_callback
         )
 
         self.content = ft.ResponsiveRow(
@@ -140,9 +156,10 @@ class BuyLogicItem(ft.Container):
 
 
 class BuyLogic(ft.Container):
-    def __init__(self, config: ConfigManager, current_tab: str):
+    def __init__(self, config: ConfigManager, current_tab: str, save_callback: Callable):
         super().__init__()
         self.config = config
+        self.save_callback = save_callback
         self.current_tab = current_tab
         self.padding = ft.padding.only(10, 0, 0, 0)
         self.max_items = 20
@@ -218,19 +235,24 @@ class BuyLogic(ft.Container):
         if current_count < self.max_items:
             new_item = BuyLogicItem(
                 index=current_count + 1,
-                on_remove=self.remove_item
+                on_remove=self.remove_item,
+                save_callback=self.save_callback
             )
             self.items_column.controls.append(new_item)
             self.update_ui()
+            self.save_callback()
             return new_item
         return None
 
     def remove_item(self, item_to_remove):
         self.items_column.controls.remove(item_to_remove)
         for i, item in enumerate(self.items_column.controls):
-            item.index = i + 1
-            item.content.controls[0].value = f"{i + 1}."
+            new_index = i + 1
+            item.index = new_index
+            item.content.controls[0].controls[1].value = f"{new_index}."
+        
         self.update_ui()
+        self.save_callback()
 
     def update_ui(self):
         count = len(self.items_column.controls)
@@ -241,10 +263,11 @@ class BuyLogic(ft.Container):
 
 
 class RightTab(ft.Container):
-    def __init__(self, config: ConfigManager, current_tab: str = "fast_buy"):
+    def __init__(self, config: ConfigManager, current_tab: str, save_callback: Callable):
         super().__init__()
         self.current_tab = current_tab
         self.config = config
+        self.save_callback = save_callback
         self.settings = self.config.get(current_tab)
         self.bgcolor = "#2D4F78"
         self.padding = 20
@@ -258,6 +281,7 @@ class RightTab(ft.Container):
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
             suffix_text="%",
+            on_change=save_callback
         )
 
         self.default_buy_amount = ft.TextField(
@@ -268,6 +292,7 @@ class RightTab(ft.Container):
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
             suffix_text="items",
+            on_change=save_callback
         )
 
         self.presets = ft.Container(
@@ -292,7 +317,7 @@ class RightTab(ft.Container):
             weight=ft.FontWeight.BOLD
         )
 
-        self.buy_logic = BuyLogic(config=config, current_tab=self.current_tab)
+        self.buy_logic = BuyLogic(config=config, current_tab=self.current_tab, save_callback=self.save_callback)
 
         self.content = ft.ResponsiveRow(
             controls=[
@@ -415,11 +440,12 @@ class UpperRow(ft.Container):
 
 
 class ContentMain(ft.Container):
-    def __init__(self, config: ConfigManager):
+    def __init__(self, config: ConfigManager, save_callback: Callable):
         super().__init__()
         self.config = config
-        self.general = GeneralSettings(config)
-        self.right_tab = RightTab(config, "fast_buy")
+        self.save_callback = save_callback
+        self.general = GeneralSettings(config, save_callback=save_callback)
+        self.right_tab = RightTab(config, "fast_buy", save_callback=save_callback)
 
         self.content = ft.ResponsiveRow(
             controls=[
@@ -437,8 +463,9 @@ class Settings(ft.Container):
         self.margin = 0
         self.padding = 0
         self.page = page
+        self.config = config
 
-        self.content_main = ContentMain(config=config)
+        self.content_main = ContentMain(config=config, save_callback=self.save_all)
         self.upper_row = UpperRow(right_tab=self.content_main.right_tab)
 
         self.content = ft.Column(
@@ -449,7 +476,28 @@ class Settings(ft.Container):
             spacing = 0,
         )
 
+    def save_all(self, e=None):
+        gen = self.content_main.general
+        self.config.set("general", {
+            "buy_mode": gen.buy_mode.value,
+            "game_language": gen.game_language.value,
+            "min_silver": gen.stop_silver_threshold.value
+        })
 
+        rt = self.content_main.right_tab
+        tab_data = {
+            "min_profit_rate": rt.minimal_profit_rate.value,
+            "default_buy_amount": rt.default_buy_amount.value,
+            "presets": {dd.data: dd.value for dd in rt.presets.content.controls},
+            "buy_logic": [
+                {
+                    "amount_to_buy": item.quantity_input.value,
+                    "price_larger_then": item.price_input.value
+                } for item in rt.buy_logic.items_column.controls
+            ]
+        }
+        self.config.set(rt.current_tab, tab_data)
+        
 def main(page: ft.Page):
     page.padding = 0
     config_manager = ConfigManager()
