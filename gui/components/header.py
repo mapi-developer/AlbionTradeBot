@@ -7,6 +7,7 @@ class Header(ft.Container):
     def __init__(self, page: ft.Page, on_nav_click: Callable, login: Login):
         super().__init__()
         self.page = page
+        self.margin = 0
 
         self.nav_rows = ft.Row(
             controls=[

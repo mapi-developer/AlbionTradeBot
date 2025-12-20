@@ -3,11 +3,11 @@ import threading
 
 from gui.components.header import Header
 from gui.components.presets import Presets
-from gui.components.settings import Settings
 from gui.components.dashboard import Dashboard
 from gui.components.login import Login
 from gui.components.subscription import SubscriptionTab
 from gui.components.overlay import BotOverlay
+from gui_updated.pages import Settings
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -37,7 +37,7 @@ class GuiApp:
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
         
         # Initialize views
-        self.settings = Settings(self.config, self.page)
+        self.settings = Settings(page=self.page, config=self.config)
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
         self.dashboard = ft.Container(
             content=Dashboard(self, self.config, self.page, self.bot, self.header),
@@ -104,7 +104,6 @@ class GuiApp:
         )
 
         if event.control.data == "settings":
-            self.settings.update_preset_dropdown()
             self.body.content = self.settings
         elif event.control.data == "presets":
             self.body.content = self.presets

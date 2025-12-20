@@ -5,8 +5,10 @@ class GuiStyle:
         WHITE = "#ffffff"
         LIGHT_GREEN = "#0d962b"
         GRAY_BLUE = "#1c2f4d"
+        LIGHT_GRAY_BLUE = "#87afc1ff"
         BLUE = "#1d4777"
         DARK_BLUE = "#0f1c31"
+        LIGHT_BLUE = "#2D4F78"
 
     class TextSize:
         SETTINGS_TITLE = 20

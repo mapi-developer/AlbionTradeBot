@@ -1,22 +1,42 @@
 {
     "general": {
         "buy_mode": "fast",
-        "game_language": "KO-KR",
-        "min_silver": "124125"
+        "game_language": "RU-RU",
+        "min_silver": "1000000"
     },
     "fast_buy": {
         "min_profit_rate": "35",
-        "default_buy_amount": "180",
+        "default_buy_amount": "25",
         "presets": {
             "caerleon": "Fast Buy Test.json",
-            "martlock": "",
-            "lymhurst": "Fort Sterling Main.json",
-            "fort_sterling": "Fort Sterling Main.json",
-            "bridgewatch": "",
-            "thetford": "Fort Sterling Main.json",
-            "brecilien": ""
+            "martlock": "Fast Buy Test.json",
+            "lymhurst": "Fast Buy Test.json",
+            "fort_sterling": "Fast Buy Test.json",
+            "bridgewatch": "Fast Buy Test.json",
+            "thetford": "Fast Buy Test.json",
+            "brecilien": "Fast Buy Test.json"
         },
         "buy_logic": [
+            {
+                "amount_to_buy": "20",
+                "price_larger_then": "1000"
+            },
+            {
+                "amount_to_buy": "5",
+                "price_larger_then": "10000"
+            },
+            {
+                "amount_to_buy": "",
+                "price_larger_then": ""
+            },
+            {
+                "amount_to_buy": "",
+                "price_larger_then": ""
+            },
+            {
+                "amount_to_buy": "",
+                "price_larger_then": ""
+            },
             {
                 "amount_to_buy": "",
                 "price_larger_then": ""
@@ -29,14 +49,14 @@
     },
     "order_buy": {
         "min_profit_rate": 80,
-        "default_buy_amount": 25,
+        "default_buy_amount": "5",
         "presets": {
-            "fort_sterling": "",
-            "lymhurst": "",
-            "bridgewatch": "",
-            "martlock": "",
-            "thetford": "",
             "caerleon": "Fort Sterling Main.json",
+            "martlock": "Fort Sterling Main.json",
+            "lymhurst": "Fort Sterling Main.json",
+            "fort_sterling": "Fort Sterling Main.json",
+            "bridgewatch": "Fort Sterling Main.json",
+            "thetford": "Fort Sterling Main.json",
             "brecilien": "Fort Sterling Main.json"
         },
         "buy_logic": []

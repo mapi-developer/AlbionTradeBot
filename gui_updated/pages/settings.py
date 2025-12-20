@@ -80,6 +80,7 @@ class GeneralSettings(ft.Container):
             color=ft.Colors.WHITE,
             label_style=ft.TextStyle(color=ft.Colors.WHITE),
             fill_color=GuiStyle.Colors.DARK_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             on_change=save_callback
         )
 
@@ -112,7 +113,7 @@ class BuyLogicItem(ft.Container):
             dense=True,
             text_size=15,
             content_padding=10,
-            border_color="#87afc1ff",
+            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             col={"sm": 2, "md": 2, "xl": 2},
             on_change=save_callback
         )
@@ -123,7 +124,7 @@ class BuyLogicItem(ft.Container):
             dense=True,
             text_size=15,
             content_padding=10,
-            border_color="#87afc1ff",
+            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             col={"sm": 4, "md": 4, "xl": 4},
             on_change=save_callback
         )
@@ -230,7 +231,7 @@ class BuyLogic(ft.Container):
         
         self.update_ui()
 
-    def add_item(self, e) -> ft.TextField:
+    def add_item(self, e) -> BuyLogicItem:
         current_count = len(self.items_column.controls)
         if current_count < self.max_items:
             new_item = BuyLogicItem(
@@ -269,7 +270,7 @@ class RightTab(ft.Container):
         self.config = config
         self.save_callback = save_callback
         self.settings = self.config.get(current_tab)
-        self.bgcolor = "#2D4F78"
+        self.bgcolor = GuiStyle.Colors.LIGHT_BLUE
         self.padding = 20
         self.col={"sm": 12, "md": 8, "xl": 8}
 
@@ -280,7 +281,9 @@ class RightTab(ft.Container):
             fill_color=GuiStyle.Colors.DARK_BLUE,
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
+            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             suffix_text="%",
+            
             on_change=save_callback
         )
 
@@ -291,6 +294,7 @@ class RightTab(ft.Container):
             fill_color=GuiStyle.Colors.DARK_BLUE,
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
+            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             suffix_text="items",
             on_change=save_callback
         )
@@ -348,6 +352,7 @@ class RightTab(ft.Container):
             tooltip=f"Choose Preset for {CITIES[city]}",
             options = [ft.DropdownOption(key=language, text=language) for language in self.config.get_presets_list()],
             filter = True,
+            save_callback=self.save_callback
         )
         return dropdown
 
@@ -443,9 +448,9 @@ class ContentMain(ft.Container):
     def __init__(self, config: ConfigManager, save_callback: Callable):
         super().__init__()
         self.config = config
-        self.save_callback = save_callback
         self.general = GeneralSettings(config, save_callback=save_callback)
         self.right_tab = RightTab(config, "fast_buy", save_callback=save_callback)
+        self.save_callback = save_callback
 
         self.content = ft.ResponsiveRow(
             controls=[
@@ -465,6 +470,7 @@ class Settings(ft.Container):
         self.page = page
         self.config = config
 
+        self.content_main = None
         self.content_main = ContentMain(config=config, save_callback=self.save_all)
         self.upper_row = UpperRow(right_tab=self.content_main.right_tab)
 
@@ -477,6 +483,8 @@ class Settings(ft.Container):
         )
 
     def save_all(self, e=None):
+        if not self.content_main:
+            return
         gen = self.content_main.general
         self.config.set("general", {
             "buy_mode": gen.buy_mode.value,
