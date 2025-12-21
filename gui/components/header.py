@@ -37,6 +37,18 @@ class Header(ft.Container):
                     ),
                 ),
                 ft.FilledTonalButton(
+                    "Shop",
+                    icon=ft.Icons.SHOP,
+                    on_click=on_nav_click,
+                    data="shop",
+                    style=ft.ButtonStyle(
+                        text_style=ft.TextStyle(color="#FFFFFF"),
+                        color=ft.Colors.GREY_400,
+                        bgcolor="#0C2E5D",
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                    ),
+                ),
+                ft.FilledTonalButton(
                     "Settings",
                     icon=ft.Icons.SETTINGS,
                     on_click=on_nav_click,

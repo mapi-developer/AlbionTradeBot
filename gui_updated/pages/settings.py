@@ -420,13 +420,13 @@ class UpperRow(ft.Container):
                     controls=[
                         general_title_row
                     ],
-                    col={"sm": 12, "md": 4, "xl": 4},
+                    col={"sm": 4, "md": 4, "xl": 4},
                 ),
                 ft.Column(
                     controls= [
                         self.tabs_row,
                     ],
-                    col={"sm": 12, "md": 4, "xl": 4},
+                    col={"sm": 4, "md": 4, "xl": 4},
                 ),
             ],
             alignment=ft.MainAxisAlignment.START,
@@ -508,6 +508,7 @@ class Settings(ft.Container):
         
 def main(page: ft.Page):
     page.padding = 0
+    page.scroll = ft.ScrollMode.AUTO
     config_manager = ConfigManager()
     app_settings = Settings(page=page, config=config_manager)
     page.add(app_settings)

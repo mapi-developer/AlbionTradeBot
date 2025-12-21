@@ -1,3 +1,4 @@
-from .settings import Settings, UpperRow
+from .settings import Settings
+from .shop import Shop
 
-__all__ = ["Settings", "UpperRow"]
+__all__ = ["Settings", "Shop"]

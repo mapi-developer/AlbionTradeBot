@@ -8,6 +8,7 @@ from gui.components.login import Login
 from gui.components.subscription import SubscriptionTab
 from gui.components.overlay import BotOverlay
 from gui_updated.pages import Settings
+from gui_updated.pages import Shop
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -43,6 +44,8 @@ class GuiApp:
             content=Dashboard(self, self.config, self.page, self.bot, self.header),
             expand=True,
         )
+
+        self.shop = Shop()
         
         # Pass the Header's subscription widget to the Tab so it can update status after purchase
         self.subscription_tab = SubscriptionTab(
@@ -109,6 +112,8 @@ class GuiApp:
             self.body.content = self.presets
         elif event.control.data == "dashboard":
             self.body.content = self.dashboard
+        elif event.control.data == "shop":
+            self.body.content = self.shop
         else:
             self.body.content = ft.Container(
                 content=ft.Column(
@@ -135,6 +140,7 @@ class GuiApp:
 
 def main(page: ft.Page):
     app = GuiApp(page=page)
+    page.scroll = ft.ScrollMode.AUTO
     page.window.prevent_close = True
 
     def on_window_event(e):

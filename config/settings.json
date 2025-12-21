@@ -1,7 +1,7 @@
 {
     "general": {
         "buy_mode": "fast",
-        "game_language": "RU-RU",
+        "game_language": "AR-SA",
         "min_silver": "1000000"
     },
     "fast_buy": {
@@ -17,22 +17,6 @@
             "brecilien": "Fast Buy Test.json"
         },
         "buy_logic": [
-            {
-                "amount_to_buy": "20",
-                "price_larger_then": "1000"
-            },
-            {
-                "amount_to_buy": "5",
-                "price_larger_then": "10000"
-            },
-            {
-                "amount_to_buy": "",
-                "price_larger_then": ""
-            },
-            {
-                "amount_to_buy": "",
-                "price_larger_then": ""
-            },
             {
                 "amount_to_buy": "",
                 "price_larger_then": ""
