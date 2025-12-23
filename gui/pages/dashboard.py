@@ -1025,9 +1025,6 @@ class Dashboard(ft.Container):
         )
         self.update()
 
-    def update_overview(self):
-        return
-
 
 def main(page: ft.Page):
     page.padding = 0

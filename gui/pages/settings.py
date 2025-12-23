@@ -462,10 +462,6 @@ class ContentMain(ft.Container):
             run_spacing=20,
         )
 
-    def update_presets(self):
-        if self.right_tab:
-            self.right_tab.update_data()
-
 
 class Settings(ft.Container):
     def __init__(self, page: ft.Page, config: ConfigManager):
@@ -487,10 +483,6 @@ class Settings(ft.Container):
             spacing = 0,
         )
 
-    def update_settings(self):
-        return
-        if self.content_main:
-            self.content_main.update_presets()
 
     def save_all(self, e=None):
         if not self.content_main:
