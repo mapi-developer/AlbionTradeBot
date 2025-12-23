@@ -1,7 +1,7 @@
 {
     "general": {
-        "buy_mode": "fast",
-        "game_language": "AR-SA",
+        "buy_mode": "order",
+        "game_language": "EN-US",
         "min_silver": "1000000"
     },
     "fast_buy": {

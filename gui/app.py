@@ -3,12 +3,13 @@ import threading
 
 from gui.components.header import Header
 from gui.components.presets import Presets
-from gui.components.dashboard import Dashboard
+#from gui.components.dashboard import Dashboard
 from gui.components.login import Login
 from gui.components.subscription import SubscriptionTab
 from gui.components.overlay import BotOverlay
 from gui_updated.pages import Settings
 from gui_updated.pages import Shop
+from gui_updated.pages import Dashboard
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface
@@ -40,10 +41,11 @@ class GuiApp:
         # Initialize views
         self.settings = Settings(page=self.page, config=self.config)
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
-        self.dashboard = ft.Container(
-            content=Dashboard(self, self.config, self.page, self.bot, self.header),
-            expand=True,
-        )
+        # self.dashboard = ft.Container(
+        #     content=Dashboard(self, self.config, self.page, self.bot, self.header),
+        #     expand=True,
+        # )
+        self.dashboard = Dashboard()
 
         self.shop = Shop()
         
@@ -140,7 +142,6 @@ class GuiApp:
 
 def main(page: ft.Page):
     app = GuiApp(page=page)
-    page.scroll = ft.ScrollMode.AUTO
     page.window.prevent_close = True
 
     def on_window_event(e):
