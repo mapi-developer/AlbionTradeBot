@@ -1025,7 +1025,8 @@ class Dashboard(ft.Container):
         )
         self.update()
 
-        # ADD HERE LOGIC TO UPDATE DATA
+    def update_overview(self):
+        return
 
 
 def main(page: ft.Page):

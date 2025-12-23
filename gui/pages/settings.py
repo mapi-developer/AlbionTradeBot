@@ -365,7 +365,8 @@ class RightTab(ft.Container):
         self.presets.content.controls = [self.create_preset_dropdown(city) for city in CITIES.keys()]
         self.buy_logic.load_items(current_tab=self.current_tab)
 
-        self.update()
+        if self.page:
+            self.update()
 
 
 class UpperRow(ft.Container):
@@ -461,6 +462,10 @@ class ContentMain(ft.Container):
             run_spacing=20,
         )
 
+    def update_presets(self):
+        if self.right_tab:
+            self.right_tab.update_data()
+
 
 class Settings(ft.Container):
     def __init__(self, page: ft.Page, config: ConfigManager):
@@ -483,7 +488,9 @@ class Settings(ft.Container):
         )
 
     def update_settings(self):
-        pass
+        return
+        if self.content_main:
+            self.content_main.update_presets()
 
     def save_all(self, e=None):
         if not self.content_main:

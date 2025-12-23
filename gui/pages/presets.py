@@ -468,7 +468,6 @@ class Presets(ft.Column):
                 data=cat,
                 label_padding=ft.padding.symmetric(horizontal=4),
                 bgcolor=THEME_INNER_BG,
-                # 🛠️ FIX: Use 'border' here too
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
                 selected_color="#1B223D",
             )
@@ -613,7 +612,7 @@ class Presets(ft.Column):
                 json.dump(list(self.preset_set), f, indent=4)
 
             self.update_preset_dropdown()
-            self.settings.update_settings()
+            #self.settings.update_settings()
 
             show_popup(self.page, f"Preset '{name}.json' saved successfully!")
         except Exception as ex:

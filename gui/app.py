@@ -69,7 +69,7 @@ class GuiApp:
         self.page.controls.clear()
         self.page.add(self.main_column)
         self.page.update()
-        self.dashboard.content.update_overview()
+        self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
             if not self.bot:
