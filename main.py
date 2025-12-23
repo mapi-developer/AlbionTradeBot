@@ -1,4 +1,5 @@
 import flet as ft
+import multiprocessing
 from gui.app import main as gui_main
 import traceback
 
@@ -12,4 +13,5 @@ def main():
             f.write(traceback.format_exc())
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()

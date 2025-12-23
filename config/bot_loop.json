@@ -3,17 +3,11 @@
         "type": "travel_to",
         "data": {
             "destination": "market",
-            "market_city": "brecilien",
+            "market_city": "black_market",
             "island_name": ""
         }
     },
     {
         "type": "price_check"
-    },
-    {
-        "type": "buy_items"
-    },
-    {
-        "type": "remove_orders"
     }
 ]

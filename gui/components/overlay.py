@@ -31,7 +31,6 @@ def run_flet_overlay(status_queue):
                 if not status_queue.empty():
                     data = status_queue.get_nowait()
                     
-                    # 1. Graceful Shutdown Signal
                     if data == "STOP":
                         page.window.destroy()
                         return
@@ -46,7 +45,8 @@ def run_flet_overlay(status_queue):
                 break
             time.sleep(0.3)
 
-    ft.app(target=overlay_main)
+    # Use port=0 to allow the OS to pick any available port, avoiding conflicts
+    ft.app(target=overlay_main, port=0, host="127.0.0.1", view=ft.AppView.FLET_APP) 
 
 class BotOverlay:
     def __init__(self):
@@ -56,24 +56,20 @@ class BotOverlay:
     def start(self):
         if self.process and self.process.is_alive():
             return
+        # Ensure the process is created safely
         self.process = multiprocessing.Process(target=run_flet_overlay, args=(self.status_queue,), daemon=True)
         self.process.start()
 
     def stop(self):
-        """Forces the overlay to close and clears any pending updates."""
         if self.process and self.process.is_alive():
             try:
-                # 1. Clear the queue so the process doesn't try to process old data
+                # Clear queue and send stop signal
                 while not self.status_queue.empty():
                     self.status_queue.get_nowait()
                 
-                # 2. Send the poison pill
                 self.status_queue.put("STOP")
+                self.process.join(timeout=1.0) # Increase timeout slightly
                 
-                # 3. Give it a tiny moment to self-destruct
-                self.process.join(timeout=0.2)
-                
-                # 4. If it's still stubborn, kill it
                 if self.process.is_alive():
                     self.process.terminate()
             except Exception as e:
