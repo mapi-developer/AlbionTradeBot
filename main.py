@@ -1,10 +1,9 @@
 import flet as ft
-import multiprocessing
 from gui.app import main as gui_main
 import traceback
 
 def main():
-    try:
+    try:    
         ft.app(target=gui_main)
     except Exception:
         # Log unexpected crashes to a file next to the exe
@@ -13,5 +12,6 @@ def main():
             f.write(traceback.format_exc())
 
 if __name__ == "__main__":
+    import multiprocessing
     multiprocessing.freeze_support()
     main()

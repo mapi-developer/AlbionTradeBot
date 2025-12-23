@@ -405,11 +405,6 @@ class Dashboard(ft.Column):
         self.run_btn.disabled = True
         # Change color to Dark Green when running (disabled state)
         self.run_btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN_900, color=ft.Colors.WHITE70)
-
-        if not self.app.overlay:
-            self.app.overlay = BotOverlay()
-        
-        self.app.overlay.start()
         
         self.stop_btn.disabled = False
         self.available_commands_view.disabled = True

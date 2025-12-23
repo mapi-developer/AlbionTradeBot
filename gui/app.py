@@ -16,6 +16,8 @@ from bot import TradeBot
 
 
 class GuiApp:
+    overlay:BotOverlay
+
     def __init__(self, page: ft.Page):
         self.main_column = None
         self.page = page

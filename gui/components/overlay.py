@@ -1,8 +1,13 @@
 import flet as ft
 import multiprocessing
 import time
+import os
 
 def run_flet_overlay(status_queue):
+    os.environ.pop("FLET_SERVER_PORT", None)
+    os.environ.pop("FLET_SERVER_IP", None)
+    os.environ.pop("FLET_DISPLAY_URL", None)
+
     def overlay_main(page: ft.Page):
         page.window.title_bar_hidden = True
         page.window.frameless = True
@@ -46,7 +51,7 @@ def run_flet_overlay(status_queue):
             time.sleep(0.3)
 
     # Use port=0 to allow the OS to pick any available port, avoiding conflicts
-    ft.app(target=overlay_main, port=0, host="127.0.0.1", view=ft.AppView.FLET_APP) 
+    ft.app(target=overlay_main, port=0, host="127.0.0.1", view=ft.AppView.FLET_APP)
 
 class BotOverlay:
     def __init__(self):

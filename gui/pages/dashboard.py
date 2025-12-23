@@ -3,7 +3,7 @@ import threading
 import time
 import keyboard
 from database.interface import DatabaseInterface
-from gui.components.overlay import BotOverlay
+from components import BotOverlay
 from bot import TradeBot
 
 
@@ -1043,7 +1043,7 @@ class Dashboard(ft.Container):
         self.bot = bot
         self.header = header
 
-        self.overlay = None
+        self.app.overlay = None
         self.is_running_sequence = False
         self.loop_sequence = False
         self.bot_sequence = self.config.load_bot_loop() if self.config else []
@@ -1100,8 +1100,8 @@ class Dashboard(ft.Container):
         if self.bot:
             try:
                 paused = self.bot.toggle_pause()
-                if self.overlay:
-                    self.overlay.send_update(
+                if self.app.overlay:
+                    self.app.overlay.send_update(
                         status="Paused" if paused else "Running", 
                         task=self.bot.current_task_name, 
                         paused=paused
@@ -1119,8 +1119,9 @@ class Dashboard(ft.Container):
         self.set_ui_lock(True)
         self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
 
-        self.overlay = BotOverlay()
-        self.overlay.start()
+        if self.app.overlay == None:
+            self.app.overlay = BotOverlay()
+        self.app.overlay.start()
 
         threading.Thread(target=self.sequence_worker, daemon=True).start()
 
@@ -1129,9 +1130,8 @@ class Dashboard(ft.Container):
         self.set_ui_lock(False)
         self.seq_panel.update_status("Stopped", ft.Colors.RED_400)
 
-        if self.overlay:
-            self.overlay.stop()
-            self.overlay = None
+        if self.app.overlay:
+            self.app.overlay.stop()
 
         self.bot = TradeBot(db=DatabaseInterface())
         if self.app: self.app.bot = self.bot
@@ -1151,8 +1151,8 @@ class Dashboard(ft.Container):
                     if not task_type or task_type not in COMMAND_TYPES:
                         continue
                     task_info = COMMAND_TYPES[task_type]
-                    if self.overlay:
-                        self.overlay.send_update(
+                    if self.app.overlay:
+                        self.app.overlay.send_update(
                             status="Running", 
                             task=task_info['label'], 
                             paused=False
