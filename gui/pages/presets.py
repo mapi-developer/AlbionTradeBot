@@ -612,7 +612,7 @@ class Presets(ft.Column):
                 json.dump(list(self.preset_set), f, indent=4)
 
             self.update_preset_dropdown()
-            #self.settings.update_settings()
+            self.settings.update_settings()
 
             show_popup(self.page, f"Preset '{name}.json' saved successfully!")
         except Exception as ex:

@@ -1,53 +1,65 @@
-from sqlalchemy import Column, Integer, String, BigInteger, DateTime, JSON
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import BigInteger, String, DateTime, Integer, JSON, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from typing import Optional
 from datetime import datetime
 
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
+
+
+class ItemData(Base):
+    __tablename__ = "Item"
+
+    unique_name: Mapped[str] = mapped_column(String, primary_key=True, index=True)
+    
+    price_black_market: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_caerleon: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_lymhurst: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_bridgewatch: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_fort_sterling: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_thetford: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_martlock: Mapped[Optional[int]] = mapped_column(BigInteger)
+
+    black_market_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    caerleon_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    lymhurst_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    bridgewatch_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    fort_sterling_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    thetford_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    martlock_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), 
+        server_default=func.now(), 
+        onupdate=func.now()
+    )
+
 
 class MarketOrder(Base):
     __tablename__ = 'market_orders'
-    id = Column(BigInteger, primary_key=True)
-    item_db_name = Column(String, index=True) 
-    auction_type = Column(String)
-    location_id = Column(Integer, index=True)
-    quality = Column(Integer)
-    enchantment = Column(Integer)
-    price = Column(BigInteger)
-    amount = Column(Integer)
-    expires = Column(String)
-    ingested_at = Column(DateTime, default=datetime.utcnow)
-    raw_data = Column(JSON)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    item_db_name: Mapped[str] = mapped_column(String, index=True) 
+    auction_type: Mapped[Optional[str]] = mapped_column(String)
+    location_id: Mapped[int] = mapped_column(Integer, index=True)
+    quality: Mapped[int] = mapped_column(Integer)
+    enchantment: Mapped[int] = mapped_column(Integer)
+    price: Mapped[int] = mapped_column(BigInteger)
+    amount: Mapped[int] = mapped_column(Integer)
+    expires: Mapped[Optional[str]] = mapped_column(String)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    raw_data: Mapped[Optional[dict]] = mapped_column(JSON)
 
 class MarketHistory(Base):
     __tablename__ = 'market_history'
     
-    # Composite Primary Key
-    item_db_name = Column(String, primary_key=True)
-    quality = Column(Integer, primary_key=True)
-    location_id = Column(Integer, primary_key=True)
-    timestamp = Column(BigInteger, primary_key=True) 
-    aggregation_type = Column(Integer, primary_key=True) 
+    item_db_name: Mapped[str] = mapped_column(String, primary_key=True)
+    quality: Mapped[int] = mapped_column(Integer, primary_key=True)
+    location_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    timestamp: Mapped[int] = mapped_column(BigInteger, primary_key=True) 
+    aggregation_type: Mapped[int] = mapped_column(Integer, primary_key=True) 
     
-    item_amount = Column(BigInteger)
-    silver_amount = Column(BigInteger)
-    ingested_at = Column(DateTime, default=datetime.utcnow)
-
-class ItemData(Base):
-    __tablename__ = 'items_data'
-
-    unique_name = Column(String, primary_key=True)
-    price_black_market = Column(BigInteger, default=0)
-    price_caerleon = Column(BigInteger, default=0)
-    price_lymhurst = Column(BigInteger, default=0)
-    price_bridgewatch = Column(BigInteger, default=0)
-    price_fort_sterling = Column(BigInteger, default=0)
-    price_thetford = Column(BigInteger, default=0)
-    price_martlock = Column(BigInteger, default=0)
-    black_market_updated_at = Column(DateTime, default=datetime.utcnow)
-    caerleon_updated_at = Column(DateTime, default=datetime.utcnow)
-    lymhurst_updated_at = Column(DateTime, default=datetime.utcnow)
-    bridgewatch_updated_at = Column(DateTime, default=datetime.utcnow)
-    fort_sterling_updated_at = Column(DateTime, default=datetime.utcnow)
-    thetford_updated_at = Column(DateTime, default=datetime.utcnow)
-    martlock_updated_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    item_amount: Mapped[int] = mapped_column(BigInteger)
+    silver_amount: Mapped[int] = mapped_column(BigInteger)
+    ingested_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

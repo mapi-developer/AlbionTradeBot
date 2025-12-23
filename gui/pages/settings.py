@@ -368,6 +368,9 @@ class RightTab(ft.Container):
         if self.page:
             self.update()
 
+    def update_on_new_preset(self):
+        self.update_data(self.current_tab)
+
 
 class UpperRow(ft.Container):
     def __init__(self, right_tab: RightTab):
@@ -507,6 +510,9 @@ class Settings(ft.Container):
             ]
         }
         self.config.set(rt.current_tab, tab_data)
+
+    def update_settings(self):
+        self.content_main.right_tab.update_on_new_preset()
         
 def main(page: ft.Page):
     page.padding = 0
