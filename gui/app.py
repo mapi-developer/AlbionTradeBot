@@ -1,15 +1,14 @@
 import flet as ft
 import threading
 
-from gui.components.header import Header
-from gui.components.presets import Presets
-#from gui.components.dashboard import Dashboard
-from gui.components.login import Login
-from gui.components.subscription import SubscriptionTab
-from gui.components.overlay import BotOverlay
-from gui_updated.pages import Settings
-from gui_updated.pages import Shop
-from gui_updated.pages import Dashboard
+from gui.components import Header
+from gui.pages import Presets
+from gui.pages import Login
+from gui.components import SubscriptionTab
+from gui.components import BotOverlay
+from gui.pages import Dashboard
+from gui.pages import Settings
+from gui.pages import Shop
 
 from managers.config import ConfigManager
 from database.interface import DatabaseInterface

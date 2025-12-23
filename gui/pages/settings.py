@@ -482,6 +482,9 @@ class Settings(ft.Container):
             spacing = 0,
         )
 
+    def update_settings(self):
+        pass
+
     def save_all(self, e=None):
         if not self.content_main:
             return

@@ -2,7 +2,11 @@ import flet as ft
 import re, os, json
 from managers.config import ConfigManager, PRESETS_DIR, BOT_ITEMS_FILE
 from .settings import Settings
-from .popup import show_popup
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from components.popup import show_popup
 
 THEME_PANEL_BG = "#294D7C"  # Main container color
 THEME_INNER_BG = "#203064"  # Inner cards/inputs color

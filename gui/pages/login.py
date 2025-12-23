@@ -10,8 +10,8 @@ from typing import Optional
 API_URL = "https://crypto-backend-736893217724.europe-west3.run.app"
 GOOGLE_CLIENT_ID = "736893217724-2q2tqloh51meq7c6oklt7apk9jqfm5vt.apps.googleusercontent.com"
 DISCORD_CLIENT_ID = "1447721013260456058"
-LOCAL_AUTH_PORT = 5000 
-LOCAL_REDIRECT_URI = f"http://127.0.0.1:{LOCAL_AUTH_PORT}/oauth/callback" 
+LOCAL_AUTH_PORT = 5000
+LOCAL_REDIRECT_URI = f"http://127.0.0.1:{LOCAL_AUTH_PORT}/oauth/callback"
 
 class State:
     token: Optional[str] = None

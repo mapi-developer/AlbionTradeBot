@@ -1,9 +1,15 @@
 import flet as ft
 import requests
-from .login import Login
 from datetime import datetime, timezone
 import threading
 import webbrowser
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from pages.login import Login
+
 
 API_URL = "https://crypto-backend-736893217724.europe-west3.run.app"
 

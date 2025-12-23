@@ -1,6 +1,4 @@
 import flet as ft
-import asyncio
-import uuid
 
 
 COMMAND_TYPES = {
@@ -805,7 +803,7 @@ class BotSequencePanel(RightPanel):
 
 
 class ActivityLogItem(ft.Container):
-    def __init__(self, title: str):
+    def __init__(self, title: str, on_click=None):
         super().__init__()
         self.title = ft.Text(
             value=title,
@@ -817,15 +815,14 @@ class ActivityLogItem(ft.Container):
 
         self.content = ft.ElevatedButton(
             content=ft.ResponsiveRow(
-                controls=[
-                    self.title
-                ]
+                controls=[self.title]
             ),
             style=ft.ButtonStyle(
                 padding=ft.padding.only(20, 20, 20, 20),
                 bgcolor="#415E7A",
                 shape=ft.RoundedRectangleBorder(radius=8),
             ),
+            on_click=on_click # Added on_click handler
         )
 
 
@@ -891,85 +888,112 @@ class LogsView(ft.Container):
 
 class ActivityLogsPanel(RightPanel):
     def __init__(self):
-        super().__init__(scroll_mode=None)
-        self.title = ft.Container(
-            content=ft.ResponsiveRow(
-                controls=[
-                    ft.Text(
-                        value="Bot Activity Logs",
-                        size=30,
-                        weight=ft.FontWeight.BOLD,
-                        col={"sm": 12, "md": 12, "xl": 12},
-                    )
-                ],
+        super().__init__()
+        self.expand = True
+
+        self.back_button = ft.IconButton(
+            icon=ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
+            icon_size=20,
+            on_click=lambda _: self.show_logs_list(),
+            visible=False,
+            icon_color="#ffffff"
+        )
+        self.title_text = ft.Text(
+            value="Bot Activity Logs",
+            size=30,
+            weight=ft.FontWeight.BOLD,
+        )
+        self.title_container = ft.Container(
+            content=ft.Row(
+                controls=[self.back_button, self.title_text],
+                spacing=10,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER
             ),
             padding=ft.padding.only(0, 0, 0, 10),
         )
 
-        self.logs_list = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ActivityLogItem(title="23.12.2025 | 12:17 UTC | Last Activity Log"),
-                    ActivityLogItem(title="22.12.2025 | 10:17 UTC"),
-                ]
-            ),
-            padding=ft.padding.only(0, 10, 0, 0)
+        self.logs_list_content = ft.Column(
+            controls=[
+                ActivityLogItem("23.12.2025 | 14:42 UTC | Current Session", on_click=self.handle_log_click),
+                ActivityLogItem("23.12.2025 | 12:17 UTC", on_click=self.handle_log_click),
+                ActivityLogItem("22.12.2025 | 10:17 UTC", on_click=self.handle_log_click),
+            ],
+            spacing=10
         )
 
-        raw_data = [
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            "system;Bot Initialized",
-            "system;Database connected",
-            "system;Items loaded (1972)",
-            "activity;Started to make orders",
-            "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-            "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-            "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-        ]
-
-        self.logs_view = LogsView(initial_logs=raw_data)
-
-        super().__init__(
-            content_controls=[
-                self.title,
-                ft.Divider(),
-                self.logs_view
+        # 3. Content for Details State
+        # In a real app, you would pass the actual data from the JSON file here
+        self.logs_view = LogsView(
+            initial_logs=[
+                "system;Bot Initialized",
+                "system;Database connected",
+                "system;Items loaded (1972)",
+                "activity;Started to make orders",
+                "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
+                "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
+                "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
             ]
         )
+        self.logs_view.visible = False
+        self.logs_view.margin = ft.margin.only(0, 10, 0, 20)
+
+        self.inner_column = self.controls[0].content 
+        
+        self._setup_initial_view()
+
+    def _setup_initial_view(self):
+        self.scroll = ft.ScrollMode.AUTO
+        self.back_button.visible = False
+        self.title_text.value = "Bot Activity Logs"
+        self.logs_list_content.visible = True
+        self.logs_view.visible = False
+        self.logs_view.expand = False
+
+        self.inner_column.controls = [
+            self.title_container,
+            ft.Divider(),
+            self.logs_list_content
+        ]
+
+    def handle_log_click(self, e):
+        self.show_log_details()
+
+    def show_logs_list(self):
+        self.scroll = ft.ScrollMode.AUTO
+        self.back_button.visible = False
+        self.title_text.value = "Bot Activity Logs"
+        
+        self.logs_list_content.visible = True
+        self.logs_view.visible = False
+        self.logs_view.expand = False
+
+        self.inner_column.controls = [
+            self.title_container,
+            ft.Divider(),
+            self.logs_list_content
+        ]
+        self.update()
+
+    def show_log_details(self):
+        self.scroll = None
+        self.back_button.visible = True
+        self.title_text.value = "Session Details"
+
+        self.logs_list_content.visible = False
+        self.logs_view.visible = True
+        self.logs_view.expand = True
+
+        self.controls[0].expand = True
+        self.inner_column.expand = True
+
+        self.inner_column.controls = [
+            self.title_container,
+            ft.Divider(),
+            self.logs_view
+        ]
+
+        if self.page:
+            self.update()
 
 
 class Dashboard(ft.Container):
