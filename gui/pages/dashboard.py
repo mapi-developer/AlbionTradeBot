@@ -406,10 +406,11 @@ class FunctionsAvaliablePanel(ft.Container):
 
 
 class TravelToAdditionalInfo(ft.Container):
-    def __init__(self, initial_data=None):
+    def __init__(self, initial_data=None, on_change_callback=None):
         super().__init__()
         self.col={"sm": 7, "md": 7, "xl": 7}
-
+        self.on_change_callback = on_change_callback
+        
         dest_val = initial_data.get("destination", "market") if initial_data else "market"
         market_val = initial_data.get("market_city", "black_market") if initial_data else "black_market"
         island_val = initial_data.get("island_name", "") if initial_data else ""
@@ -419,9 +420,6 @@ class TravelToAdditionalInfo(ft.Container):
                 expand=True,
                 value=dest_val,
                 label="Destination",
-                label_style=ft.TextStyle(
-                    size=14
-                ),
                 options=[
                     ft.DropdownOption(key="market", text="Market"),
                     ft.DropdownOption(key="island", text="Island")
@@ -436,9 +434,6 @@ class TravelToAdditionalInfo(ft.Container):
                 expand=True,
                 value=market_val,
                 label="Market City",
-                label_style=ft.TextStyle(
-                    size=14
-                ),
                 options=[
                     ft.DropdownOption(key="black_market", text="Black Market"),
                     ft.DropdownOption(key="fort_sterling", text="Fort Sterling"),
@@ -449,6 +444,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="caerleon", text="Caerleon"),
                     ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
+                on_change=lambda _: self.trigger_save()
             ),
             col={"sm": 7, "md": 7, "xl": 7},
             visible=(dest_val == "market")
@@ -459,9 +455,7 @@ class TravelToAdditionalInfo(ft.Container):
                 expand=True,
                 value=island_val,
                 label="Island Name",
-                label_style=ft.TextStyle(
-                    size=14
-                ),
+                on_change=lambda _: self.trigger_save()
             ),
             col={"sm": 7, "md": 7, "xl": 7},
             visible=(dest_val == "island")
@@ -471,12 +465,16 @@ class TravelToAdditionalInfo(ft.Container):
             controls=[self.destination_type, self.market_name, self.island_name]
         )
 
+    def trigger_save(self):
+        if self.on_change_callback:
+            self.on_change_callback()
+
     def on_destination_type_change(self, event):
         is_market = self.destination_type.content.value == "market"
         self.market_name.visible = is_market
         self.island_name.visible = not is_market
-        if self.page:
-            self.update()
+        self.update()
+        self.trigger_save()
 
     def get_data(self):
         return {
@@ -487,9 +485,10 @@ class TravelToAdditionalInfo(ft.Container):
 
 
 class WaitTimeAdditionalInfo(ft.Container):
-    def __init__(self, initial_data=None):
+    def __init__(self, initial_data=None, on_change_callback=None):
         super().__init__()
         self.col={"sm": 7, "md": 7, "xl": 7}
+        self.on_change_callback = on_change_callback
         val = initial_data.get("minutes", "5") if initial_data else "5"
 
         self.wait_time_amount = ft.Container(
@@ -497,17 +496,22 @@ class WaitTimeAdditionalInfo(ft.Container):
                 expand=True,
                 value=val,
                 label="Minutes",
+                on_change=lambda _: self.trigger_save()
             ),
             col={"sm": 7, "md": 7, "xl": 7},
         )
         self.content = ft.ResponsiveRow(controls=[self.wait_time_amount])
+
+    def trigger_save(self):
+        if self.on_change_callback:
+            self.on_change_callback()
 
     def get_data(self):
         return {"minutes": self.wait_time_amount.content.value}
 
 
 class FunctionToExecute(ft.Container):
-    def __init__(self, function_type: str, can_be_removed: bool = False, initial_data=None):
+    def __init__(self, function_type: str, can_be_removed: bool = False, initial_data=None, on_change_callback=None):
         super().__init__()
         self.function_type = function_type
         self.index = ft.Container(content=ft.Text("0"), col={"sm": .6}, alignment=ft.alignment.center)
@@ -526,9 +530,9 @@ class FunctionToExecute(ft.Container):
 
         self.additional_info = ft.Container(col=0)
         if function_type == "travel_to":
-            self.additional_info = TravelToAdditionalInfo(initial_data)
+            self.additional_info = TravelToAdditionalInfo(initial_data, on_change_callback)
         elif function_type == "wait_time":
-            self.additional_info = WaitTimeAdditionalInfo(initial_data)
+            self.additional_info = WaitTimeAdditionalInfo(initial_data, on_change_callback)
 
         self.padding = 10
         self.bgcolor = "#2D3A55"
@@ -556,41 +560,58 @@ class ExecutionFunctionsList(ft.Container):
         super().__init__()
         self.dashboard = dashboard
         self.height = 400
-        initial_move_to = FunctionToExecute("travel_to")
+        initial_move_to = FunctionToExecute("travel_to", can_be_removed=False)
         
         self.content = ft.Column(
-            controls=[
-                initial_move_to
-            ],
+            controls=[initial_move_to],
             scroll=ft.ScrollMode.AUTO,
         )
+        self.update_indexes()
 
     def load_sequence(self, sequence_data):
         self.content.controls.clear()
         for i, item in enumerate(sequence_data):
             func_type = item.get("type", "price_check")
-            new_func = FunctionToExecute(func_type, can_be_removed=False if i == 0 else True, initial_data=item.get("data"))
-            new_func.remove_button.on_click = lambda _: self.remove_function(int(new_func.index.content.value))
+            new_func = FunctionToExecute(
+                func_type, 
+                can_be_removed=False if i == 0 else True, 
+                initial_data=item.get("data"),
+                on_change_callback=self.dashboard.save_sequence
+            )
             self.content.controls.append(new_func)
+        
         self.update_indexes()
 
     def add_function(self, event):
-        new_function = FunctionToExecute(event.control.data, can_be_removed=True)
-        new_function.remove_button.on_click = lambda _: self.remove_function(int(new_function.index.content.value))
+        new_function = FunctionToExecute(
+            event.control.data, 
+            can_be_removed=True,
+            on_change_callback=self.dashboard.save_sequence
+        )
         self.content.controls.append(new_function)
         self.update_indexes()
         self.dashboard.save_sequence()
 
-    def remove_function(self, function_index):
-        self.content.controls.pop(function_index)
-        self.update_indexes()
-        self.dashboard.save_sequence()
+    def remove_function(self, e: ft.ControlEvent):
+        try:
+            function_index = int(e.control.data)
+            if 0 <= function_index < len(self.content.controls):
+                self.content.controls.pop(function_index)
+                self.update_indexes()
+                self.dashboard.save_sequence()
+        except (ValueError, TypeError):
+            pass
 
     def update_indexes(self):
         for i, function in enumerate(self.content.controls):
-            function.index.content.value = i
-            function.remove_button.on_click = lambda _: self.remove_function(int(function.index.content.value))
-        if self.page: self.update()
+            function.index.content.value = str(i)
+            
+            function.remove_button.data = str(i)
+            
+            function.remove_button.on_click = self.remove_function
+            
+        if self.page: 
+            self.update()
 
 
 class ExecutionSequencePanel(ft.Container):
@@ -603,7 +624,7 @@ class ExecutionSequencePanel(ft.Container):
             value=False,
             label="Loop infinitely",
             label_position=ft.LabelPosition.RIGHT,
-            col={"sm": 6, "md": 5, "xl": 3},
+            col={"sm": 6, "md": 3, "xl": 3},
             on_change=self.loop_toggle
         )
         self.status_text = ft.Text(
@@ -651,7 +672,7 @@ class ExecutionSequencePanel(ft.Container):
             padding=ft.padding.symmetric(15, 10),
             border_radius=10,
             border=ft.border.all(1, "#1e293b"),
-            col={"sm": 3, "md": 3, "xl": 3}
+            col={"sm": 4, "md": 4, "xl": 4}
         )
 
         self.lower_row = ft.ResponsiveRow(
@@ -667,11 +688,11 @@ class ExecutionSequencePanel(ft.Container):
                     controls=[
                         self.bot_status,
                     ],
-                    col={"sm": 4, "md": 4, "xl": 2.5}
+                    col={"sm": 4, "md": 4, "xl": 4}
                 ), 
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
         self.run_button = ft.ElevatedButton(
@@ -717,7 +738,8 @@ class ExecutionSequencePanel(ft.Container):
         )
 
     def bot_toggle(self, e):
-        if self.dashboard.bot.status != "Running":
+        print(self.dashboard.bot.status)
+        if self.dashboard.bot.status == "Ready":
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STOP", weight="bold", size=18)],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -728,7 +750,7 @@ class ExecutionSequencePanel(ft.Container):
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
             self.dashboard.start_sequence()
-        elif self.dashboard.bot.status in ["Ready", "Paused"]:
+        elif self.dashboard.bot.status in ["Running", "Paused"]:
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -1050,37 +1072,41 @@ class Dashboard(ft.Container):
             controls=[self.left_panel, self.dashboard_panel], spacing=0,
         )
 
-        # Global Hotkey (Ctrl+P)
         try:
             keyboard.remove_hotkey('ctrl+p')
-            keyboard.add_hotkey('ctrl+p', self._on_global_hotkey)
-        except: pass
+        except:
+            pass
+        
+        try:
+            keyboard.add_hotkey('ctrl+p', lambda: self._on_global_hotkey())
+        except Exception as e:
+            print(f"Failed to register global hotkey: {e}")
 
     def save_sequence(self):
         self.bot_sequence = [c.get_serialized_data() for c in self.seq_panel.execution_functions_list.content.controls]
-        if self.config: self.config.save_bot_loop(self.bot_sequence)
+        if self.config: 
+            self.config.save_bot_loop(self.bot_sequence)
 
     def _on_global_hotkey(self):
         if self.bot:
-            paused = self.bot.toggle_pause()
-            status = "PAUSED (Ctrl+P to Resume)" if paused else "Running"
-            color = ft.Colors.ORANGE_400 if paused else ft.Colors.GREEN_400
-            self.seq_panel.update_status(status, color)
+            try:
+                paused = self.bot.toggle_pause()
+                status = "PAUSED (Ctrl+P to Resume)" if paused else "Running"
+                color = ft.Colors.ORANGE_400 if paused else ft.Colors.GREEN_400
+                self.seq_panel.update_status(status, color)
+            except Exception as e:
+                print(f"Hotkey Error: {e}")
 
     def start_sequence(self):
         if not self.bot_sequence: return
         self.is_running_sequence = True
-        self.seq_panel.run_button.visible = False
-        self.seq_panel.stop_button.visible = True
         self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
         threading.Thread(target=self.sequence_worker, daemon=True).start()
 
     def stop_sequence(self):
         self.is_running_sequence = False
-        self.seq_panel.run_button.visible = True
-        self.seq_panel.stop_button.visible = False
         self.seq_panel.update_status("Stopped", ft.Colors.RED_400)
-        # Re-init bot to clear state as in old/dashboard.py
+
         self.bot = TradeBot(db=DatabaseInterface())
         if self.app: self.app.bot = self.bot
 
@@ -1089,6 +1115,7 @@ class Dashboard(ft.Container):
             while self.is_running_sequence:
                 for item in self.bot_sequence:
                     if not self.is_running_sequence: break
+                    if not self.bot: break 
                     
                     # Wait if user paused via hotkey
                     while self.is_running_sequence and self.bot and self.bot.paused:
