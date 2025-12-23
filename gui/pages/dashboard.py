@@ -3,6 +3,7 @@ import threading
 import time
 import keyboard
 from database.interface import DatabaseInterface
+from gui.components.overlay import BotOverlay
 from bot import TradeBot
 
 
@@ -605,9 +606,7 @@ class ExecutionFunctionsList(ft.Container):
     def update_indexes(self):
         for i, function in enumerate(self.content.controls):
             function.index.content.value = str(i)
-            
             function.remove_button.data = str(i)
-            
             function.remove_button.on_click = self.remove_function
             
         if self.page: 
@@ -1082,6 +1081,15 @@ class Dashboard(ft.Container):
         except Exception as e:
             print(f"Failed to register global hotkey: {e}")
 
+    def set_ui_lock(self, locked: bool):
+        self.seq_panel.home_island.disabled = locked
+        self.seq_panel.loop_checkbox.disabled = locked
+        self.seq_panel.wait_before_loop.disabled = locked
+        self.avail_panel.disabled = locked
+        self.seq_panel.execution_functions_list.disabled = locked
+        
+        self.update()
+
     def save_sequence(self):
         self.bot_sequence = [c.get_serialized_data() for c in self.seq_panel.execution_functions_list.content.controls]
         if self.config: 
@@ -1090,6 +1098,13 @@ class Dashboard(ft.Container):
     def _on_global_hotkey(self):
         if self.bot:
             try:
+                if self.app.overlay:
+                    self.app.overlay.send_update(
+                        status=self.bot.status,
+                        task="Paused by User" if paused else "Resuming...",
+                        paused=paused
+                    )
+
                 paused = self.bot.toggle_pause()
                 status = "PAUSED (Ctrl+P to Resume)" if paused else "Running"
                 color = ft.Colors.ORANGE_400 if paused else ft.Colors.GREEN_400
@@ -1100,23 +1115,39 @@ class Dashboard(ft.Container):
     def start_sequence(self):
         if not self.bot_sequence: return
         self.is_running_sequence = True
+        self.set_ui_lock(True)
         self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
         threading.Thread(target=self.sequence_worker, daemon=True).start()
 
     def stop_sequence(self):
         self.is_running_sequence = False
+        self.set_ui_lock(False)
         self.seq_panel.update_status("Stopped", ft.Colors.RED_400)
+
+        if hasattr(self.app, 'overlay') and self.app.overlay:
+            self.app.overlay.stop()
 
         self.bot = TradeBot(db=DatabaseInterface())
         if self.app: self.app.bot = self.bot
 
     def sequence_worker(self):
         try:
+            if not self.app.overlay:
+                self.app.overlay = BotOverlay()
+            self.app.overlay.start()
+
             while self.is_running_sequence:
                 for item in self.bot_sequence:
                     if not self.is_running_sequence: break
                     if not self.bot: break 
                     
+                    if self.app.overlay:
+                        self.app.overlay.send_update(
+                            status=self.bot.status,
+                            task=f"Task: {item['name']}",
+                            paused=self.bot.paused
+                        )
+
                     # Wait if user paused via hotkey
                     while self.is_running_sequence and self.bot and self.bot.paused:
                         time.sleep(0.5)
@@ -1132,9 +1163,12 @@ class Dashboard(ft.Container):
                         time.sleep(int(item["data"]["minutes"]) * 60)
 
                 if not self.loop_sequence: break
-            self.stop_sequence()
         except Exception as e:
             print(f"Sequence Error: {e}")
+            self.stop_sequence()
+        finally:
+            if hasattr(self.app, 'overlay') and self.app.overlay:
+                self.app.overlay.stop()
             self.stop_sequence()
 
     def change_tab(self, event):
