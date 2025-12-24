@@ -39,7 +39,7 @@ class TradeBot:
         self.db = db
 
         if sniffer == None:
-            sniffer = AlbionSniffer()
+            sniffer = AlbionSniffer(db_interface=self.db) 
         self.sniffer = sniffer
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()

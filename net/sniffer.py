@@ -9,7 +9,7 @@ import io
 import gzip
 from datetime import datetime, timezone
 
-LOCATION_ID_TO_COLUMN = {
+LOCATION_ID_MAP = {
     3005: "price_caerleon",
     1002: "price_lymhurst",
     2002: "price_bridgewatch",
@@ -182,23 +182,26 @@ class AlbionSniffer:
         try:
             item_name = data.get('ItemTypeId')
             data['item_db_name'] = item_name
-            location_id = data.get('LocationId', 0)
             price = data.get('UnitPriceSilver')
+            location_id = data.get('LocationId')
 
             self.market_data_buffer.append(data)
             
-            if self.db: 
+            if self.db:
+                # 1. Save raw order to market_orders table
                 self.db.add_order(data)
 
-                column_name = LOCATION_ID_TO_COLUMN.get(location_id)
-                if column_name and item_name and price:
-                    self.db.update_item_prices([{
+                # 2. Update summarized ItemData table for specific city
+                column = LOCATION_ID_MAP.get(location_id)
+                if column and item_name and price:
+                    update_data = {
                         'unique_name': item_name,
-                        column_name: price,
-                        f"{column_name.replace('price_', '')}_updated_at": datetime.now(timezone.utc)
-                    }])
+                        column: price,
+                        f"{column.replace('price_', '')}_updated_at": datetime.utcnow()
+                    }
+                    self.db.update_item_prices([update_data])
         except Exception as e:
-            print(f"Error processing order for DB: {e}")
+            pass
 
     def parse_history(self, req, params):
         try:
