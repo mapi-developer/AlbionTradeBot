@@ -145,14 +145,11 @@ class DatabaseInterface:
     def _process_item_data(self, session, batch):
         try:
             for data in batch:
-                if 'unique_name' not in data:
-                    continue
+                if 'unique_name' not in data: continue
                 
-                # Create the insert statement
                 stmt = insert(ItemData).values(data)
                 
-                # We dynamically construct the SET clause to only update columns provided in the input.
-                # This ensures if we send {'unique_name': 'X', 'price_caerleon': 1}, we don't wipe out 'price_lymhurst'.
+                # This ensures we only update the specific city column provided
                 update_cols = {
                     col: getattr(stmt.excluded, col)
                     for col in data.keys()
@@ -167,7 +164,7 @@ class DatabaseInterface:
                 session.execute(do_update)
 
             session.commit()
-            print(f"[DB] Updated item data for {len(batch)} items")
+            # print(f"[DB] Synced ItemData for {len(batch)} items")
         except Exception as e:
             print(f"[DB ItemData Error] {e}")
             session.rollback()

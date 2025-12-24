@@ -7,6 +7,18 @@ import json
 import struct
 import io
 import gzip
+from datetime import datetime, timezone
+
+LOCATION_ID_TO_COLUMN = {
+    3005: "price_caerleon",
+    1002: "price_lymhurst",
+    2002: "price_bridgewatch",
+    3008: "price_martlock",
+    4002: "price_fort_sterling",
+    7:    "price_thetford",
+    1006: "price_brecilien",
+    1003: "price_black_market"
+}
 
 class FragmentBuffer:
     def __init__(self):
@@ -168,11 +180,25 @@ class AlbionSniffer:
 
     def process_market_order(self, data):
         try:
-            data['item_db_name'] = data.get('ItemTypeId')
-            # print(f"   >>> [MARKET] Found: {data['item_db_name']} | {data.get('UnitPriceSilver')} Silver")
+            item_name = data.get('ItemTypeId')
+            data['item_db_name'] = item_name
+            location_id = data.get('LocationId', 0)
+            price = data.get('UnitPriceSilver')
+
             self.market_data_buffer.append(data)
-            if self.db: self.db.add_order(data)
-        except: pass
+            
+            if self.db: 
+                self.db.add_order(data)
+
+                column_name = LOCATION_ID_TO_COLUMN.get(location_id)
+                if column_name and item_name and price:
+                    self.db.update_item_prices([{
+                        'unique_name': item_name,
+                        column_name: price,
+                        f"{column_name.replace('price_', '')}_updated_at": datetime.now(timezone.utc)
+                    }])
+        except Exception as e:
+            print(f"Error processing order for DB: {e}")
 
     def parse_history(self, req, params):
         try:

@@ -13,13 +13,14 @@ class ItemData(Base):
 
     unique_name: Mapped[str] = mapped_column(String, primary_key=True, index=True)
     
-    price_black_market: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_caerleon: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_lymhurst: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_bridgewatch: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_fort_sterling: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_thetford: Mapped[Optional[int]] = mapped_column(BigInteger)
-    price_martlock: Mapped[Optional[int]] = mapped_column(BigInteger)
+    price_black_market: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_caerleon: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_lymhurst: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_bridgewatch: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_fort_sterling: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_thetford: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_martlock: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
+    price_brecilien: Mapped[Optional[BigInteger]] = mapped_column(BigInteger)
 
     black_market_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     caerleon_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -28,6 +29,7 @@ class ItemData(Base):
     fort_sterling_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     thetford_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     martlock_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    brecilien_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     updated_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), 
