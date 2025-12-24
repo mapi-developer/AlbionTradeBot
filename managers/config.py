@@ -55,11 +55,9 @@ CITIES = {
 
 DEFAULT_SETTINGS = {
     "general": {
-        "min_profit_rate_fast": 0.3,
-        "min_profit_rate_order": 0.8,
-        "default_buy_amount": 25,
         "min_silver": 1000000,
-        "buy_mode": "order"
+        "game_language": "RU-RU",
+        "buy_mode": "order",
     },
     "fast_buy": {
         "min_profit_rate": 25,

@@ -69,7 +69,7 @@ class GeneralSettings(ft.Container):
             label="Language in Game",
             tooltip="Choose your in game Language",
             options = [ft.DropdownOption(key=language, text=language) for language in AVALIABLE_LANGUAGES],
-            save_callback=save_callback
+            save_callback=save_callback,
         )
 
         self.stop_silver_threshold = ft.TextField(
@@ -89,7 +89,7 @@ class GeneralSettings(ft.Container):
                 ft.Column(
                     controls = [
                         self.buy_mode,
-                        self.game_language,
+                        #self.game_language,
                         self.stop_silver_threshold,
                     ],
                     col=12,

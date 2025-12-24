@@ -2,12 +2,12 @@
     {
         "type": "travel_to",
         "data": {
-            "destination": "market",
+            "destination": "island",
             "market_city": "black_market",
             "island_name": ""
         }
     },
     {
-        "type": "price_check"
+        "type": "buy_items"
     }
 ]

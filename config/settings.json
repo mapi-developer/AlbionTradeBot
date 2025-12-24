@@ -1,49 +1,46 @@
 {
     "general": {
-        "buy_mode": "fast",
-        "game_language": "RU-RU",
+        "buy_mode": "order",
+        "game_language": "EN-US",
         "min_silver": "1000000"
     },
     "fast_buy": {
         "min_profit_rate": "35",
         "default_buy_amount": "25",
         "presets": {
-            "caerleon": "Fast Buy Test.json",
-            "martlock": "Fast Buy Test.json",
-            "lymhurst": "Fast Buy Test.json",
-            "fort_sterling": "Fast Buy Test.json",
-            "bridgewatch": "Fast Buy Test.json",
-            "thetford": "Fast Buy Test.json",
-            "brecilien": "Fast Buy Test.json"
+            "caerleon": "Test Preset.json",
+            "martlock": "Test Preset.json",
+            "lymhurst": "Test Preset.json",
+            "fort_sterling": "Test Preset.json",
+            "bridgewatch": "Test Preset.json",
+            "thetford": "Test Preset.json",
+            "brecilien": "Test Preset.json"
+        },
+        "buy_logic": [
+            {
+                "amount_to_buy": "1",
+                "price_larger_then": "1000"
+            }
+        ]
+    },
+    "order_buy": {
+        "min_profit_rate": "45",
+        "default_buy_amount": "5",
+        "presets": {
+            "caerleon": "Test Preset.json",
+            "martlock": "Test Preset.json",
+            "lymhurst": "Test Preset.json",
+            "fort_sterling": "Test Preset.json",
+            "bridgewatch": "Test Preset.json",
+            "thetford": "Test Preset.json",
+            "brecilien": "Test Preset.json"
         },
         "buy_logic": [
             {
                 "amount_to_buy": "",
                 "price_larger_then": ""
-            },
-            {
-                "amount_to_buy": "",
-                "price_larger_then": ""
-            },
-            {
-                "amount_to_buy": "",
-                "price_larger_then": ""
             }
         ]
-    },
-    "order_buy": {
-        "min_profit_rate": 80,
-        "default_buy_amount": "5",
-        "presets": {
-            "caerleon": "Fort Sterling Main.json",
-            "martlock": "Fort Sterling Main.json",
-            "lymhurst": "Fort Sterling Main.json",
-            "fort_sterling": "Fort Sterling Main.json",
-            "bridgewatch": "Fort Sterling Main.json",
-            "thetford": "Fort Sterling Main.json",
-            "brecilien": "Fort Sterling Main.json"
-        },
-        "buy_logic": []
     },
     "city_presets": {
         "fort_sterling": "Fort Sterling Main.json",

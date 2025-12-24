@@ -737,7 +737,10 @@ class ExecutionSequencePanel(ft.Container):
         )
 
     def bot_toggle(self, e):
-        print(self.dashboard.bot.status)
+        print("bot toggle")
+        if self.dashboard.bot == None:
+            self.dashboard.bot = TradeBot(db=DatabaseInterface())
+            self.dashboard.app.bot = self.dashboard.bot
         if self.dashboard.bot.status == "Ready":
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STOP", weight="bold", size=18)],
@@ -1034,6 +1037,7 @@ class ActivityLogsPanel(RightPanel):
 
 
 class Dashboard(ft.Container):
+    bot: TradeBot | None
     def __init__(self, app=None, config=None, page=None, bot: TradeBot = None, header=None):
         super().__init__()
         self.expand = True
@@ -1115,6 +1119,9 @@ class Dashboard(ft.Container):
 
     def start_sequence(self):
         if not self.bot_sequence: return
+        if self.app.bot == None:
+            self.bot = TradeBot(db=DatabaseInterface())
+            self.app.bot = self.bot
         self.is_running_sequence = True
         self.set_ui_lock(True)
         self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
@@ -1130,10 +1137,20 @@ class Dashboard(ft.Container):
         self.set_ui_lock(False)
         self.seq_panel.update_status("Stopped", ft.Colors.RED_400)
 
+        self.seq_panel.run_button.content=ft.Row(
+            [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+        self.seq_panel.run_button.style=ft.ButtonStyle(
+            color=ft.Colors.WHITE,
+            bgcolor=ft.Colors.BLUE_600,
+            shape=ft.RoundedRectangleBorder(radius=8),
+        )
+
         if self.app.overlay:
             self.app.overlay.stop()
 
-        self.bot = TradeBot(db=DatabaseInterface())
+        self.bot = None
         if self.app: self.app.bot = self.bot
         if self.page: self.update()
 

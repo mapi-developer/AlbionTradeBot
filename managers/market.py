@@ -1,16 +1,20 @@
 from core.capture import WindowCapture
 from core.input import InputSender
-from .config import MOUSE_POSITIONS, CAPTURE_POSITIONS, ITEM_DATA, LANGUAGE
+from .config import MOUSE_POSITIONS, CAPTURE_POSITIONS, ITEM_DATA, ConfigManager, LANGUAGE
 
 class MarketManager(InputSender):
-    def __init__(self, capture: WindowCapture = None):
+    def __init__(self, capture: WindowCapture = None, config: ConfigManager = None):
         super().__init__()
         if capture == None:
             capture = WindowCapture(window_name="Albion Online Client")
+        if config == None:
+            config = ConfigManager()
         self.mouse_positions = MOUSE_POSITIONS[capture.get_window_resolution()]["market"]
         self.capture_positions = CAPTURE_POSITIONS[capture.get_window_resolution()]["market"]
         self.items = { item["UniqueName"]: item for item in ITEM_DATA }
         self.capture = capture
+        self.config = config
+        #self.lang = config.get("general")["game_language"]
         self.lang = LANGUAGE
 
     def __repr__(self) -> str:
@@ -30,6 +34,8 @@ class MarketManager(InputSender):
             return "thetford"
         elif "brecilien" in raw_title:
             return "brecilien"
+        elif "black" in raw_title:
+            return "black_market"
         else:
             return "Error To Check Market"
 
@@ -43,7 +49,7 @@ class MarketManager(InputSender):
         self.click(self.mouse_positions["next_page"], clicks=5, interval=0.2)
         self.sleep(0.5)
     
-    def get_name_from_unique(self, unique_name) -> str | None:
+    def get_name_from_unique(self, unique_name: str) -> str | None:
         if unique_name in self.items:
             return self.items[unique_name]["LocalizedNames"].get(self.lang, "Language not found")
         return None

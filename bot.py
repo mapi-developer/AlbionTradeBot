@@ -62,7 +62,8 @@ class TradeBot:
 
     def load_preset_items(self, setting_key):
         """Loads items list from the preset file defined in settings."""
-        preset_file = self.config_manager.get("city_presets")[setting_key]
+        buy_mode = self.config_manager.get("general")["buy_mode"]
+        preset_file = self.config_manager.get(buy_mode+"_buy")["presets"][setting_key]
         if not preset_file:
             print(f"[Error] No preset selected for '{setting_key}' in configuration.")
             return []
@@ -123,7 +124,7 @@ class TradeBot:
                 self.sniffer.clear_buffer()
                 
                 if isBlackMarket:
-                    self.market_manager.search_item(item, black_market=True)
+                    self.market_manager.search_item(item, from_db=False, black_market=True)
                 else:
                     self.market_manager.search_item(item, from_db=True, black_market=False)
                     
@@ -185,9 +186,7 @@ class TradeBot:
     def buy_items(self, fast_buy: bool = False):
         self.status = "Running"
         self.capture.set_foreground_window()
-        # self.market_manager.change_tab("my_orders_tab")
-        # if self.market_manager.order_exists():
-        #     self.remove_orders()
+        print(self.market_manager.get_market_title())
         items_to_buy_list = self.load_preset_items(self.market_manager.get_market_title())
         items_prices = self.db.get_all_prices_for_city("black_market")
         if self.config_manager.get("general")["buy_mode"] == "fast":
@@ -201,6 +200,11 @@ class TradeBot:
         self.market_manager.prepare()
             
         try:
+            if fast_buy:
+                settings = self.config_manager.get("fast_buy")
+            else:
+                settings = self.config_manager.get("order_buy")
+
             for item_unique_name in items_to_buy_list:
                 self._wait_if_paused() # Check pause
                 
@@ -229,12 +233,10 @@ class TradeBot:
 
                         if price > order_price and price > 0:
                             order_price = price
-                min_profit_rate = self.config_manager.get("general")["min_profit_rate_order"] or 0.0
-
+                min_profit_rate = settings["min_profit_rate"] or 0.0
+                print(min_profit_rate)
                 if fast_buy == False:
                     lowest_price = order_price
-                if fast_buy == True:
-                    min_profit_rate = self.config_manager.get("general")["min_profit_rate_fast"] or 0.0
 
                 black_market_price = 0
                 try:
@@ -248,7 +250,7 @@ class TradeBot:
                 profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
 
                 if profit_margin >= min_profit_rate:
-                    buy_logic_rules = self.config_manager.get("buy_logic") or []
+                    buy_logic_rules = settings.get("buy_logic") or []
                     sorted_rules = sorted(buy_logic_rules, key=lambda x: int(x.get('price', 0)), reverse=True)
                     
                     quantity_to_buy = 0
@@ -259,7 +261,7 @@ class TradeBot:
                             quantity_to_buy = int(rule['amount_to_buy'])
                     
                     if quantity_to_buy == 0:
-                        quantity_to_buy = int(self.config_manager.get("general")["default_buy_amount"])
+                        quantity_to_buy = int(settings["default_buy_amount"])
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name}! Price: {lowest_price}, Margin: {profit_margin*100:.2f}%. Buying {quantity_to_buy} units.")
