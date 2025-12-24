@@ -72,6 +72,7 @@ class AlbionSniffer:
         if packet[UDP].sport != 5056 and packet[UDP].dport != 5056: return
 
         try:
+            print(packet)
             payload = bytes(packet[UDP].payload)
             commands = self.layer_decoder.decode_packet(payload)
 

@@ -68,7 +68,7 @@ class MarketManager(InputSender):
         if from_db == True:
             name_from_unique = self.get_name_from_unique(name)
             if name_from_unique != None:
-                name = self.get_name_from_unique(name)
+                name = name_from_unique
 
         self.click(self.mouse_positions["search_reset"])
         self.click(self.mouse_positions["search"])

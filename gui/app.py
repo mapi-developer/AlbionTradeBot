@@ -137,8 +137,8 @@ class GuiApp:
         self.page.update()
 
     def on_page_resize(self, e):
-        if self.main_column:
-            self.main_column.update()
+        if self.main_column.page:
+            self.main_column.page.update()
 
 
 def main(page: ft.Page):
