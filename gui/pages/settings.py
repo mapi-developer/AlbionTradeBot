@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from components.style import GuiStyle
-from managers.config import ConfigManager, AVALIABLE_LANGUAGES, CITIES, BUY_MODES
+from bot import SettingsManager
 
 
 class SettingsDropdown(ft.Dropdown):
@@ -46,10 +46,11 @@ class SettingsDropdown(ft.Dropdown):
 
 
 class GeneralSettings(ft.Container):
-    def __init__(self, config: ConfigManager, save_callback: Callable):
+    def __init__(self, settings: SettingsManager, save_callback: Callable):
         super().__init__()
         self.save_callback = save_callback
-        general_settings = config.get("general")
+        general_settings = settings.get("general")
+        self.settings = settings
 
         self.padding = 20
         self.col={"sm": 12, "md": 4, "xl": 4}
@@ -59,7 +60,10 @@ class GeneralSettings(ft.Container):
             data="buy_mode",
             label="Buy Mode Strategy", 
             tooltip="Choose strategy for bot",
-            options=BUY_MODES,
+            options=[
+                ft.DropdownOption(key="fast", text="Fast Buy"),
+                ft.DropdownOption(key="order", text="Order Buy")
+            ],
             save_callback=save_callback
         )
 
@@ -68,7 +72,7 @@ class GeneralSettings(ft.Container):
             data="game_language",
             label="Language in Game",
             tooltip="Choose your in game Language",
-            options = [ft.DropdownOption(key=language, text=language) for language in AVALIABLE_LANGUAGES],
+            options = [ft.DropdownOption(key=language, text=language) for language in self.settings.AVALIABLE_LANGUAGES],
             save_callback=save_callback,
         )
 
@@ -157,7 +161,7 @@ class BuyLogicItem(ft.Container):
 
 
 class BuyLogic(ft.Container):
-    def __init__(self, config: ConfigManager, current_tab: str, save_callback: Callable):
+    def __init__(self, config: SettingsManager, current_tab: str, save_callback: Callable):
         super().__init__()
         self.config = config
         self.save_callback = save_callback
@@ -264,7 +268,7 @@ class BuyLogic(ft.Container):
 
 
 class RightTab(ft.Container):
-    def __init__(self, config: ConfigManager, current_tab: str, save_callback: Callable):
+    def __init__(self, config: SettingsManager, current_tab: str, save_callback: Callable):
         super().__init__()
         self.current_tab = current_tab
         self.config = config
@@ -301,7 +305,7 @@ class RightTab(ft.Container):
 
         self.presets = ft.Container(
             content=ft.Column(
-                controls=[self.create_preset_dropdown(city) for city in CITIES.keys()]
+                controls=[self.create_preset_dropdown(city) for city in self.config.CITIES.keys()]
             ),
             padding=5,
             bgcolor=GuiStyle.Colors.DARK_BLUE,
@@ -348,8 +352,8 @@ class RightTab(ft.Container):
         dropdown = SettingsDropdown(
             value=self.settings["presets"][city],
             data=city,
-            label=f"{CITIES[city]}",
-            tooltip=f"Choose Preset for {CITIES[city]}",
+            label=f"{self.config.CITIES[city]}",
+            tooltip=f"Choose Preset for {self.config.CITIES[city]}",
             options = [ft.DropdownOption(key=language, text=language) for language in self.config.get_presets_list()],
             filter = True,
             save_callback=self.save_callback
@@ -362,7 +366,7 @@ class RightTab(ft.Container):
         
         self.minimal_profit_rate.value = self.settings.get("min_profit_rate", "0")
         self.default_buy_amount.value = self.settings.get("default_buy_amount", "0")
-        self.presets.content.controls = [self.create_preset_dropdown(city) for city in CITIES.keys()]
+        self.presets.content.controls = [self.create_preset_dropdown(city) for city in self.config.CITIES.keys()]
         self.buy_logic.load_items(current_tab=self.current_tab)
 
         if self.page:
@@ -449,7 +453,7 @@ class UpperRow(ft.Container):
 
 
 class ContentMain(ft.Container):
-    def __init__(self, config: ConfigManager, save_callback: Callable):
+    def __init__(self, config: SettingsManager, save_callback: Callable):
         super().__init__()
         self.config = config
         self.general = GeneralSettings(config, save_callback=save_callback)
@@ -467,7 +471,7 @@ class ContentMain(ft.Container):
 
 
 class Settings(ft.Container):
-    def __init__(self, page: ft.Page, config: ConfigManager):
+    def __init__(self, page: ft.Page, config: SettingsManager):
         super().__init__()
         self.margin = 0
         self.padding = 0
@@ -517,7 +521,7 @@ class Settings(ft.Container):
 def main(page: ft.Page):
     page.padding = 0
     page.scroll = ft.ScrollMode.AUTO
-    config_manager = ConfigManager()
+    config_manager = SettingsManager()
     app_settings = Settings(page=page, config=config_manager)
     page.add(app_settings)
     page.update()

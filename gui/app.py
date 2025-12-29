@@ -1,19 +1,16 @@
 import flet as ft
 import threading
 
-from gui.components import Header
-from gui.pages import Presets
-from gui.pages import Login
-from gui.components import SubscriptionTab
-from gui.components import BotOverlay
-from gui.pages import Dashboard
-from gui.pages import Settings
-from gui.pages import Shop
+from gui import Header
+from gui import Presets
+from gui import Login
+from gui import SubscriptionTab
+from gui import BotOverlay
+from gui import Dashboard
+from gui import Settings
+from gui import Shop
 
-from managers.config import ConfigManager
-from database.interface import DatabaseInterface
-from bot import TradeBot
-
+from bot import Bot, SettingsManager
 
 class GuiApp:
     overlay:BotOverlay
@@ -30,10 +27,10 @@ class GuiApp:
             "Roboto Mono": "https://github.com/google/fonts/raw/main/apache/robotomono/RobotoMono-Regular.ttf"
         }
 
-        self.config = ConfigManager()
+        self.config = SettingsManager()
         self.login = Login(self.page, on_login_success=self.show_main_app)
 
-        self.bot = TradeBot(db=DatabaseInterface())
+        self.bot = Bot()
         self.overlay = BotOverlay()
 
         self.presets = self.config.get_presets_list()
@@ -74,10 +71,11 @@ class GuiApp:
         #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
+            if self.bot: self.bot.destroy()
             if not self.bot:
                 try:
                     print("Initializing bot...")
-                    self.bot = TradeBot(db=DatabaseInterface())
+                    self.bot = Bot()
                     print("Bot initialized.")
                 except Exception as e:
                     print(f"Error initializing bot: {e}")

@@ -1,0 +1,318 @@
+import re
+import threading
+from .managers import SettingsManager, MarketManager, TravelManager, LoginManager
+from .core import WindowCapture
+from .api import DatabaseInterface
+from .net import AlbionSniffer
+import gc
+import os
+import json
+import time
+
+class Bot:
+    def __init__(
+            self, 
+            capture: WindowCapture = None, 
+            market_manager: MarketManager = None,
+            travel_manager: TravelManager = None,
+            login_manager: LoginManager = None,
+            sniffer: AlbionSniffer = None
+        ):
+        self.settings = SettingsManager()
+        self.status = "Initializing"
+        self.paused = False
+        self.db = DatabaseInterface()
+        if capture == None: capture = WindowCapture("Albion Online Client")
+        if market_manager == None: market_manager = MarketManager(capture=capture, settings=self.settings)
+        if travel_manager == None: travel_manager = TravelManager(self, capture=capture, settings=self.settings)
+        if login_manager == None: login_manager = LoginManager(bot=self, capture=capture, settings=self.settings)
+        if sniffer == None: sniffer = AlbionSniffer()
+        self.capture = capture
+        self.market_manager = market_manager
+        self.travel_manager = travel_manager
+        self.login_manager = login_manager
+        self.sniffer = sniffer
+        self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
+        self.sniffer_thread.start()
+        self.status = "Ready"
+        self.current_task_name = "Ready"
+        self.current_item_name = ""
+        self.current_location = "island"
+
+    def destroy(self):
+        print("Destroying Bot instance...")
+        self.status = "Destroying"
+
+        if self.sniffer:
+            self.sniffer.stop()
+
+        if self.sniffer_thread and self.sniffer_thread.is_alive():
+            self.sniffer_thread.join(timeout=1.0)
+            if self.sniffer_thread.is_alive():
+                print("Warning: Sniffer thread did not shut down cleanly.")
+
+        if self.market_manager != None:
+            self.market_manager.destroy()
+            self.market_manager = None
+
+        if self.db:
+            if hasattr(self.db, 'close'):
+                self.db.close()
+            elif hasattr(self.db, 'disconnect'):
+                self.db.disconnect()
+
+        if self.capture and hasattr(self.capture, 'release'):
+            self.capture.release()
+
+        self.sniffer = None
+        self.market_manager = None
+        self.capture = None
+        self.db = None
+        self.settings = None
+        
+        gc.collect()
+        print("Bot instance destroyed.")
+
+    def load_preset_items(self, city: str):
+        buy_mode = self.settings.get("general")["buy_mode"]
+        preset_file = self.settings.get(buy_mode+"_buy")["presets"][city]
+        if not preset_file:
+            print(f"[Error] No preset selected for '{city}'")
+            return []
+        
+        path = os.path.join(self.settings.PRESETS_DIR, preset_file)
+        if not os.path.exists(path):
+            print(f"[Error] Preset file not found: {path}")
+            return []
+        
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Error] Failed to load preset {preset_file}: {e}")
+            return []
+
+    def toggle_pause(self):
+        self.paused = not self.paused
+        self.status = "Paused" if self.paused else "Running"
+
+        return self.paused
+    
+    def _wait_if_paused(self):
+        while self.paused:
+            time.sleep(.5)
+        self.capture.set_foreground_window()
+
+    def parse_item_info(self, full_unique_name: str):
+        if "@" in full_unique_name:
+            parts = full_unique_name.split("@")
+            base_with_tier = parts[0]
+            try: enchant = int(parts[1])
+            except: enchant = 0
+        else:
+            base_with_tier = full_unique_name
+            enchant = 0
+
+        match = re.match(r"(T\d+)_(.+)", base_with_tier)
+        if match:
+            tier = match.group(1)
+            base_name = match.group(2)
+        else:
+            tier = "TX"
+            base_name = base_with_tier
+
+        return base_name, tier, enchant
+
+    def check_price(self):
+        self.status = "Running"
+        self.current_task_name = "Price Check"
+        self.capture.set_foreground_window()
+        market_title = self.market_manager.get_market_title()
+        self.current_location = market_title
+        is_black_market = market_title == "black_market"
+
+        if is_black_market:
+            items_to_check = list(self.settings.ITEMS_BLACK_MARKET.values())
+            print(f"Starting Black Market Price Check for {len(items_to_check)} items from dictionary...")
+        else:
+            items_to_check = self.load_preset_items(market_title)
+            if not items_to_check:
+                print("[Warning] No items to check. Please select a preset in Settings")
+                return
+            print(f"Starting Price Check for {len(items_to_check)} items in {market_title}")
+
+        self.market_manager.change_tab("buy")
+
+        try:
+            for item in items_to_check:
+                self._wait_if_paused()
+                self.current_item_name = f"Scanning: {item}"
+                
+                if is_black_market:
+                    self.market_manager.search_item(item, black_market=True)
+                else:
+                    self.market_manager.search_item(item, from_db=True)
+
+                self.market_manager.sleep(.3)
+                self.market_manager.check_pages()
+
+                current_market_orders = self.sniffer.get_market_buffer()
+                if not current_market_orders:
+                    print(f"No market data captured for: {item}")
+
+                found_prices = {}
+                for order in current_market_orders:
+                    quality = order.get("QualityLevel", 1)
+                    if quality > 3: continue
+
+                    full_name = order.get("ItemTypeId", "Unknown")
+                    base_name, tier, enchant = self.parse_item_info(full_unique_name=full_name)
+                    raw_price = order.get("UnitPriceSilver", 0)
+                    key = (base_name, tier, enchant)
+                    if key not in found_prices:
+                        found_prices[key] = raw_price
+                    else:
+                        if raw_price > found_prices[key]:
+                            found_prices[key] = raw_price
+
+                if found_prices:
+                    payload = []
+                    for (base, tier, enc), price in found_prices.items():
+                        if enc > 0: unique_name = f"{tier}_{base}@{enc}"
+                        else: unique_name = f"{tier}_{base}"
+
+                        item_data = {
+                            "unique_name": unique_name,
+                            f"price_{market_title}": int(price)
+                        }
+                        payload.append(item_data)
+                    
+                    if payload:
+                        self.db.update_item_prices(payload)
+        except KeyboardInterrupt:
+            print("Stopping bot...")
+
+        self.status = "Ready"
+
+    def remove_orders(self):
+        self.status = "Running"
+        self.current_task_name = "Removing Orders"
+        self.current_location = self.market_manager.get_market_title()
+        self.capture.set_foreground_window()
+        self.market_manager.change_tab("my_orders_tab")
+        while self.market_manager.order_exists():
+            self._wait_if_paused
+            self.market_manager.remove_order(25)
+            self.market_manager.scroll()
+
+        self.status = "Ready"
+
+    def buy_items(self):
+        self.status = "Running"
+        self.current_task_name = "Buying Items"
+        self.capture.set_foreground_window()
+        buy_mode = self.settings.get("general")["buy_mode"]
+        market_title = self.market_manager.get_market_title()
+        self.current_location = market_title
+        is_fast_buy = buy_mode == "fast"
+        items_to_buy_list = self.load_preset_items(market_title)
+        items_prices = self.db.get_all_prices_for_city("black_market")
+        min_silver = self.settings.get("general")["min_silver"]
+
+        if not items_to_buy_list:
+            print("No items to buy. Please select a preset in Settings")
+            return
+    
+        print(f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
+        self.market_manager.prepare()
+
+        try:
+            settings = self.settings.get(f"{buy_mode}_buy")
+            
+            for item_unique_name in items_to_buy_list:
+                self._wait_if_paused()
+                self.market_manager.update_silver_balance()
+                self.sniffer.market_buffer.clear()
+                self.market_manager.search_item(item_unique_name, from_db=True)
+                self.market_manager.open_item()
+                self.market_manager.sleep(.5)
+
+                current_market_orders = self.sniffer.get_market_buffer()
+                if not current_market_orders:
+                    print(f"No data for {item_unique_name}")
+                    self.market_manager.close_item()
+                    continue
+                
+                lowest_price = float('inf')
+                order_price = 0
+
+                for order in current_market_orders:
+                    if order.get("AuctionType") == "offer":
+                        price = order.get("UnitPriceSilver", 0) / 10000
+                        if price < lowest_price and price > 0:
+                            lowest_price = price
+
+                if not is_fast_buy:
+                    for order in current_market_orders:
+                        if order.get("AuctionType") == "request":
+                            price = order.get("UnitPriceSilver", 0) / 10000
+                            if price > order_price and price > 0:
+                                order_price = price
+
+                    lowest_price = order_price
+                print(f"{item_unique_name} | {lowest_price}")
+                min_profit_rate = float(settings["min_profit_rate"])/100 or 0.0
+                
+                black_market_price = 0
+                if item_unique_name in items_prices.keys():
+                    black_market_price = items_prices[item_unique_name] / 10000
+                else:
+                    print(f"No black market data for {item_unique_name}")
+                    self.market_manager.close_item()
+                    continue
+
+                profit = black_market_price * 0.96 - lowest_price
+                profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
+
+                if profit_margin >= min_profit_rate:
+                    buy_logic_rules = settings.get("buy_logic", [])
+                    rules_sorted = sorted(buy_logic_rules, key=lambda x: int(x.get("price", 0)), reverse=True)
+
+                    quantity_to_buy = int(settings.get("default_buy_amount", 0))
+
+                    for rule in rules_sorted:
+                        price_threshold = int(rule.get("price_larger_then"))
+                        if int(lowest_price) > price_threshold:
+                            quantity_to_buy = int(rule.get("amount_to_buy"))
+
+                    if quantity_to_buy > 0:
+                        print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
+                        self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
+                    else:
+                        print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
+                        self.market_manager.close_item()
+                else:
+                    self.market_manager.close_item()
+
+                print(f"{min_silver} | {self.market_manager.silver_amount}")
+                if self.market_manager.silver_amount != 0 and int(min_silver) >= self.market_manager.silver_amount:
+                    print("[Warning] Silver amount is less than minimum to continue")
+                    break
+        except Exception as e:
+            print(f"[Error] Buy items issue: {e}")
+        
+        self.status = "Ready"
+
+    def travel_to(self, destination: str):
+        self.status = "Running"
+        self.current_task_name = "Traveling"
+        self.capture.set_foreground_window()
+        self.travel_manager.travel_to(destination=destination)
+
+    def check_login(self):
+        self.login_manager.check_login()
+
+
+if __name__ == "__main__":
+    bot = Bot()
+    bot.check_price()

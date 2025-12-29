@@ -2,9 +2,8 @@ import flet as ft
 import threading
 import time
 import keyboard
-from database.interface import DatabaseInterface
 from components import BotOverlay
-from bot import TradeBot
+from bot import Bot
 
 
 COMMAND_TYPES = {
@@ -706,7 +705,8 @@ class ExecutionSequencePanel(ft.Container):
             ),
             height=45,
             col={"sm": 5, "md": 3.5, "xl": 2.45},
-            on_click=self.bot_toggle
+            on_click=self.bot_toggle,
+            data="run"
         )
 
         self.bgcolor = "#1e293b"
@@ -737,11 +737,23 @@ class ExecutionSequencePanel(ft.Container):
         )
 
     def bot_toggle(self, e):
-        print("bot toggle")
-        if self.dashboard.bot == None:
-            self.dashboard.bot = TradeBot(db=DatabaseInterface())
+        self.run_button.disabled = True
+        self.run_button.content=ft.Row(
+            [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STARTING", weight="bold", size=18)],
+            alignment=ft.MainAxisAlignment.CENTER,
+        )
+        self.run_button.style=ft.ButtonStyle(
+            color=ft.Colors.WHITE,
+            bgcolor="#312e2e",
+            shape=ft.RoundedRectangleBorder(radius=8),
+        )
+        self.run_button.update()
+            
+        if self.run_button.data == "run":
+            if self.dashboard.bot != None:
+                self.dashboard.bot.destroy()
+            self.dashboard.bot = Bot()
             self.dashboard.app.bot = self.dashboard.bot
-        if self.dashboard.bot.status == "Ready":
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STOP", weight="bold", size=18)],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -752,7 +764,10 @@ class ExecutionSequencePanel(ft.Container):
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
             self.dashboard.start_sequence()
-        elif self.dashboard.bot.status in ["Running", "Paused"]:
+            self.run_button.data = "stop"
+            self.run_button.disabled = False
+        elif self.run_button.data == "stop":
+            self.dashboard.bot.destroy()
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -762,7 +777,14 @@ class ExecutionSequencePanel(ft.Container):
                 bgcolor=ft.Colors.BLUE_600,
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
+            if self.dashboard.bot.status == "Running":
+                self.dashboard.bot.toggle_pause()
+                time.sleep(1)
             self.dashboard.stop_sequence()
+            self.run_button.data = "run"
+            self.run_button.disabled = False
+
+        self.run_button.update()
 
     def loop_toggle(self, e):
         if self.loop_checkbox.value:
@@ -1037,8 +1059,8 @@ class ActivityLogsPanel(RightPanel):
 
 
 class Dashboard(ft.Container):
-    bot: TradeBot | None
-    def __init__(self, app=None, config=None, page=None, bot: TradeBot = None, header=None):
+    bot: Bot | None
+    def __init__(self, app=None, config=None, page=None, bot: Bot = None, header=None):
         super().__init__()
         self.expand = True
         self.app = app
@@ -1120,15 +1142,15 @@ class Dashboard(ft.Container):
     def start_sequence(self):
         if not self.bot_sequence: return
         if self.app.bot == None:
-            self.bot = TradeBot(db=DatabaseInterface())
+            self.bot = Bot()
             self.app.bot = self.bot
-        self.is_running_sequence = True
-        self.set_ui_lock(True)
-        self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
-
         if self.app.overlay == None:
             self.app.overlay = BotOverlay()
         self.app.overlay.start()
+        time.sleep(3)
+        self.is_running_sequence = True
+        self.set_ui_lock(True)
+        self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
 
         threading.Thread(target=self.sequence_worker, daemon=True).start()
 
@@ -1181,9 +1203,19 @@ class Dashboard(ft.Container):
                     # Execute on bot
                     bot_func = getattr(self.bot, func_name, None)
                     if callable(bot_func):
-                        bot_func() # You may need to pass item["data"] here if methods support it
+                        self.bot.check_login()
+                        if item["type"] == "travel_to":
+                            if item["data"]["destination"] == "market":
+                                bot_func(item["data"]["market_city"])
+                            else:
+                                bot_func(item["data"]["island_name"])
+                        else:
+                            bot_func()
                     elif item["type"] == "wait_time":
-                        time.sleep(int(item["data"]["minutes"]) * 60)
+                        time_wait = float(item["data"]["minutes"]) * 60
+                        for _ in range(int(time_wait)):
+                            time.sleep(1)
+                            self.bot._wait_if_paused()
 
                 if not self.loop_sequence: break
         except Exception as e:

@@ -1,6 +1,6 @@
 import flet as ft
 import re, os, json
-from managers.config import ConfigManager, PRESETS_DIR, BOT_ITEMS_FILE
+from bot import SettingsManager
 from .settings import Settings
 import sys
 import os
@@ -173,7 +173,7 @@ class ItemListPanel(ft.Container):
 
 
 class Presets(ft.Column):
-    def __init__(self, config: ConfigManager, page: ft.Page, settings: Settings):
+    def __init__(self, config: SettingsManager, page: ft.Page, settings: Settings):
         super().__init__()
         self.settings = settings
         self.expand = True
@@ -440,10 +440,10 @@ class Presets(ft.Column):
         self.apply_filters()
 
     def load_json_data(self):
-        if not os.path.exists(BOT_ITEMS_FILE):
+        if not os.path.exists(self.config.BOT_ITEMS_FILE):
             return {}
         try:
-            with open(BOT_ITEMS_FILE, "r", encoding="utf-8") as f:
+            with open(self.config.BOT_ITEMS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             return {}
@@ -588,7 +588,7 @@ class Presets(ft.Column):
             show_popup(self.page, "Please select a preset to load.", is_error=True)
             return
         try:
-            with open(os.path.join(PRESETS_DIR, fname), "r") as f:
+            with open(os.path.join(self.config.PRESETS_DIR, fname), "r") as f:
                 self.preset_set = set(json.load(f))
 
             self.filename_input.value = fname.replace(".json", "")
@@ -608,7 +608,7 @@ class Presets(ft.Column):
             show_popup(self.page, "Please enter a filename to save.", is_error=True)
             return
         try:
-            with open(os.path.join(PRESETS_DIR, f"{name}.json"), "w") as f:
+            with open(os.path.join(self.config.PRESETS_DIR, f"{name}.json"), "w") as f:
                 json.dump(list(self.preset_set), f, indent=4)
 
             self.update_preset_dropdown()
@@ -624,7 +624,7 @@ class Presets(ft.Column):
             show_popup(self.page, "Please select a preset to delete.", is_error=True)
             return
         try:
-            os.remove(os.path.join(PRESETS_DIR, fname))
+            os.remove(os.path.join(self.config.PRESETS_DIR, fname))
             self.preset_dropdown.value = None
             self.update_preset_dropdown()
             self.settings.update_settings()
