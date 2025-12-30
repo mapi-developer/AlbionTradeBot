@@ -11,12 +11,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pages.login import Login
 
 
-API_URL = "https://crypto-backend-736893217724.europe-west3.run.app"
+API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
 
 class Subscription(ft.Container):
-    """
-    Small widget used in the Header to show status.
-    """
     def __init__(self, page: ft.Page, login: Login):
         super().__init__()
         self.login = login

@@ -7,8 +7,8 @@ from urllib.parse import urlparse, parse_qs
 import urllib.parse
 from typing import Optional
 
-API_URL = "https://crypto-backend-736893217724.europe-west3.run.app"
-GOOGLE_CLIENT_ID = "736893217724-2q2tqloh51meq7c6oklt7apk9jqfm5vt.apps.googleusercontent.com"
+API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
+GOOGLE_CLIENT_ID = "1054089939982-e2umo92u5p7mh4gjm3hvknddprenho3k.apps.googleusercontent.com"
 DISCORD_CLIENT_ID = "1447721013260456058"
 LOCAL_AUTH_PORT = 5000
 LOCAL_REDIRECT_URI = f"http://127.0.0.1:{LOCAL_AUTH_PORT}/oauth/callback"
@@ -80,7 +80,7 @@ class Login(ft.Container):
             threading.Thread(target=self.start_local_server, daemon=True).start()
 
             # Construct Auth URL
-            redirect_uri = f"{API_URL}/auth/login/{provider}"
+            redirect_uri = f"{API_URL}/login/{provider}"
             state_param = urllib.parse.quote(LOCAL_REDIRECT_URI)
 
             if provider == "google":
