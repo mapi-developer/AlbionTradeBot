@@ -1,4 +1,4 @@
-from .components import GuiStyle, Header, BotOverlay, SubscriptionTab
+from .components import GuiStyle, Header, BotOverlay, Subscription
 from .pages import Settings, Presets, Login, Dashboard, Shop
 from .app import GuiApp
 
@@ -8,7 +8,7 @@ __all__ = [
     "Settings",
     "Header",
     "BotOverlay",
-    "SubscriptionTab",
+    "Subscription",
     "Presets",
     "Login",
     "Dashboard",

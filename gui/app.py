@@ -4,7 +4,7 @@ import threading
 from gui import Header
 from gui import Presets
 from gui import Login
-from gui import SubscriptionTab
+from gui import Subscription
 from gui import BotOverlay
 from gui import Dashboard
 from gui import Settings
@@ -45,13 +45,12 @@ class GuiApp:
         # )
         self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header)
 
-        self.shop = Shop()
+        self.shop = Shop(login_state=self.login.state)
         
         # Pass the Header's subscription widget to the Tab so it can update status after purchase
-        self.subscription_tab = SubscriptionTab(
+        self.subscription_tab = Subscription(
             self.page, 
-            self.login, 
-            status_widget=self.header.subscription
+            self.login
         )
 
         self.header.subscription.open_subscriptions_offer.on_click = lambda e: self.go_to_subscription()
@@ -88,7 +87,7 @@ class GuiApp:
 
     def go_to_subscription(self):
         """Switches the view to the Subscription Tab."""
-        self.body.content = self.subscription_tab
+        self.body.content = self.shop
         self.page.update()
 
     def on_nav_click(self, event):

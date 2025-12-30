@@ -1,12 +1,16 @@
 import flet as ft
+import requests
+import webbrowser
 
+API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
 
 class ShopingCard(ft.Column):
-    def __init__(self, title: str, description: str, price: str, on_select):
+    def __init__(self, title: str, description: str, price: str, plan_id: str, on_select):
         super().__init__()
 
         self.on_select = on_select
         self.selected = False
+        self.plan_id = plan_id 
         self.col = {"sm": 12, "md": 4, "xl": 3}
 
         self.check_icon = ft.Icon(
@@ -107,19 +111,21 @@ class ShopCards(ft.ResponsiveRow):
         self.vertical_alignment = ft.CrossAxisAlignment.CENTER
         self.spacing = 30
         self.run_spacing = 30
-        self.chosen_subscription = None
+        self.chosen_plan_id = None 
+        self.chosen_subscription_name = None
 
         self.controls = [
             ShopingCard(
-                "Starter Plan", "Full bot access for a week", "$15", self.select_plan
+                "Starter Plan", "Full bot access for a week", "$15", "1_week", self.select_plan
             ),
             ShopingCard(
-                "Monthly Plan", "Full bot access for one month", "$50", self.select_plan
+                "Monthly Plan", "Full bot access for one month", "$50", "1_month", self.select_plan
             ),
             ShopingCard(
                 "Three Month Pass",
                 "Full bot access for three months",
-                "$130",
+                "$130", 
+                "3_months",
                 self.select_plan,
             ),
         ]
@@ -129,9 +135,10 @@ class ShopCards(ft.ResponsiveRow):
             card.selected = False
 
         selected_card.selected = True
-        self.chosen_subscription = (
+        self.chosen_subscription_name = (
             selected_card.controls[0].content.controls[0].controls[1].value
         )
+        self.chosen_plan_id = selected_card.plan_id
 
         for card in self.controls:
             card.update_state()
@@ -152,8 +159,8 @@ class GiftInfo(ft.Container):
         )
 
         self.recipient_id = ft.TextField(
-            label="Recipient Email or Discord ID",
-            hint_text="e.g. user@email.com",
+            label="Recipient User ID",
+            hint_text="e.g. 123",
             border_color="white",
             focused_border_color="#1d9dec",
             label_style=ft.TextStyle(color="white"),
@@ -190,9 +197,11 @@ class GiftInfo(ft.Container):
 
 
 class Shop(ft.Container):
-    def __init__(self):
+    def __init__(self, login_state=None, page=None):
         super().__init__()
         self.padding = ft.padding.all(30)
+        self.login_state = login_state
+        self.page = page
 
         self.shop_cards = ShopCards()
         self.gift_info = GiftInfo()
@@ -224,23 +233,71 @@ class Shop(ft.Container):
         )
 
     def on_purchase_click(self, e):
-        plan = self.shop_cards.chosen_subscription
+        print("Purchase")
+        plan_id = self.shop_cards.chosen_plan_id
         is_gift = self.gift_info.gift_checkbox.value
-        target_user = self.gift_info.recipient_id.value if is_gift else "Self"
-        if not plan:
-            print("Error: No plan selected")
-        elif is_gift and not target_user:
-            print("Error: Please provide recipient info")
+        
+        # Determine target user
+        if is_gift:
+             print("gift")
+             target_user_id = self.gift_info.recipient_id.value
+        elif self.login_state:
+             print("not gift")
+             target_user_id = self.login_state.user_id
         else:
-            print(f"Purchasing {plan} for {target_user}")
+             print("Error to find user")
+             target_user_id = None
 
+        if not plan_id:
+            self.show_snack("Error: No plan selected")
+            return
+        
+        if not target_user_id:
+            self.show_snack("Error: Please provide recipient ID or login first")
+            return
+
+        try:
+            print("Call backend")
+            # Call Backend with Updated Structure
+            # user_id in params, plan_id in body
+            res = requests.post(
+                f"{API_URL}/payments/create", 
+                params={"user_id": target_user_id},
+                json={"plan_id": plan_id}
+            )
+            
+            if res.status_code == 200:
+                data = res.json()
+                invoice_url = data.get("invoice_url")
+                if invoice_url:
+                    webbrowser.open(invoice_url)
+                    self.show_snack("Redirecting to payment provider...")
+                else:
+                    self.show_snack("Error: Payment URL not found")
+            else:
+                print(res.text)
+                self.show_snack(f"Error starting payment: {res.status_code}")
+
+        except Exception as ex:
+            print(ex)
+            self.show_snack(f"Connection Error: {ex}")
+
+    def show_snack(self, message):
+        if self.page:
+            self.page.snack_bar = ft.SnackBar(ft.Text(message))
+            self.page.snack_bar.open = True
+            self.page.update()
 
 def main(page: ft.Page):
     page.padding = 0
     page.title = "Subscription Shop"
     page.scroll = "auto"
-
-    app_shop = Shop()
+    
+    # Mock login state for testing
+    class MockState:
+        user_id = 1
+        
+    app_shop = Shop(login_state=MockState(), page=page)
 
     def on_page_resize(e):
         app_shop.gift_info.update_alignment(page.window.width)

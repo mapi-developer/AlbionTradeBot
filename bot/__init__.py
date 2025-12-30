@@ -1,6 +1,6 @@
 from .api import APIClient, DatabaseInterface
 from .core import WindowCapture, InputSender
-from .managers import MarketManager, TravelManager, SettingsManager, LoginManager
+from .managers import MarketManager, TravelManager, SettingsManager, LoginManager, Logger
 from .net import AlbionSniffer
 from .bot import Bot
 
@@ -15,4 +15,5 @@ __all__ = [
     "LoginManager",
     "AlbionSniffer",
     "Bot",
+    "Logger",
 ]

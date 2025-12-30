@@ -11,7 +11,7 @@ COMMAND_TYPES = {
         "label": "Travel to",
         "icon": ft.Icons.NAVIGATION_ROUNDED,
         "color": ft.Colors.BLUE_500,
-        "func": "travel_to" # Placeholder
+        "func": "travel_to" 
     },
     "price_check": {
         "label": "Price Check",
@@ -35,7 +35,7 @@ COMMAND_TYPES = {
         "label": "Wait time",
         "icon": ft.Icons.TIMER_OUTLINED,
         "color": "#cd9316",
-        "func": "wait_time" # Placeholder
+        "func": "wait_time" 
     },
 }
 
@@ -268,15 +268,17 @@ class OrdersGraph(ft.Container):
 
 
 class RightPanel(ft.Column):
-    def __init__(self, content_controls=[], scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO):
+    def __init__(self, content_controls=[], scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO, expand_content=False):
         super().__init__()
         self.scroll = scroll_mode
+        self.expand = True # Ensure the panel itself takes available space
         self.col = {"sm": 10.5, "md": 10.5, "xl": 10.5}
         self.controls = [
             ft.Container(
-                content=ft.Column(spacing=0, controls=content_controls),
+                content=ft.Column(spacing=0, controls=content_controls, expand=expand_content),
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(20, 10, 20, 0),
+                expand=True # Ensure the container takes available space
             )
         ]
 
@@ -836,9 +838,37 @@ class BotControlPanel(ft.Container):
             ]
         )
 
+class SubscriptionBlocker(ft.Container):
+    def __init__(self, on_shop_click):
+        super().__init__()
+        self.bgcolor = ft.Colors.with_opacity(0.8, "#131415")
+        self.alignment = ft.alignment.center
+        self.expand = True
+        self.border_radius = 10
+        self.content = ft.Column(
+            controls=[
+                ft.Icon(ft.Icons.LOCK_OUTLINE, size=64, color=ft.Colors.RED_400),
+                ft.Text("Subscription Required", size=24, weight=ft.FontWeight.BOLD),
+                ft.Text("This feature is only available for active subscribers.", size=16, color=ft.Colors.GREY_400),
+                ft.Container(height=20),
+                ft.ElevatedButton(
+                    text="Go to Shop",
+                    icon=ft.Icons.SHOPPING_BAG,
+                    style=ft.ButtonStyle(
+                        bgcolor="#1d9dec",
+                        color=ft.Colors.WHITE,
+                        padding=20
+                    ),
+                    on_click=on_shop_click
+                )
+            ],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.CENTER
+        )
 
 class BotSequencePanel(RightPanel):
     def __init__(self, dashboard):
+        self.dashboard = dashboard
         self.title = ft.Container(
             content=ft.ResponsiveRow(
                 controls=[
@@ -854,14 +884,58 @@ class BotSequencePanel(RightPanel):
         )
 
         self.bot_control_panel = BotControlPanel(dashboard=dashboard)
-
-        super().__init__(
-            content_controls=[
-                self.title,
-                ft.Divider(),
-                self.bot_control_panel,
-            ]
+        
+        # 1. Main UI content inside the layout container with padding
+        self.content_layout = ft.Container(
+            content=ft.Column(
+                controls=[
+                    self.title,
+                    ft.Divider(),
+                    self.bot_control_panel,
+                ],
+                spacing=0,
+                expand=True,
+                scroll=ft.ScrollMode.AUTO 
+            ),
+            padding=ft.padding.only(20, 10, 20, 0),
+            expand=True
         )
+
+        # 2. Blocker covers everything (Overlay)
+        self.blocker = SubscriptionBlocker(on_shop_click=lambda e: self.dashboard.app.go_to_subscription())
+        self.blocker.visible = False 
+
+        # 3. Stack wraps both, allowing blocker to sit on top of the padded container
+        self.main_stack = ft.Stack(
+            controls=[
+                self.content_layout,
+                self.blocker
+            ],
+            expand=True
+        )
+
+        # 4. Initialize RightPanel
+        # We override the controls list directly to bypass the default padding container
+        super().__init__()
+        self.controls = [
+            ft.Container(
+                content=self.main_stack,
+                bgcolor=ft.Colors.TRANSPARENT,
+                padding=0, # No padding on the outer container
+                expand=True 
+            )
+        ]
+        self.expand = True
+        self.scroll = None
+    
+    def show_tab(self):
+        if self.dashboard.header and self.dashboard.header.subscription:
+            is_subscribed = self.dashboard.header.subscription.is_active
+            self.blocker.visible = not is_subscribed
+            self.bot_control_panel.disabled = not is_subscribed 
+            
+            if self.page:
+                self.update()
 
 
 class ActivityLogItem(ft.Container):
@@ -1225,10 +1299,17 @@ class Dashboard(ft.Container):
             self.stop_sequence()
 
     def change_tab(self, event):
+        target_tab = event.control.data
         self.content = ft.ResponsiveRow(
-            controls=[self.left_panel, self.right_panels[event.control.data]], spacing=0
+            controls=[self.left_panel, self.right_panels[target_tab]], spacing=0
         )
-        self.update()
+        
+        # Check subscription when opening the sequence tab
+        if target_tab == "sequence":
+            self.bot_sequence_panel.show_tab()
+        
+        if self.page:
+            self.update()
 
 
 def main(page: ft.Page):
