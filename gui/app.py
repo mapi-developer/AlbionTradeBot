@@ -10,7 +10,7 @@ from gui import Dashboard
 from gui import Settings
 from gui import Shop
 
-from bot import Bot, SettingsManager
+from bot import Bot, SettingsManager, Logger
 
 class GuiApp:
     overlay:BotOverlay
@@ -28,6 +28,11 @@ class GuiApp:
         }
 
         self.config = SettingsManager()
+
+        self.logger = Logger()
+        self.logger.start_session()
+        self.logger.add_log("app", "Application started")
+
         self.login = Login(self.page, on_login_success=self.show_main_app)
 
         self.bot = Bot()
@@ -43,7 +48,7 @@ class GuiApp:
         #     content=Dashboard(self, self.config, self.page, self.bot, self.header),
         #     expand=True,
         # )
-        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header)
+        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger)
 
         self.shop = Shop(login_state=self.login.state)
         
@@ -73,11 +78,9 @@ class GuiApp:
             if self.bot: self.bot.destroy()
             if not self.bot:
                 try:
-                    print("Initializing bot...")
-                    self.bot = Bot()
-                    print("Bot initialized.")
+                    self.bot = Bot(self.logger)
                 except Exception as e:
-                    print(f"Error initializing bot: {e}")
+                    self.logger.add_log("error", f"Bot initialization failed: {e}")
                     return
 
             if self.bot:
@@ -146,6 +149,10 @@ def main(page: ft.Page):
         if e.data == "close":
             if hasattr(app, 'overlay') and app.overlay:
                 app.overlay.stop()
+
+            if hasattr(app, 'logger'):
+                app.logger.add_log("app", "Application closing")
+                app.logger.end_session()
             
             page.window.destroy()
 

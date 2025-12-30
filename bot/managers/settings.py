@@ -102,6 +102,7 @@ class SettingsManager:
     BOT_LOOP_FILE = os.path.join(BASE_DIR, "config/settings", "bot_loop.json")
     SETTINGS_FILE = os.path.join(BASE_DIR, "config/settings", "settings.json")
     PRESETS_DIR = os.path.join(BASE_DIR, "config/settings", "presets")
+    LOGS_DIR = os.path.join(BASE_DIR, "config/logs")
 
     TRAVALER_BANNERS = [
         os.path.join(BASE_DIR, "config/static/img/travaler_icons", "island_travaler_banner.png")
@@ -164,3 +165,27 @@ class SettingsManager:
                 json.dump(loop_data, f, indent=4)
         except Exception as e:
             print(f"Error saving bot loop: {e}")
+
+    def get_logs(self):
+        """Returns a list of log filenames, sorted by newest first."""
+        if not os.path.exists(self.LOGS_DIR):
+            return []
+        try:
+            files = [f for f in os.listdir(self.LOGS_DIR) if f.endswith('.json')]
+            files.sort(reverse=True)
+            return files
+        except Exception as e:
+            print(f"Error listing logs: {e}")
+            return []
+
+    def get_log(self, filename):
+        """Returns the content of a specific log file as a list/dict."""
+        path = os.path.join(self.LOGS_DIR, filename)
+        if not os.path.exists(path):
+            return []
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading log {filename}: {e}")
+            return []

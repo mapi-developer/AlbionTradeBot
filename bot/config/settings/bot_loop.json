@@ -6,5 +6,16 @@
             "market_city": "black_market",
             "island_name": ""
         }
+    },
+    {
+        "type": "price_check"
+    },
+    {
+        "type": "travel_to",
+        "data": {
+            "destination": "island",
+            "market_city": "black_market",
+            "island_name": "Matvey4a Guild's Is;nad - fort"
+        }
     }
 ]

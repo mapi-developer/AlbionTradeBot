@@ -1,7 +1,9 @@
+from logging import Logger
 import flet as ft
 import threading
 import time
 import keyboard
+import os
 from components import BotOverlay
 from bot import Bot
 
@@ -271,14 +273,14 @@ class RightPanel(ft.Column):
     def __init__(self, content_controls=[], scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO, expand_content=False):
         super().__init__()
         self.scroll = scroll_mode
-        self.expand = True # Ensure the panel itself takes available space
+        self.expand = True 
         self.col = {"sm": 10.5, "md": 10.5, "xl": 10.5}
         self.controls = [
             ft.Container(
                 content=ft.Column(spacing=0, controls=content_controls, expand=expand_content),
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(20, 10, 20, 0),
-                expand=True # Ensure the container takes available space
+                expand=True 
             )
         ]
 
@@ -754,7 +756,7 @@ class ExecutionSequencePanel(ft.Container):
         if self.run_button.data == "run":
             if self.dashboard.bot != None:
                 self.dashboard.bot.destroy()
-            self.dashboard.bot = Bot()
+            self.dashboard.bot = Bot(logger=self.dashboard.logger)
             self.dashboard.app.bot = self.dashboard.bot
             self.run_button.content=ft.Row(
                 [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STOP", weight="bold", size=18)],
@@ -939,7 +941,7 @@ class BotSequencePanel(RightPanel):
 
 
 class ActivityLogItem(ft.Container):
-    def __init__(self, title: str, on_click=None):
+    def __init__(self, title: str, on_click=None, data=None):
         super().__init__()
         self.title = ft.Text(
             value=title,
@@ -958,16 +960,21 @@ class ActivityLogItem(ft.Container):
                 bgcolor="#415E7A",
                 shape=ft.RoundedRectangleBorder(radius=8),
             ),
-            on_click=on_click # Added on_click handler
+            on_click=on_click, # Added on_click handler
+            data=data # Store filename
         )
 
 
 class LogsView(ft.Container):
     LOG_COLORS = {
+        "app": "#d8d7d7",
+        "bot": "#6f178f",
         "system": ft.Colors.BLUE_400,
         "activity": ft.Colors.GREEN_400,
         "orders": ft.Colors.AMBER_500,
-        "error": ft.Colors.RED_400
+        "error": ft.Colors.RED_400,
+        "market": ft.Colors.PURPLE_400,
+        "travel": ft.Colors.CYAN_400
     }
 
     class LogRow(ft.Row):
@@ -1003,13 +1010,16 @@ class LogsView(ft.Container):
         self.content = self.log_column
 
         if initial_logs:
-            for entry in initial_logs:
-                if ";" in entry:
-                    category, message = entry.split(";", 1)
-                    color = self.LOG_COLORS.get(category.lower(), ft.Colors.GREY_400)
-                    self.log_column.controls.append(
-                        self.LogRow(category, message, color)
-                    )
+            self.add_logs(initial_logs)
+            
+    def clear_logs(self):
+        self.log_column.controls.clear()
+        if self.page:
+            self.update()
+
+    def set_logs(self, log_list: list[str]):
+        self.log_column.controls.clear()
+        self.add_logs(log_list)
 
     def add_logs(self, log_list: list[str]):
         for entry in log_list:
@@ -1019,13 +1029,15 @@ class LogsView(ft.Container):
                 self.log_column.controls.append(
                     self.LogRow(category, message, color)
                 )
-        self.update()
+        if self.page:
+            self.update()
 
 
 class ActivityLogsPanel(RightPanel):
-    def __init__(self):
+    def __init__(self, dashboard=None):
         super().__init__()
         self.expand = True
+        self.dashboard = dashboard # Store reference to dashboard (and app)
 
         self.back_button = ft.IconButton(
             icon=ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
@@ -1049,33 +1061,52 @@ class ActivityLogsPanel(RightPanel):
         )
 
         self.logs_list_content = ft.Column(
-            controls=[
-                ActivityLogItem("23.12.2025 | 14:42 UTC | Current Session", on_click=self.handle_log_click),
-                ActivityLogItem("23.12.2025 | 12:17 UTC", on_click=self.handle_log_click),
-                ActivityLogItem("22.12.2025 | 10:17 UTC", on_click=self.handle_log_click),
-            ],
+            controls=[], # Populated dynamically
             spacing=10
         )
 
-        # 3. Content for Details State
-        # In a real app, you would pass the actual data from the JSON file here
-        self.logs_view = LogsView(
-            initial_logs=[
-                "system;Bot Initialized",
-                "system;Database connected",
-                "system;Items loaded (1972)",
-                "activity;Started to make orders",
-                "orders;Order Made | Novice's Scholar Robe | BM: 1920 | Order: 54 | Amount: 12",
-                "orders;Order Made | Novice's Scholar Jacket | BM: 162 | Order: 2 | Amount: 120",
-                "orders;Order Made | Novice's Scholar Shoes | BM: 5245 | Order: 554 | Amount: 8",
-            ]
-        )
+        self.logs_view = LogsView()
         self.logs_view.visible = False
         self.logs_view.margin = ft.margin.only(0, 10, 0, 20)
 
         self.inner_column = self.controls[0].content 
         
+        # Initialize with logs
+        self.refresh_logs()
         self._setup_initial_view()
+
+    def format_log_title(self, filename):
+        # filename: 23.12.2025-14.42.json
+        # output: 23.12.2025 | 14:42 UTC
+        try:
+            name = os.path.splitext(filename)[0]
+            date_part, time_part = name.split('-')
+            time_formatted = time_part.replace('.', ':')
+            return f"{date_part} | {time_formatted} UTC"
+        except:
+            return filename
+
+    def refresh_logs(self):
+        files = []
+        if self.dashboard and self.dashboard.config:
+            files = self.dashboard.config.get_logs()
+        
+        self.logs_list_content.controls.clear()
+        
+        for f in files:
+            title = self.format_log_title(f)
+            
+            # Optional: Highlight current session if matching
+            if self.dashboard and self.dashboard.app and hasattr(self.dashboard.app, 'logger'):
+                current = self.dashboard.app.logger.current_session_file
+                if current and os.path.basename(current) == f:
+                     title += " | Current Session"
+            
+            self.logs_list_content.controls.append(
+                ActivityLogItem(title, on_click=self.handle_log_click, data=f)
+            )
+        if self.page:
+            self.update()
 
     def _setup_initial_view(self):
         self.scroll = ft.ScrollMode.AUTO
@@ -1092,7 +1123,11 @@ class ActivityLogsPanel(RightPanel):
         ]
 
     def handle_log_click(self, e):
-        self.show_log_details()
+        filename = e.control.data
+        if filename and self.dashboard and self.dashboard.config:
+            data = self.dashboard.config.get_log(filename)
+            self.logs_view.set_logs(data)
+            self.show_log_details()
 
     def show_logs_list(self):
         self.scroll = ft.ScrollMode.AUTO
@@ -1134,7 +1169,7 @@ class ActivityLogsPanel(RightPanel):
 
 class Dashboard(ft.Container):
     bot: Bot | None
-    def __init__(self, app=None, config=None, page=None, bot: Bot = None, header=None):
+    def __init__(self, app=None, config=None, page=None, bot: Bot = None, header=None, logger: Logger = None):
         super().__init__()
         self.expand = True
         self.app = app
@@ -1142,6 +1177,8 @@ class Dashboard(ft.Container):
         self.page = page
         self.bot = bot
         self.header = header
+        if logger == None: logger = Logger()
+        self.logger = logger
 
         self.app.overlay = None
         self.is_running_sequence = False
@@ -1150,7 +1187,7 @@ class Dashboard(ft.Container):
 
         self.dashboard_panel = DashboardPanel()
         self.bot_sequence_panel = BotSequencePanel(dashboard=self)
-        self.bot_activity_panel = ActivityLogsPanel()
+        self.bot_activity_panel = ActivityLogsPanel(dashboard=self) # Pass self
         self.left_panel = LeftPanel()
 
         self.seq_panel = self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
@@ -1216,7 +1253,7 @@ class Dashboard(ft.Container):
     def start_sequence(self):
         if not self.bot_sequence: return
         if self.app.bot == None:
-            self.bot = Bot()
+            self.bot = Bot(logger=self.logger)
             self.app.bot = self.bot
         if self.app.overlay == None:
             self.app.overlay = BotOverlay()
@@ -1307,10 +1344,10 @@ class Dashboard(ft.Container):
         # Check subscription when opening the sequence tab
         if target_tab == "sequence":
             self.bot_sequence_panel.show_tab()
-        
-        if self.page:
-            self.update()
-
+        elif target_tab == "logs":
+            self.bot_activity_panel.refresh_logs() # Refresh list when opening logs
+            
+        self.update()
 
 def main(page: ft.Page):
     page.padding = 0

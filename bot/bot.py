@@ -1,6 +1,6 @@
 import re
 import threading
-from .managers import SettingsManager, MarketManager, TravelManager, LoginManager
+from .managers import SettingsManager, MarketManager, TravelManager, LoginManager ,Logger
 from .core import WindowCapture
 from .api import DatabaseInterface
 from .net import AlbionSniffer
@@ -16,6 +16,7 @@ class Bot:
             market_manager: MarketManager = None,
             travel_manager: TravelManager = None,
             login_manager: LoginManager = None,
+            logger: Logger = None,
             sniffer: AlbionSniffer = None
         ):
         self.settings = SettingsManager()
@@ -26,11 +27,13 @@ class Bot:
         if market_manager == None: market_manager = MarketManager(capture=capture, settings=self.settings)
         if travel_manager == None: travel_manager = TravelManager(self, capture=capture, settings=self.settings)
         if login_manager == None: login_manager = LoginManager(bot=self, capture=capture, settings=self.settings)
+        if logger == None: logger = Logger()
         if sniffer == None: sniffer = AlbionSniffer()
         self.capture = capture
         self.market_manager = market_manager
         self.travel_manager = travel_manager
         self.login_manager = login_manager
+        self.logger = logger
         self.sniffer = sniffer
         self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         self.sniffer_thread.start()
@@ -38,6 +41,8 @@ class Bot:
         self.current_task_name = "Ready"
         self.current_item_name = ""
         self.current_location = "island"
+
+        self.logger.add_log("bot", f"Bot initialized!")
 
     def destroy(self):
         print("Destroying Bot instance...")
@@ -72,6 +77,7 @@ class Bot:
         
         gc.collect()
         print("Bot instance destroyed.")
+        self.logger.add_log("bot", f"Bot destroyed!")
 
     def load_preset_items(self, city: str):
         buy_mode = self.settings.get("general")["buy_mode"]
@@ -127,6 +133,7 @@ class Bot:
         self.status = "Running"
         self.current_task_name = "Price Check"
         self.capture.set_foreground_window()
+        self.logger.add_log("bot", f"Bot Starting price checking for {self.current_location}")
         market_title = self.market_manager.get_market_title()
         self.current_location = market_title
         is_black_market = market_title == "black_market"
@@ -198,6 +205,7 @@ class Bot:
         self.status = "Running"
         self.current_task_name = "Removing Orders"
         self.current_location = self.market_manager.get_market_title()
+        self.logger.add_log("bot", f"Bot Starting to remove orders for {self.current_location}")
         self.capture.set_foreground_window()
         self.market_manager.change_tab("my_orders_tab")
         while self.market_manager.order_exists():
@@ -224,6 +232,7 @@ class Bot:
             return
     
         print(f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
+        self.logger.add_log("bot", f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
         self.market_manager.prepare()
 
         try:
@@ -240,6 +249,7 @@ class Bot:
                 current_market_orders = self.sniffer.get_market_buffer()
                 if not current_market_orders:
                     print(f"No data for {item_unique_name}")
+                    self.logger.add_log("market", f"No data for {item_unique_name}")
                     self.market_manager.close_item()
                     continue
                 
@@ -260,7 +270,6 @@ class Bot:
                                 order_price = price
 
                     lowest_price = order_price
-                print(f"{item_unique_name} | {lowest_price}")
                 min_profit_rate = float(settings["min_profit_rate"])/100 or 0.0
                 
                 black_market_price = 0
@@ -268,6 +277,7 @@ class Bot:
                     black_market_price = items_prices[item_unique_name] / 10000
                 else:
                     print(f"No black market data for {item_unique_name}")
+                    self.logger.add_log("market", f"No black market data for {item_unique_name}")
                     self.market_manager.close_item()
                     continue
 
@@ -287,9 +297,11 @@ class Bot:
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
+                        self.logger.add_log("market", f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
                         self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
                     else:
                         print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
+                        self.logger.add_log("market", f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
                         self.market_manager.close_item()
                 else:
                     self.market_manager.close_item()
@@ -297,15 +309,18 @@ class Bot:
                 print(f"{min_silver} | {self.market_manager.silver_amount}")
                 if self.market_manager.silver_amount != 0 and int(min_silver) >= self.market_manager.silver_amount:
                     print("[Warning] Silver amount is less than minimum to continue")
+                    self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
                     break
         except Exception as e:
             print(f"[Error] Buy items issue: {e}")
+            self.logger.add_log("market", f"[Error] Buy items issue: {e}")
         
         self.status = "Ready"
 
     def travel_to(self, destination: str):
         self.status = "Running"
         self.current_task_name = "Traveling"
+        self.logger.add_log("bot", f"Bot Starting traveling to {destination}")
         self.capture.set_foreground_window()
         self.travel_manager.travel_to(destination=destination)
 
