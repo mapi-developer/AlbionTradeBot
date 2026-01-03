@@ -8,6 +8,15 @@ a = Analysis(
     binaries=[],
     datas=[],  # We will NOT bundle config here, we copy it manually
     hiddenimports=[
+        # --- YOUR APP MODULES ---
+        'gui.pages.login',      # Fixes the crash you saw
+        'gui.pages.dashboard',  # Preventing future crashes
+        'gui.pages.settings',
+        'gui.pages.shop',
+        'gui.pages.presets',
+        'gui.components.subscription',
+        
+        # --- THIRD PARTY LIBRARIES ---
         'scapy.layers.all',
         'sqlalchemy.dialects.postgresql',
         'psycopg2',

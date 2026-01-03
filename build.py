@@ -23,14 +23,18 @@ def copy_external_assets():
     print(">>> Copying external assets...")
     
     source_dist = os.path.join('dist', 'AlbionTradeBot')
-    
+
     # 1. Copy Config Folder (This makes it editable)
-    src_config = 'config'
+    src_config = os.path.join('bot', 'config') 
+    
     dst_config = os.path.join(source_dist, 'config')
     
     # Ignore internal python cache files
-    shutil.copytree(src_config, dst_config, dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
-    print(f"   [+] Copied config folder to {dst_config}")
+    if os.path.exists(src_config):
+        shutil.copytree(src_config, dst_config, dirs_exist_ok=True, ignore=shutil.ignore_patterns('__pycache__'))
+        print(f"   [+] Copied config folder to {dst_config}")
+    else:
+        print(f"   [!] ERROR: Config source not found at {src_config}")
 
     # 2. Copy .env file (Critical for Database)
     if os.path.exists('.env'):

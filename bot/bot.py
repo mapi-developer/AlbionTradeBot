@@ -17,7 +17,8 @@ class Bot:
             travel_manager: TravelManager = None,
             login_manager: LoginManager = None,
             logger: Logger = None,
-            sniffer: AlbionSniffer = None
+            sniffer: AlbionSniffer = None,
+            overlay = None
         ):
         self.settings = SettingsManager()
         self.status = "Initializing"
@@ -41,8 +42,10 @@ class Bot:
         self.current_task_name = "Ready"
         self.current_item_name = ""
         self.current_location = "island"
+        self.sequence_settings = None
+        self.overlay = overlay
 
-        self.logger.add_log("bot", f"Bot initialized!")
+        self.logger.add_log("app", f"Bot initialized!")
 
     def destroy(self):
         print("Destroying Bot instance...")
@@ -55,6 +58,7 @@ class Bot:
             self.sniffer_thread.join(timeout=1.0)
             if self.sniffer_thread.is_alive():
                 print("Warning: Sniffer thread did not shut down cleanly.")
+                self.logger.add_log("app", f"Warning: Sniffer thread did not shut down cleanly.")
 
         if self.market_manager != None:
             self.market_manager.destroy()
@@ -77,18 +81,20 @@ class Bot:
         
         gc.collect()
         print("Bot instance destroyed.")
-        self.logger.add_log("bot", f"Bot destroyed!")
+        self.logger.add_log("app", f"Bot destroyed!")
 
     def load_preset_items(self, city: str):
         buy_mode = self.settings.get("general")["buy_mode"]
         preset_file = self.settings.get(buy_mode+"_buy")["presets"][city]
         if not preset_file:
             print(f"[Error] No preset selected for '{city}'")
+            self.logger.add_log("error", f"[Error] No preset selected for '{city}'")
             return []
         
         path = os.path.join(self.settings.PRESETS_DIR, preset_file)
         if not os.path.exists(path):
             print(f"[Error] Preset file not found: {path}")
+            self.logger.add_log("error", f"[Error] Preset file not found: {path}")
             return []
         
         try:
@@ -96,11 +102,13 @@ class Bot:
                 return json.load(f)
         except Exception as e:
             print(f"[Error] Failed to load preset {preset_file}: {e}")
+            self.logger.add_log("error", f"[Error] Failed to load preset {preset_file}: {e}")
             return []
 
     def toggle_pause(self):
         self.paused = not self.paused
         self.status = "Paused" if self.paused else "Running"
+        self.logger.add_log("bot", f"Pause toggled status: {self.status}")
 
         return self.paused
     
@@ -108,6 +116,8 @@ class Bot:
         while self.paused:
             time.sleep(.5)
         self.capture.set_foreground_window()
+        buy_mode = self.settings.get("general")["buy_mode"]
+        self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
 
     def parse_item_info(self, full_unique_name: str):
         if "@" in full_unique_name:
@@ -166,6 +176,7 @@ class Bot:
                 current_market_orders = self.sniffer.get_market_buffer()
                 if not current_market_orders:
                     print(f"No market data captured for: {item}")
+                    self.logger.add_log("market", f"No market data captured for: {item} (price_check)")
 
                 found_prices = {}
                 for order in current_market_orders:
@@ -229,6 +240,7 @@ class Bot:
 
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Settings")
+            self.logger.add_log("market", f"No itmes to buy. Please select a preset in Settings")
             return
     
         print(f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
@@ -236,15 +248,22 @@ class Bot:
         self.market_manager.prepare()
 
         try:
-            settings = self.settings.get(f"{buy_mode}_buy")
+            self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
             
-            for item_unique_name in items_to_buy_list:
+            for i, item_unique_name in enumerate(items_to_buy_list):
                 self._wait_if_paused()
                 self.market_manager.update_silver_balance()
                 self.sniffer.market_buffer.clear()
                 self.market_manager.search_item(item_unique_name, from_db=True)
                 self.market_manager.open_item()
                 self.market_manager.sleep(.5)
+
+                if not self.paused:
+                    self.overlay.send_update(
+                        status="Running", 
+                        task=f"Buy Items: {i+1}/{len(items_to_buy_list)}", 
+                        paused=False
+                    )
 
                 current_market_orders = self.sniffer.get_market_buffer()
                 if not current_market_orders:
@@ -270,7 +289,7 @@ class Bot:
                                 order_price = price
 
                     lowest_price = order_price
-                min_profit_rate = float(settings["min_profit_rate"])/100 or 0.0
+                min_profit_rate = float(self.sequence_settings["min_profit_rate"])/100 or 0.0
                 
                 black_market_price = 0
                 if item_unique_name in items_prices.keys():
@@ -285,10 +304,10 @@ class Bot:
                 profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
 
                 if profit_margin >= min_profit_rate:
-                    buy_logic_rules = settings.get("buy_logic", [])
-                    rules_sorted = sorted(buy_logic_rules, key=lambda x: int(x.get("price", 0)), reverse=True)
+                    buy_logic_rules = [i for i in self.sequence_settings.get("buy_logic", []) if i["amount_to_buy"] != "" and i["price_larger_then"] != ""]
+                    rules_sorted = sorted(buy_logic_rules, key=lambda x: int(x.get("price_larger_then", 0)), reverse=False)
 
-                    quantity_to_buy = int(settings.get("default_buy_amount", 0))
+                    quantity_to_buy = int(self.sequence_settings.get("default_buy_amount", 0))
 
                     for rule in rules_sorted:
                         price_threshold = int(rule.get("price_larger_then"))
@@ -297,7 +316,7 @@ class Bot:
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
-                        self.logger.add_log("market", f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
+                        self.logger.add_log("market", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.market_manager.silver_amount}")
                         self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
                     else:
                         print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
@@ -306,21 +325,20 @@ class Bot:
                 else:
                     self.market_manager.close_item()
 
-                print(f"{min_silver} | {self.market_manager.silver_amount}")
-                if self.market_manager.silver_amount != 0 and int(min_silver) >= self.market_manager.silver_amount:
-                    print("[Warning] Silver amount is less than minimum to continue")
-                    self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
-                    break
+                #if self.market_manager.silver_amount != 0 and int(min_silver) >= self.market_manager.silver_amount:
+                    #print("[Warning] Silver amount is less than minimum to continue")
+                    #self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
+                    #break
         except Exception as e:
             print(f"[Error] Buy items issue: {e}")
-            self.logger.add_log("market", f"[Error] Buy items issue: {e}")
+            self.logger.add_log("error", f"[Error] Buy items issue: {e}")
         
         self.status = "Ready"
 
     def travel_to(self, destination: str):
         self.status = "Running"
         self.current_task_name = "Traveling"
-        self.logger.add_log("bot", f"Bot Starting traveling to {destination}")
+        self.logger.add_log("travel", f"Bot Starting traveling to {destination}")
         self.capture.set_foreground_window()
         self.travel_manager.travel_to(destination=destination)
 

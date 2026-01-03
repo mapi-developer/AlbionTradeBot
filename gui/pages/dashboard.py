@@ -445,8 +445,8 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="bridgewatch", text="Bridgewatch"),
                     ft.DropdownOption(key="martlock", text="Martlock"),
                     ft.DropdownOption(key="thetford", text="Thetford"),
-                    ft.DropdownOption(key="caerleon", text="Caerleon"),
-                    ft.DropdownOption(key="brecilien", text="Brecilien"),
+                    #ft.DropdownOption(key="caerleon", text="Caerleon"),
+                    #ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
                 on_change=lambda _: self.trigger_save()
             ),
@@ -526,13 +526,13 @@ class FunctionToExecute(ft.Container):
             content=ft.Icon(name=COMMAND_TYPES[function_type]["icon"], color="#ffffff"),
         )
         
-        remove_btn_container = ft.Container(
+        self.remove_btn_container = ft.Container(
             content=ft.IconButton(icon=ft.Icons.DELETE, icon_color="#b32525"),
             col={"sm": 1}, alignment=ft.alignment.center_right
         )
-        self.remove_button = remove_btn_container.content
-
-        self.additional_info = ft.Container(col=0)
+        self.remove_button = self.remove_btn_container.content
+        
+        self.additional_info = ft.Container(col={"sm": 7, "md": 7, "xl": 7})
         if function_type == "travel_to":
             self.additional_info = TravelToAdditionalInfo(initial_data, on_change_callback)
         elif function_type == "wait_time":
@@ -547,7 +547,7 @@ class FunctionToExecute(ft.Container):
                     controls=[self.index, self.icon, self.title, self.additional_info],
                     spacing=20, vertical_alignment=ft.CrossAxisAlignment.CENTER, col={"sm": 10}
                 ),
-                remove_btn_container if can_be_removed else ft.Container(col=1)
+                self.remove_btn_container if can_be_removed else ft.Container(col=1)
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN
         )
@@ -564,10 +564,9 @@ class ExecutionFunctionsList(ft.Container):
         super().__init__()
         self.dashboard = dashboard
         self.height = 400
-        initial_move_to = FunctionToExecute("travel_to", can_be_removed=False)
         
         self.content = ft.Column(
-            controls=[initial_move_to],
+            controls=[],
             scroll=ft.ScrollMode.AUTO,
         )
         self.update_indexes()
@@ -576,12 +575,18 @@ class ExecutionFunctionsList(ft.Container):
         self.content.controls.clear()
         for i, item in enumerate(sequence_data):
             func_type = item.get("type", "price_check")
+
+            can_be_removed = True
+            if i == 0 and len([function["type"] for function in sequence_data if function["type"] == "travel_to"]) > 1:
+                can_be_removed = False
+
             new_func = FunctionToExecute(
                 func_type, 
-                can_be_removed=False if i == 0 else True, 
+                can_be_removed=can_be_removed, 
                 initial_data=item.get("data"),
                 on_change_callback=self.dashboard.save_sequence
             )
+            
             self.content.controls.append(new_func)
         
         self.update_indexes()
@@ -592,6 +597,14 @@ class ExecutionFunctionsList(ft.Container):
             can_be_removed=True,
             on_change_callback=self.dashboard.save_sequence
         )
+        travel_to_amount = len([function.function_type for function in self.content.controls if function.function_type == "travel_to"])
+        if travel_to_amount == 0 and new_function.function_type == "travel_to" and len(self.content.controls) != 0:
+            init_travel = FunctionToExecute(
+                event.control.data, 
+                can_be_removed=False,
+                on_change_callback=self.dashboard.save_sequence
+            )
+            self.content.controls.insert(0, init_travel)
         self.content.controls.append(new_function)
         self.update_indexes()
         self.dashboard.save_sequence()
@@ -611,6 +624,14 @@ class ExecutionFunctionsList(ft.Container):
             function.index.content.value = str(i)
             function.remove_button.data = str(i)
             function.remove_button.on_click = self.remove_function
+
+            if function.function_type == "travel_to":
+                travel_amount = len([function.function_type for function in self.content.controls if function.function_type == "travel_to"])
+                if i == 0 and travel_amount > 1:
+                    function.content.controls[1] = ft.Container(col=1)
+                elif i == 0:
+                    function.content.controls[1] = function.remove_btn_container
+
             
         if self.page: 
             self.update()
@@ -644,7 +665,7 @@ class ExecutionSequencePanel(ft.Container):
             offset=ft.Offset(0, .1)
         )
         self.home_island = ft.TextField(
-            label="Start/End Island Name",
+            label="End Island Name",
             text_size=12,
             col=4,
             prefix_icon=ft.Icons.MAP_OUTLINED,
@@ -792,11 +813,12 @@ class ExecutionSequencePanel(ft.Container):
 
     def loop_toggle(self, e):
         if self.loop_checkbox.value:
-            self.wait_before_loop.visible = True
+            self.wait_before_loop.visible = False
+            self.dashboard.loop_sequence = True
         else:
             self.wait_before_loop.visible = False
-        self.dashboard.loop_sequence = self.loop_checkbox.value
-        
+            self.dashboard.loop_sequence = False
+                
         self.update()
 
     def update_status(self, text: str, color: str):
@@ -1226,7 +1248,8 @@ class Dashboard(ft.Container):
         self.avail_panel.disabled = locked
         self.seq_panel.execution_functions_list.disabled = locked
         
-        self.update()
+        if self.page:
+            self.update()
 
     def save_sequence(self):
         self.bot_sequence = [c.get_serialized_data() for c in self.seq_panel.execution_functions_list.content.controls]
@@ -1282,8 +1305,10 @@ class Dashboard(ft.Container):
 
         if self.app.overlay:
             self.app.overlay.stop()
-
+        if self.bot != None:
+            self.bot.destroy()
         self.bot = None
+        self.seq_panel.run_button.data = "run"
         if self.app: self.app.bot = self.bot
         if self.page: self.update()
 
@@ -1310,7 +1335,7 @@ class Dashboard(ft.Container):
 
                     func_name = COMMAND_TYPES[item["type"]]["func"]
                     self.seq_panel.update_status(f"Executing: {item['type']}", ft.Colors.GREEN_400)
-                    
+                    self.bot.overlay = self.app.overlay
                     # Execute on bot
                     bot_func = getattr(self.bot, func_name, None)
                     if callable(bot_func):
@@ -1328,7 +1353,13 @@ class Dashboard(ft.Container):
                             time.sleep(1)
                             self.bot._wait_if_paused()
 
-                if not self.loop_sequence: break
+                functions_list = self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.execution_functions_list.content.controls
+                travel_amount = len([function.function_type for function in functions_list if function.function_type == "travel_to"])
+                if self.bot.current_location != "island" and travel_amount != 0:
+                    bot_func = getattr(self.bot, "travel_to", None)
+                    bot_func(self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value)
+
+                if self.loop_sequence == False: break
         except Exception as e:
             print(f"Sequence Error: {e}")
             self.stop_sequence()

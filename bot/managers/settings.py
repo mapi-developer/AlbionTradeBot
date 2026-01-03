@@ -26,7 +26,6 @@ class SettingsManager:
         "bridgewatch",
         "martlock",
         "thetford",
-        "brecilien",
         "black_market",
     ]
 
@@ -105,7 +104,44 @@ class SettingsManager:
     LOGS_DIR = os.path.join(BASE_DIR, "config/logs")
 
     TRAVALER_BANNERS = [
-        os.path.join(BASE_DIR, "config/static/img/travaler_icons", "island_travaler_banner.png")
+        # QUAD HD
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "1.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "2.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "3.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "4.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "5.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "6.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "7.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "8.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "9.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "10.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "11.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "12.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "13.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "14.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "15.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "16.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "17.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "18.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "19.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "20.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "21.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "22.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "23.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "24.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "25.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "26.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "27.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "28.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "29.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "30.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "31.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "32.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "33.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "34.png"),
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "35.png"),
+        # FULL HD
+        os.path.join(BASE_DIR, "config\\static\\img\\travaler_icons", "36.png"),
     ]
 
     def __init__(self):
@@ -142,6 +178,7 @@ class SettingsManager:
         return self.settings.get(key, self.DEFAULT_SETTINGS.get(key))
 
     def set(self, key, value):
+        print("save settings")
         self.settings[key] = value
         self.save_settings(self.settings)
 

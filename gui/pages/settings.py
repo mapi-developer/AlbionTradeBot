@@ -119,7 +119,7 @@ class BuyLogicItem(ft.Container):
             content_padding=10,
             border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             col={"sm": 2, "md": 2, "xl": 2},
-            on_change=save_callback
+            on_change=save_callback,
         )
         
         self.price_input = ft.TextField(
@@ -130,7 +130,7 @@ class BuyLogicItem(ft.Container):
             content_padding=10,
             border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
             col={"sm": 4, "md": 4, "xl": 4},
-            on_change=save_callback
+            on_change=save_callback,
         )
 
         self.content = ft.ResponsiveRow(
@@ -228,14 +228,14 @@ class BuyLogic(ft.Container):
         self.items_column.controls.clear() 
         
         for item in self.config.get(self.current_tab).get("buy_logic", []):
-            new_item = self.add_item(None)
+            new_item = self.add_item(None, True)
             if new_item:
                 new_item.quantity_input.value = item["amount_to_buy"]
                 new_item.price_input.value = item["price_larger_then"]
         
         self.update_ui()
 
-    def add_item(self, e) -> BuyLogicItem:
+    def add_item(self, e, isLoad: bool = False) -> BuyLogicItem:
         current_count = len(self.items_column.controls)
         if current_count < self.max_items:
             new_item = BuyLogicItem(
@@ -245,7 +245,8 @@ class BuyLogic(ft.Container):
             )
             self.items_column.controls.append(new_item)
             self.update_ui()
-            self.save_callback()
+            if not isLoad:
+                self.save_callback()
             return new_item
         return None
 

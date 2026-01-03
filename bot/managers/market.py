@@ -1,17 +1,21 @@
 from ..core import WindowCapture, InputSender
 from ..managers import SettingsManager
 import re
-import gc
+import random
 
 def ConvertSilverToNumber(string: str) -> int | None:
-    string = string.strip().replace(" ", "")
-    multipliers = {'k': 1_000, 'm': 1_000_000, 'b': 1_000_000_000}
+    try:
+        string = string.strip().replace(" ", "")
+        multipliers = {'k': 1_000, 'm': 1_000_000, 'b': 1_000_000_000}
 
-    match = re.match(r'([\d\.]+)([kmb]?)$', string)
-    if match:
-        number, suffix = match.groups()
-        return int(float(number) * multipliers.get(suffix, 1))
-    else:
+        match = re.match(r'([\d\.]+)([kmb]?)$', string)
+        if match:
+            number, suffix = match.groups()
+            return int(float(number) * multipliers.get(suffix, 1))
+        else:
+            return None
+    except Exception as e:
+        print(f"[Error] Can't conver {string} to silver number")
         return None
 
 class MarketManager(InputSender):
@@ -27,9 +31,11 @@ class MarketManager(InputSender):
         self.settings = settings
         
         # Load heavy dictionaries
-        res = capture.get_window_resolution()
-        self.capture_positions = self.settings.CAPTURE_POSITIONS[res]["market"]
-        self.mouse_positions = self.settings.MOUSE_POSITIONS[res]["market"]
+        self.resolution = capture.get_window_resolution()
+        w_h = self.resolution.split("x")
+        self.width, self.height = int(w_h[0]), int(w_h[1])
+        self.capture_positions = self.settings.CAPTURE_POSITIONS[self.resolution]["market"]
+        self.mouse_positions = self.settings.MOUSE_POSITIONS[self.resolution]["market"]
         self.items = {item["UniqueName"]: item for item in self.settings.ITEM_DATA}
         self.lang = "EN-US" 
 
@@ -92,13 +98,13 @@ class MarketManager(InputSender):
             return None
     
     def order_exists(self) -> bool:
-        return self.capture.get_text_from_screenshot(self.capture_positions["order_exists"]) == "edit"
+        return "edit" in self.capture.get_text_from_screenshot(self.capture_positions["order_exists"])
     
     def remove_order(self, amount: int = 10):
         self.click(self.mouse_positions["button_remove_order"], amount, interval=0.1)
 
     def check_pages(self) -> None:
-        self.click(self.mouse_positions["next_page"], clicks=5, interval=0.2)
+        self.click(self.mouse_positions["next_page"], clicks=7, interval=0.2)
         self.sleep(0.5)
 
     def check_item_stats(self) -> None:
@@ -118,7 +124,8 @@ class MarketManager(InputSender):
                 name = name_from_unique
 
         self.click(self.mouse_positions["search_reset"])
-        self.click(self.mouse_positions["search"])
+        pos = self.mouse_positions["search"]
+        self.click([pos[0]+random.randint(1, int(self.width/16)), pos[1]])
         if black_market == False:
             name = name+f" {tier}_{enchant}"
         self.typewrite(name)

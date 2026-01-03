@@ -1,21 +1,8 @@
 [
     {
-        "type": "travel_to",
-        "data": {
-            "destination": "market",
-            "market_city": "black_market",
-            "island_name": ""
-        }
+        "type": "remove_orders"
     },
     {
-        "type": "price_check"
-    },
-    {
-        "type": "travel_to",
-        "data": {
-            "destination": "island",
-            "market_city": "black_market",
-            "island_name": "Matvey4a Guild's Is;nad - fort"
-        }
+        "type": "buy_items"
     }
 ]

@@ -216,7 +216,7 @@ class WindowCapture:
     
     def find_template(
         self,
-        template_path: str,
+        template_paths: list[str],
         threshold: float = 0.8,
         search_region: Optional[Tuple[int, int, int, int]] = None
     ) -> Optional[list[int, int]]:
@@ -242,46 +242,49 @@ class WindowCapture:
 
         # 3. Load the template image
         # Note: ensure template_path is absolute or relative to your script execution
-        template = cv.imread(template_path, cv.IMREAD_COLOR)
-        if template is None:
-            if self.debugging:
-                print(f"[WindowCapture] Error: Could not load template file: {template_path}")
-            return None
+        for template_path in template_paths:
+            template = cv.imread(template_path, cv.IMREAD_COLOR)
+            if template is None:
+                if self.debugging:
+                    print(f"[WindowCapture] Error: Could not load template file: {template_path}")
+                continue
 
-        # Get template dimensions
-        h, w = template.shape[:2]
+            # Get template dimensions
+            h, w = template.shape[:2]
 
-        # 4. Perform Template Matching
-        # TM_CCOEFF_NORMED is robust for standard object detection
-        try:
-            result = cv.matchTemplate(screen_img, template, method=cv.TM_CCOEFF_NORMED)
-        except cv.error:
-            # This usually happens if the template is larger than the search region
-            return None
+            # 4. Perform Template Matching
+            # TM_CCOEFF_NORMED is robust for standard object detection
+            try:
+                result = cv.matchTemplate(screen_img, template, method=cv.TM_CCOEFF_NORMED)
+            except cv.error:
+                # This usually happens if the template is larger than the search region
+                continue
 
-        _, max_val, _, max_loc = cv.minMaxLoc(result)
+            _, max_val, _, max_loc = cv.minMaxLoc(result)
 
-        # 5. Check Threshold
-        if max_val >= threshold:
-            top_left = max_loc
-            center_x = top_left[0] + w // 2
-            center_y = top_left[1] + h // 2
-            
-            # If we searched a specific region, offset the result to match the full window
-            if search_region:
-                center_x += search_region[0]
-                center_y += search_region[1]
+            # 5. Check Threshold
+            if max_val >= threshold:
+                top_left = max_loc
+                center_x = top_left[0] + w // 2
+                center_y = top_left[1] + h // 2
                 
-            # Debugging visualization
-            if self.debugging:
-                debug_img = screen_img.copy()
-                cv.rectangle(debug_img, top_left, (top_left[0] + w, top_left[1] + h), (0, 255, 0), 2)
-                # Helper to save debug image using your base dir
-                debug_path = str(Path(self.BASE_DIR) / f"debug_match_{int(time.time())}.png")
-                cv.imwrite(debug_path, debug_img)
-                print(f"[WindowCapture] Found {template_path} at ({center_x}, {center_y}) with conf {max_val:.2f}")
+                # If we searched a specific region, offset the result to match the full window
+                if search_region:
+                    center_x += search_region[0]
+                    center_y += search_region[1]
+                    
+                # Debugging visualization
+                if self.debugging:
+                    debug_img = screen_img.copy()
+                    cv.rectangle(debug_img, top_left, (top_left[0] + w, top_left[1] + h), (0, 255, 0), 2)
+                    # Helper to save debug image using your base dir
+                    debug_path = str(Path(self.BASE_DIR) / f"debug_match_{int(time.time())}.png")
+                    cv.imwrite(debug_path, debug_img)
+                    print(f"[WindowCapture] Found {template_path} at ({center_x}, {center_y}) with conf {max_val:.2f}")
 
-            return [center_x, center_y]
+                return [center_x, center_y]
+            else:
+                continue
 
         return None
 

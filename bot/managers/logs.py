@@ -1,12 +1,18 @@
 import json
 import os
 from datetime import datetime
+import sys
+
+if getattr(sys, 'frozen', False):
+    # If running as a compiled .exe, use the executable's directory
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # If running as a script, use the project root relative to this file
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 class Logger:
     def __init__(self):
-        # Determine path: bot/managers/logs.py -> bot/config/logs
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.logs_dir = os.path.join(current_dir, "..", "config", "logs")
+        self.logs_dir = os.path.join(BASE_DIR, 'config', "logs")
         self.current_session_file = None
         
         # Ensure the logs directory exists

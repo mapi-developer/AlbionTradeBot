@@ -22,7 +22,7 @@ class TravelManager(InputSender):
         self.typewrite("#forcecityoverload true")
         self.sleep(.3)
         self.press("enter")
-        travaler_location = self.capture.find_template(self.settings.TRAVALER_BANNERS[0])
+        travaler_location = self.capture.find_template(self.settings.TRAVALER_BANNERS)
         if travaler_location != None:
             self.click(travaler_location)
         else:
@@ -72,7 +72,7 @@ class TravelManager(InputSender):
         self.choose_destination(destination=destination)
         self.bot.current_location = "island"
 
-        if destination in self.settings.MARKETS:
+        if destination in self.settings.MARKETS or destination == "brecilien":
             self.from_travel_to_market(destination=destination)
 
         self.sleep(1)

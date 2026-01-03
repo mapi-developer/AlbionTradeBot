@@ -1,0 +1,16 @@
+[
+    "app;Bot initialized!",
+    "app;Bot destroyed!",
+    "app;Bot initialized!",
+    "bot;Bot Starting to remove orders for brecilien",
+    "bot;Starting Buying 14 items in brecilien",
+    "market;Profit on T8_ARMOR_LEATHER_AVALON@4 | Price: 300128.0 | Margin: 91.52% | Buying 1 units | SilverBalance: 232000000",
+    "market;Profit on T8_ARMOR_LEATHER_AVALON@2 | Price: 200004.0 | Margin: 1046.58% | Buying 3 units | SilverBalance: 232000000",
+    "market;Profit on T8_ARMOR_LEATHER_UNDEAD@2 | Price: 200010.0 | Margin: 722.77% | Buying 3 units | SilverBalance: 231000000",
+    "bot;Pause toggled status: Paused",
+    "market;Profit on T8_ARMOR_LEATHER_FEY@1 | Price: 1569878.0 | Margin: 142.75% | Buying 1 units | SilverBalance: 230000000",
+    "bot;Pause toggled status: Running",
+    "market;Profit on T8_ARMOR_LEATHER_AVALON@3 | Price: 17.0 | Margin: 10393142.35% | Buying 21 units | SilverBalance: 229000000",
+    "bot;Pause toggled status: Paused",
+    "market;Profit on T8_ARMOR_LEATHER_FEY@3 | Price: 200015.0 | Margin: 3364.13% | Buying 3 units | SilverBalance: 229000000"
+]
