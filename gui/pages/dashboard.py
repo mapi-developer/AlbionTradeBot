@@ -6,6 +6,8 @@ import keyboard
 import os
 from components import BotOverlay
 from bot import Bot
+import requests
+from datetime import datetime
 
 
 COMMAND_TYPES = {
@@ -13,31 +15,31 @@ COMMAND_TYPES = {
         "label": "Travel to",
         "icon": ft.Icons.NAVIGATION_ROUNDED,
         "color": ft.Colors.BLUE_500,
-        "func": "travel_to" 
+        "func": "travel_to",
     },
     "price_check": {
         "label": "Price Check",
         "icon": ft.Icons.SEARCH_ROUNDED,
         "color": ft.Colors.PURPLE_500,
-        "func": "check_price"
+        "func": "check_price",
     },
     "buy_items": {
         "label": "Buy items",
         "icon": ft.Icons.SHOPPING_CART_ROUNDED,
         "color": "#0d9259",
-        "func": "buy_items"
+        "func": "buy_items",
     },
     "remove_orders": {
         "label": "Remove orders",
         "icon": ft.Icons.CANCEL_ROUNDED,
         "color": "#b02d21",
-        "func": "remove_orders"
+        "func": "remove_orders",
     },
     "wait_time": {
         "label": "Wait time",
         "icon": ft.Icons.TIMER_OUTLINED,
         "color": "#cd9316",
-        "func": "wait_time" 
+        "func": "wait_time",
     },
 }
 
@@ -118,8 +120,17 @@ class LeftPanel(ft.Column):
 class InfoCard(ft.Container):
     def __init__(self, title: str, icon: str, value: str = "Data Loading..."):
         super().__init__()
-
+        
         self.col = {"xs": 12, "sm": 6, "md": 3}
+        
+        # 1. Create the Text control explicitly so we can hold a reference to it
+        self.display_value = ft.Text(
+            value=value,
+            size=24,
+            weight=ft.FontWeight.BOLD,
+            color="#ffffff",
+        )
+
         self.content = ft.Card(
             content=ft.Container(
                 padding=15,
@@ -130,19 +141,13 @@ class InfoCard(ft.Container):
                                 ft.Row(
                                     controls=[
                                         ft.Icon(icon, color=ft.Colors.BLUE_ACCENT_100),
-                                        ft.Text(
-                                            title, size=12, color=ft.Colors.WHITE70
-                                        ),
+                                        ft.Text(title, size=12, color=ft.Colors.WHITE70),
                                     ]
                                 ),
                                 ft.Column(
                                     controls=[
-                                        ft.Text(
-                                            value=value,
-                                            size=24,
-                                            weight=ft.FontWeight.BOLD,
-                                            color="#ffffff",
-                                        )
+                                        # 2. Use the control we created above
+                                        self.display_value 
                                     ],
                                     spacing=5,
                                 ),
@@ -154,28 +159,38 @@ class InfoCard(ft.Container):
             color="#203064",
         )
 
-        self.value_text = (
-            self.content.content.content.controls[0].controls[1].controls[0]
-        )
-
-    def update_data(self, value: str):
-        self.value_text.value = value
+    def set_data(self, new_value: str):
+        """
+        Updates the text control and refreshes just this card.
+        """
+        self.display_value.value = str(new_value)
         self.update()
 
 
 class OverviewPanel(ft.Container):
-    def __init__(self):
+    def __init__(self, dashboard):
         super().__init__()
+        self.dashboard = dashboard
 
+        # Create the cards and assign them to self variables
         self.last_prices_update = InfoCard(
-            title="Last Prices Update (UTC)", icon=ft.Icons.UPDATE
+            title="Last Prices Update (UTC)", 
+            icon=ft.Icons.UPDATE, 
+            value="Loading..."
         )
         self.database_status = InfoCard(
-            title="Database Status", icon=ft.Icons.ACCOUNT_TREE
+            title="Database Status",
+            icon=ft.Icons.ACCOUNT_TREE,
+            value="Loading..."
         )
-        self.bot_status = InfoCard(title="Bot Status", icon=ft.Icons.ADB)
+        self.bot_status = InfoCard(
+            title="Bot Status", 
+            icon=ft.Icons.ADB
+        )
         self.subscribed_until = InfoCard(
-            title="Subscribed until", icon=ft.Icons.ADD_TASK
+            title="Subscribed until",
+            icon=ft.Icons.ADD_TASK,
+            value="Loading..."
         )
 
         self.content = ft.ResponsiveRow(
@@ -187,6 +202,54 @@ class OverviewPanel(ft.Container):
             ],
             spacing=5,
         )
+
+    def did_mount(self):
+        self.update_data()
+
+    def update_data(self):
+        thread = threading.Thread(target=self._get_data_background, daemon=True)
+        thread.start()
+
+    def _get_data_background(self):
+        try:
+            status_res = requests.get(f"{self.dashboard.API_URL}/")
+            status = "Error"
+            if status_res.status_code == 200:
+                data = status_res.json()
+                status = data.get("status")
+
+            last_update_res = requests.get(
+                f"{self.dashboard.API_URL}/items/?city=black_market&item_names=T4_SHOES_PLATE_UNDEAD"
+            )
+            formatted_date = "Unknown"
+            if last_update_res.status_code == 200:
+                data = last_update_res.json()
+                if data and len(data) > 0:
+                    last_update = data[0].get("updated_at")
+                    if last_update:
+                        dt_object = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
+                        formatted_date = dt_object.strftime("%d.%m.%Y")
+
+            headers = {"Authorization": f"Bearer {self.dashboard.login.state.token}"}
+            res = requests.get(f"{self.dashboard.API_URL}/users/{self.dashboard.login.state.user_id}", headers=headers)
+            sub_formatted_date = "Loading"
+            
+            if res.status_code == 200:
+                data = res.json()
+                subscribed_until = data.get("subscribed_until")
+                if subscribed_until:
+                    dt_object = datetime.fromisoformat(subscribed_until.replace('Z', '+00:00'))
+                    sub_formatted_date = dt_object.strftime("%d.%m.%Y")
+                else:
+                    sub_formatted_date = "Not Active"
+            
+            if self.page:
+                self.last_prices_update.set_data(formatted_date)
+                self.database_status.set_data("Connected" if status == "alive" else "Not Connected")
+                self.bot_status.set_data("Alive")
+                self.subscribed_until.set_data(sub_formatted_date)
+        except Exception as e:
+            print(f"Error updating data: {e}")
 
 
 class OrdersGraph(ft.Container):
@@ -270,23 +333,30 @@ class OrdersGraph(ft.Container):
 
 
 class RightPanel(ft.Column):
-    def __init__(self, content_controls=[], scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO, expand_content=False):
+    def __init__(
+        self,
+        content_controls=[],
+        scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO,
+        expand_content=False,
+    ):
         super().__init__()
         self.scroll = scroll_mode
-        self.expand = True 
+        self.expand = True
         self.col = {"sm": 10.5, "md": 10.5, "xl": 10.5}
         self.controls = [
             ft.Container(
-                content=ft.Column(spacing=0, controls=content_controls, expand=expand_content),
+                content=ft.Column(
+                    spacing=0, controls=content_controls, expand=expand_content
+                ),
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(20, 10, 20, 0),
-                expand=True 
+                expand=True,
             )
         ]
 
 
 class DashboardPanel(RightPanel):
-    def __init__(self):
+    def __init__(self, dashboard):
         self.title = ft.Container(
             content=ft.ResponsiveRow(
                 controls=[
@@ -301,7 +371,7 @@ class DashboardPanel(RightPanel):
             padding=ft.padding.only(0, 0, 0, 10),
         )
 
-        self.overview_panel = OverviewPanel()
+        self.overview_panel = OverviewPanel(dashboard=dashboard)
         self.orders_graph = OrdersGraph()
         super().__init__(
             content_controls=[
@@ -319,7 +389,12 @@ class BotExecutionWarning(ft.Container):
         super().__init__()
         self.content = ft.Row(
             controls=[
-                ft.Icon(ft.Icons.INFO_OUTLINE, color=ft.Colors.BLUE_400, size=20, offset=ft.Offset(0, 0.1)),
+                ft.Icon(
+                    ft.Icons.INFO_OUTLINE,
+                    color=ft.Colors.BLUE_400,
+                    size=20,
+                    offset=ft.Offset(0, 0.1),
+                ),
                 ft.Text(
                     "Bot will automatically travel from and to specified island at start and end.",
                     size=16,
@@ -412,11 +487,17 @@ class FunctionsAvaliablePanel(ft.Container):
 class TravelToAdditionalInfo(ft.Container):
     def __init__(self, initial_data=None, on_change_callback=None):
         super().__init__()
-        self.col={"sm": 7, "md": 7, "xl": 7}
+        self.col = {"sm": 7, "md": 7, "xl": 7}
         self.on_change_callback = on_change_callback
-        
-        dest_val = initial_data.get("destination", "market") if initial_data else "market"
-        market_val = initial_data.get("market_city", "black_market") if initial_data else "black_market"
+
+        dest_val = (
+            initial_data.get("destination", "market") if initial_data else "market"
+        )
+        market_val = (
+            initial_data.get("market_city", "black_market")
+            if initial_data
+            else "black_market"
+        )
         island_val = initial_data.get("island_name", "") if initial_data else ""
 
         self.destination_type = ft.Container(
@@ -426,7 +507,7 @@ class TravelToAdditionalInfo(ft.Container):
                 label="Destination",
                 options=[
                     ft.DropdownOption(key="market", text="Market"),
-                    ft.DropdownOption(key="island", text="Island")
+                    ft.DropdownOption(key="island", text="Island"),
                 ],
                 on_change=self.on_destination_type_change,
             ),
@@ -445,13 +526,13 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="bridgewatch", text="Bridgewatch"),
                     ft.DropdownOption(key="martlock", text="Martlock"),
                     ft.DropdownOption(key="thetford", text="Thetford"),
-                    #ft.DropdownOption(key="caerleon", text="Caerleon"),
-                    #ft.DropdownOption(key="brecilien", text="Brecilien"),
+                    # ft.DropdownOption(key="caerleon", text="Caerleon"),
+                    # ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
-                on_change=lambda _: self.trigger_save()
+                on_change=lambda _: self.trigger_save(),
             ),
             col={"sm": 7, "md": 7, "xl": 7},
-            visible=(dest_val == "market")
+            visible=(dest_val == "market"),
         )
 
         self.island_name = ft.Container(
@@ -459,10 +540,10 @@ class TravelToAdditionalInfo(ft.Container):
                 expand=True,
                 value=island_val,
                 label="Island Name",
-                on_change=lambda _: self.trigger_save()
+                on_change=lambda _: self.trigger_save(),
             ),
             col={"sm": 7, "md": 7, "xl": 7},
-            visible=(dest_val == "island")
+            visible=(dest_val == "island"),
         )
 
         self.content = ft.ResponsiveRow(
@@ -484,14 +565,14 @@ class TravelToAdditionalInfo(ft.Container):
         return {
             "destination": self.destination_type.content.value,
             "market_city": self.market_name.content.value,
-            "island_name": self.island_name.content.value
+            "island_name": self.island_name.content.value,
         }
 
 
 class WaitTimeAdditionalInfo(ft.Container):
     def __init__(self, initial_data=None, on_change_callback=None):
         super().__init__()
-        self.col={"sm": 7, "md": 7, "xl": 7}
+        self.col = {"sm": 7, "md": 7, "xl": 7}
         self.on_change_callback = on_change_callback
         val = initial_data.get("minutes", "5") if initial_data else "5"
 
@@ -500,7 +581,7 @@ class WaitTimeAdditionalInfo(ft.Container):
                 expand=True,
                 value=val,
                 label="Minutes",
-                on_change=lambda _: self.trigger_save()
+                on_change=lambda _: self.trigger_save(),
             ),
             col={"sm": 7, "md": 7, "xl": 7},
         )
@@ -515,28 +596,46 @@ class WaitTimeAdditionalInfo(ft.Container):
 
 
 class FunctionToExecute(ft.Container):
-    def __init__(self, function_type: str, can_be_removed: bool = False, initial_data=None, on_change_callback=None):
+    def __init__(
+        self,
+        function_type: str,
+        can_be_removed: bool = False,
+        initial_data=None,
+        on_change_callback=None,
+    ):
         super().__init__()
         self.function_type = function_type
-        self.index = ft.Container(content=ft.Text("0"), col={"sm": .6}, alignment=ft.alignment.center)
-        self.title = ft.Text(COMMAND_TYPES[function_type]["label"], size=18, weight="bold", col={"sm": 3})
+        self.index = ft.Container(
+            content=ft.Text("0"), col={"sm": 0.6}, alignment=ft.alignment.center
+        )
+        self.title = ft.Text(
+            COMMAND_TYPES[function_type]["label"], size=18, weight="bold", col={"sm": 3}
+        )
         self.icon = ft.Container(
-            col={"sm": .7}, aspect_ratio=1, bgcolor=COMMAND_TYPES[function_type]["color"],
-            border_radius=4, alignment=ft.alignment.center,
+            col={"sm": 0.7},
+            aspect_ratio=1,
+            bgcolor=COMMAND_TYPES[function_type]["color"],
+            border_radius=4,
+            alignment=ft.alignment.center,
             content=ft.Icon(name=COMMAND_TYPES[function_type]["icon"], color="#ffffff"),
         )
-        
+
         self.remove_btn_container = ft.Container(
             content=ft.IconButton(icon=ft.Icons.DELETE, icon_color="#b32525"),
-            col={"sm": 1}, alignment=ft.alignment.center_right
+            col={"sm": 1},
+            alignment=ft.alignment.center_right,
         )
         self.remove_button = self.remove_btn_container.content
-        
+
         self.additional_info = ft.Container(col={"sm": 7, "md": 7, "xl": 7})
         if function_type == "travel_to":
-            self.additional_info = TravelToAdditionalInfo(initial_data, on_change_callback)
+            self.additional_info = TravelToAdditionalInfo(
+                initial_data, on_change_callback
+            )
         elif function_type == "wait_time":
-            self.additional_info = WaitTimeAdditionalInfo(initial_data, on_change_callback)
+            self.additional_info = WaitTimeAdditionalInfo(
+                initial_data, on_change_callback
+            )
 
         self.padding = 10
         self.bgcolor = "#2D3A55"
@@ -545,11 +644,13 @@ class FunctionToExecute(ft.Container):
             controls=[
                 ft.ResponsiveRow(
                     controls=[self.index, self.icon, self.title, self.additional_info],
-                    spacing=20, vertical_alignment=ft.CrossAxisAlignment.CENTER, col={"sm": 10}
+                    spacing=20,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    col={"sm": 10},
                 ),
-                self.remove_btn_container if can_be_removed else ft.Container(col=1)
+                self.remove_btn_container if can_be_removed else ft.Container(col=1),
             ],
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
     def get_serialized_data(self):
@@ -564,7 +665,7 @@ class ExecutionFunctionsList(ft.Container):
         super().__init__()
         self.dashboard = dashboard
         self.height = 400
-        
+
         self.content = ft.Column(
             controls=[],
             scroll=ft.ScrollMode.AUTO,
@@ -577,32 +678,52 @@ class ExecutionFunctionsList(ft.Container):
             func_type = item.get("type", "price_check")
 
             can_be_removed = True
-            if i == 0 and len([function["type"] for function in sequence_data if function["type"] == "travel_to"]) > 1:
+            if (
+                i == 0
+                and len(
+                    [
+                        function["type"]
+                        for function in sequence_data
+                        if function["type"] == "travel_to"
+                    ]
+                )
+                > 1
+            ):
                 can_be_removed = False
 
             new_func = FunctionToExecute(
-                func_type, 
-                can_be_removed=can_be_removed, 
+                func_type,
+                can_be_removed=can_be_removed,
                 initial_data=item.get("data"),
-                on_change_callback=self.dashboard.save_sequence
+                on_change_callback=self.dashboard.save_sequence,
             )
-            
+
             self.content.controls.append(new_func)
-        
+
         self.update_indexes()
 
     def add_function(self, event):
         new_function = FunctionToExecute(
-            event.control.data, 
+            event.control.data,
             can_be_removed=True,
-            on_change_callback=self.dashboard.save_sequence
+            on_change_callback=self.dashboard.save_sequence,
         )
-        travel_to_amount = len([function.function_type for function in self.content.controls if function.function_type == "travel_to"])
-        if travel_to_amount == 0 and new_function.function_type == "travel_to" and len(self.content.controls) != 0:
+        travel_to_amount = len(
+            [
+                function.function_type
+                for function in self.content.controls
+                if function.function_type == "travel_to"
+            ]
+        )
+        if (
+            travel_to_amount == 0
+            and new_function.function_type == "travel_to"
+            and len(self.content.controls) != 0
+        ):
             init_travel = FunctionToExecute(
-                event.control.data, 
+                event.control.data,
                 can_be_removed=False,
-                on_change_callback=self.dashboard.save_sequence
+                on_change_callback=self.dashboard.save_sequence,
             )
             self.content.controls.insert(0, init_travel)
         self.content.controls.append(new_function)
@@ -626,14 +747,19 @@ class ExecutionFunctionsList(ft.Container):
             function.remove_button.on_click = self.remove_function
 
             if function.function_type == "travel_to":
-                travel_amount = len([function.function_type for function in self.content.controls if function.function_type == "travel_to"])
+                travel_amount = len(
+                    [
+                        function.function_type
+                        for function in self.content.controls
+                        if function.function_type == "travel_to"
+                    ]
+                )
                 if i == 0 and travel_amount > 1:
                     function.content.controls[1] = ft.Container(col=1)
                 elif i == 0:
                     function.content.controls[1] = function.remove_btn_container
 
-            
-        if self.page: 
+        if self.page:
             self.update()
 
 
@@ -648,7 +774,7 @@ class ExecutionSequencePanel(ft.Container):
             label="Loop infinitely",
             label_position=ft.LabelPosition.RIGHT,
             col={"sm": 6, "md": 3, "xl": 3},
-            on_change=self.loop_toggle
+            on_change=self.loop_toggle,
         )
         self.status_text = ft.Text(
             "Idle", size=14, weight=ft.FontWeight.BOLD, color="#94a3b8"
@@ -658,11 +784,11 @@ class ExecutionSequencePanel(ft.Container):
         )
 
         title = ft.Text(
-            value="Execution Sequence", 
-            weight="bold", 
+            value="Execution Sequence",
+            weight="bold",
             size=25,
             col=8,
-            offset=ft.Offset(0, .1)
+            offset=ft.Offset(0, 0.1),
         )
         self.home_island = ft.TextField(
             label="End Island Name",
@@ -674,7 +800,7 @@ class ExecutionSequencePanel(ft.Container):
         self.wait_before_loop = ft.TextField(
             label="Wait before repeat (minutes)",
             col={"sm": 6, "md": 5, "xl": 6},
-            visible=False
+            visible=False,
         )
 
         self.bot_status = ft.Container(
@@ -695,7 +821,7 @@ class ExecutionSequencePanel(ft.Container):
             padding=ft.padding.symmetric(15, 10),
             border_radius=10,
             border=ft.border.all(1, "#1e293b"),
-            col={"sm": 4, "md": 4, "xl": 4}
+            col={"sm": 4, "md": 4, "xl": 4},
         )
 
         self.lower_row = ft.ResponsiveRow(
@@ -705,14 +831,14 @@ class ExecutionSequencePanel(ft.Container):
                         self.loop_checkbox,
                         self.wait_before_loop,
                     ],
-                    col={"sm": 8, "md": 8, "xl": 8}
+                    col={"sm": 8, "md": 8, "xl": 8},
                 ),
                 ft.Column(
                     controls=[
                         self.bot_status,
                     ],
-                    col={"sm": 4, "md": 4, "xl": 4}
-                ), 
+                    col={"sm": 4, "md": 4, "xl": 4},
+                ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -720,7 +846,10 @@ class ExecutionSequencePanel(ft.Container):
 
         self.run_button = ft.ElevatedButton(
             content=ft.Row(
-                [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
+                [
+                    ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED),
+                    ft.Text("RUN BOT", weight="bold", size=18),
+                ],
                 alignment=ft.MainAxisAlignment.CENTER,
             ),
             style=ft.ButtonStyle(
@@ -731,7 +860,7 @@ class ExecutionSequencePanel(ft.Container):
             height=45,
             col={"sm": 5, "md": 3.5, "xl": 2.45},
             on_click=self.bot_toggle,
-            data="run"
+            data="run",
         )
 
         self.bgcolor = "#1e293b"
@@ -745,45 +874,50 @@ class ExecutionSequencePanel(ft.Container):
                         title,
                         self.home_island,
                     ],
-                    vertical_alignment=ft.VerticalAlignment.CENTER
+                    vertical_alignment=ft.VerticalAlignment.CENTER,
                 ),
                 ft.Divider(),
                 self.execution_functions_list,
                 ft.Divider(),
-                ft.Container(content=self.lower_row, padding=ft.padding.only(0, 0, 0, 10)),
+                ft.Container(
+                    content=self.lower_row, padding=ft.padding.only(0, 0, 0, 10)
+                ),
                 ft.ResponsiveRow(
-                    controls=[
-                        self.run_button
-                    ],
-                    alignment=ft.MainAxisAlignment.END
-                )
+                    controls=[self.run_button], alignment=ft.MainAxisAlignment.END
+                ),
             ],
-            width=float("inf")
+            width=float("inf"),
         )
 
     def bot_toggle(self, e):
         self.run_button.disabled = True
-        self.run_button.content=ft.Row(
-            [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STARTING", weight="bold", size=18)],
+        self.run_button.content = ft.Row(
+            [
+                ft.Icon(ft.Icons.PAUSE_ROUNDED),
+                ft.Text("STARTING", weight="bold", size=18),
+            ],
             alignment=ft.MainAxisAlignment.CENTER,
         )
-        self.run_button.style=ft.ButtonStyle(
+        self.run_button.style = ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor="#312e2e",
             shape=ft.RoundedRectangleBorder(radius=8),
         )
         self.run_button.update()
-            
+
         if self.run_button.data == "run":
             if self.dashboard.bot != None:
                 self.dashboard.bot.destroy()
             self.dashboard.bot = Bot(logger=self.dashboard.logger)
             self.dashboard.app.bot = self.dashboard.bot
-            self.run_button.content=ft.Row(
-                [ft.Icon(ft.Icons.PAUSE_ROUNDED), ft.Text("STOP", weight="bold", size=18)],
+            self.run_button.content = ft.Row(
+                [
+                    ft.Icon(ft.Icons.PAUSE_ROUNDED),
+                    ft.Text("STOP", weight="bold", size=18),
+                ],
                 alignment=ft.MainAxisAlignment.CENTER,
             )
-            self.run_button.style=ft.ButtonStyle(
+            self.run_button.style = ft.ButtonStyle(
                 color=ft.Colors.WHITE,
                 bgcolor=ft.Colors.RED_600,
                 shape=ft.RoundedRectangleBorder(radius=8),
@@ -793,11 +927,14 @@ class ExecutionSequencePanel(ft.Container):
             self.run_button.disabled = False
         elif self.run_button.data == "stop":
             self.dashboard.bot.destroy()
-            self.run_button.content=ft.Row(
-                [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
+            self.run_button.content = ft.Row(
+                [
+                    ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED),
+                    ft.Text("RUN BOT", weight="bold", size=18),
+                ],
                 alignment=ft.MainAxisAlignment.CENTER,
             )
-            self.run_button.style=ft.ButtonStyle(
+            self.run_button.style = ft.ButtonStyle(
                 color=ft.Colors.WHITE,
                 bgcolor=ft.Colors.BLUE_600,
                 shape=ft.RoundedRectangleBorder(radius=8),
@@ -818,13 +955,14 @@ class ExecutionSequencePanel(ft.Container):
         else:
             self.wait_before_loop.visible = False
             self.dashboard.loop_sequence = False
-                
+
         self.update()
 
     def update_status(self, text: str, color: str):
         self.status_text.value = text
         self.status_indicator.bgcolor = color
-        if self.page: self.update()
+        if self.page:
+            self.update()
 
 
 class BotControlPanel(ft.Container):
@@ -838,8 +976,10 @@ class BotControlPanel(ft.Container):
         self.functions_avaliable_panel = FunctionsAvaliablePanel()
 
         for key in self.functions_avaliable_panel.buttons:
-            execution_list =self.execution_sequence_panel.execution_functions_list
-            self.functions_avaliable_panel.buttons[key].on_click = execution_list.add_function
+            execution_list = self.execution_sequence_panel.execution_functions_list
+            self.functions_avaliable_panel.buttons[key].on_click = (
+                execution_list.add_function
+            )
 
         self.content = ft.ResponsiveRow(
             controls=[
@@ -862,6 +1002,7 @@ class BotControlPanel(ft.Container):
             ]
         )
 
+
 class SubscriptionBlocker(ft.Container):
     def __init__(self, on_shop_click):
         super().__init__()
@@ -873,22 +1014,25 @@ class SubscriptionBlocker(ft.Container):
             controls=[
                 ft.Icon(ft.Icons.LOCK_OUTLINE, size=64, color=ft.Colors.RED_400),
                 ft.Text("Subscription Required", size=24, weight=ft.FontWeight.BOLD),
-                ft.Text("This feature is only available for active subscribers.", size=16, color=ft.Colors.GREY_400),
+                ft.Text(
+                    "This feature is only available for active subscribers.",
+                    size=16,
+                    color=ft.Colors.GREY_400,
+                ),
                 ft.Container(height=20),
                 ft.ElevatedButton(
                     text="Go to Shop",
                     icon=ft.Icons.SHOPPING_BAG,
                     style=ft.ButtonStyle(
-                        bgcolor="#1d9dec",
-                        color=ft.Colors.WHITE,
-                        padding=20
+                        bgcolor="#1d9dec", color=ft.Colors.WHITE, padding=20
                     ),
-                    on_click=on_shop_click
-                )
+                    on_click=on_shop_click,
+                ),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER
+            alignment=ft.MainAxisAlignment.CENTER,
         )
+
 
 class BotSequencePanel(RightPanel):
     def __init__(self, dashboard):
@@ -908,7 +1052,7 @@ class BotSequencePanel(RightPanel):
         )
 
         self.bot_control_panel = BotControlPanel(dashboard=dashboard)
-        
+
         # 1. Main UI content inside the layout container with padding
         self.content_layout = ft.Container(
             content=ft.Column(
@@ -919,23 +1063,21 @@ class BotSequencePanel(RightPanel):
                 ],
                 spacing=0,
                 expand=True,
-                scroll=ft.ScrollMode.AUTO 
+                scroll=ft.ScrollMode.AUTO,
             ),
             padding=ft.padding.only(20, 10, 20, 0),
-            expand=True
+            expand=True,
         )
 
         # 2. Blocker covers everything (Overlay)
-        self.blocker = SubscriptionBlocker(on_shop_click=lambda e: self.dashboard.app.go_to_subscription())
-        self.blocker.visible = False 
+        self.blocker = SubscriptionBlocker(
+            on_shop_click=lambda e: self.dashboard.app.go_to_subscription()
+        )
+        self.blocker.visible = False
 
         # 3. Stack wraps both, allowing blocker to sit on top of the padded container
         self.main_stack = ft.Stack(
-            controls=[
-                self.content_layout,
-                self.blocker
-            ],
-            expand=True
+            controls=[self.content_layout, self.blocker], expand=True
         )
 
         # 4. Initialize RightPanel
@@ -945,19 +1087,19 @@ class BotSequencePanel(RightPanel):
             ft.Container(
                 content=self.main_stack,
                 bgcolor=ft.Colors.TRANSPARENT,
-                padding=0, # No padding on the outer container
-                expand=True 
+                padding=0,  # No padding on the outer container
+                expand=True,
             )
         ]
         self.expand = True
         self.scroll = None
-    
+
     def show_tab(self):
         if self.dashboard.header and self.dashboard.header.subscription:
             is_subscribed = self.dashboard.header.subscription.is_active
             self.blocker.visible = not is_subscribed
-            self.bot_control_panel.disabled = not is_subscribed 
-            
+            self.bot_control_panel.disabled = not is_subscribed
+
             if self.page:
                 self.update()
 
@@ -970,20 +1112,18 @@ class ActivityLogItem(ft.Container):
             weight="bold",
             size=22,
             color="#ffffff",
-            col={"sm": 12, "md": 12, "xl": 12}
+            col={"sm": 12, "md": 12, "xl": 12},
         )
 
         self.content = ft.ElevatedButton(
-            content=ft.ResponsiveRow(
-                controls=[self.title]
-            ),
+            content=ft.ResponsiveRow(controls=[self.title]),
             style=ft.ButtonStyle(
                 padding=ft.padding.only(20, 20, 20, 20),
                 bgcolor="#415E7A",
                 shape=ft.RoundedRectangleBorder(radius=8),
             ),
-            on_click=on_click, # Added on_click handler
-            data=data # Store filename
+            on_click=on_click,  # Added on_click handler
+            data=data,  # Store filename
         )
 
 
@@ -996,7 +1136,7 @@ class LogsView(ft.Container):
         "orders": ft.Colors.AMBER_500,
         "error": ft.Colors.RED_400,
         "market": ft.Colors.PURPLE_400,
-        "travel": ft.Colors.CYAN_400
+        "travel": ft.Colors.CYAN_400,
     }
 
     class LogRow(ft.Row):
@@ -1005,14 +1145,16 @@ class LogsView(ft.Container):
             self.vertical_alignment = ft.CrossAxisAlignment.START
             self.controls = [
                 ft.Container(
-                    content=ft.Text(category.upper(), size=10, weight="bold", color=ft.Colors.BLACK),
+                    content=ft.Text(
+                        category.upper(), size=10, weight="bold", color=ft.Colors.BLACK
+                    ),
                     bgcolor=color,
                     padding=ft.padding.symmetric(horizontal=5, vertical=2),
                     border_radius=3,
                     width=70,
                     alignment=ft.alignment.center,
                 ),
-                ft.Text(message, size=13, font_family="monospace", expand=True)
+                ft.Text(message, size=13, font_family="monospace", expand=True),
             ]
 
     def __init__(self, initial_logs=None):
@@ -1024,16 +1166,14 @@ class LogsView(ft.Container):
         self.expand = True
 
         self.log_column = ft.Column(
-            scroll=ft.ScrollMode.AUTO,
-            spacing=5,
-            auto_scroll=True
+            scroll=ft.ScrollMode.AUTO, spacing=5, auto_scroll=True
         )
-        
+
         self.content = self.log_column
 
         if initial_logs:
             self.add_logs(initial_logs)
-            
+
     def clear_logs(self):
         self.log_column.controls.clear()
         if self.page:
@@ -1048,9 +1188,7 @@ class LogsView(ft.Container):
             if ";" in entry:
                 category, message = entry.split(";", 1)
                 color = self.LOG_COLORS.get(category.lower(), ft.Colors.GREY_400)
-                self.log_column.controls.append(
-                    self.LogRow(category, message, color)
-                )
+                self.log_column.controls.append(self.LogRow(category, message, color))
         if self.page:
             self.update()
 
@@ -1059,14 +1197,14 @@ class ActivityLogsPanel(RightPanel):
     def __init__(self, dashboard=None):
         super().__init__()
         self.expand = True
-        self.dashboard = dashboard # Store reference to dashboard (and app)
+        self.dashboard = dashboard  # Store reference to dashboard (and app)
 
         self.back_button = ft.IconButton(
             icon=ft.Icons.ARROW_BACK_IOS_NEW_ROUNDED,
             icon_size=20,
             on_click=lambda _: self.show_logs_list(),
             visible=False,
-            icon_color="#ffffff"
+            icon_color="#ffffff",
         )
         self.title_text = ft.Text(
             value="Bot Activity Logs",
@@ -1077,22 +1215,21 @@ class ActivityLogsPanel(RightPanel):
             content=ft.Row(
                 controls=[self.back_button, self.title_text],
                 spacing=10,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
             padding=ft.padding.only(0, 0, 0, 10),
         )
 
         self.logs_list_content = ft.Column(
-            controls=[], # Populated dynamically
-            spacing=10
+            controls=[], spacing=10  # Populated dynamically
         )
 
         self.logs_view = LogsView()
         self.logs_view.visible = False
         self.logs_view.margin = ft.margin.only(0, 10, 0, 20)
 
-        self.inner_column = self.controls[0].content 
-        
+        self.inner_column = self.controls[0].content
+
         # Initialize with logs
         self.refresh_logs()
         self._setup_initial_view()
@@ -1102,8 +1239,8 @@ class ActivityLogsPanel(RightPanel):
         # output: 23.12.2025 | 14:42 UTC
         try:
             name = os.path.splitext(filename)[0]
-            date_part, time_part = name.split('-')
-            time_formatted = time_part.replace('.', ':')
+            date_part, time_part = name.split("-")
+            time_formatted = time_part.replace(".", ":")
             return f"{date_part} | {time_formatted} UTC"
         except:
             return filename
@@ -1112,18 +1249,22 @@ class ActivityLogsPanel(RightPanel):
         files = []
         if self.dashboard and self.dashboard.config:
             files = self.dashboard.config.get_logs()
-        
+
         self.logs_list_content.controls.clear()
-        
+
         for f in files:
             title = self.format_log_title(f)
-            
+
             # Optional: Highlight current session if matching
-            if self.dashboard and self.dashboard.app and hasattr(self.dashboard.app, 'logger'):
+            if (
+                self.dashboard
+                and self.dashboard.app
+                and hasattr(self.dashboard.app, "logger")
+            ):
                 current = self.dashboard.app.logger.current_session_file
                 if current and os.path.basename(current) == f:
-                     title += " | Current Session"
-            
+                    title += " | Current Session"
+
             self.logs_list_content.controls.append(
                 ActivityLogItem(title, on_click=self.handle_log_click, data=f)
             )
@@ -1141,7 +1282,7 @@ class ActivityLogsPanel(RightPanel):
         self.inner_column.controls = [
             self.title_container,
             ft.Divider(),
-            self.logs_list_content
+            self.logs_list_content,
         ]
 
     def handle_log_click(self, e):
@@ -1155,7 +1296,7 @@ class ActivityLogsPanel(RightPanel):
         self.scroll = ft.ScrollMode.AUTO
         self.back_button.visible = False
         self.title_text.value = "Bot Activity Logs"
-        
+
         self.logs_list_content.visible = True
         self.logs_view.visible = False
         self.logs_view.expand = False
@@ -1163,7 +1304,7 @@ class ActivityLogsPanel(RightPanel):
         self.inner_column.controls = [
             self.title_container,
             ft.Divider(),
-            self.logs_list_content
+            self.logs_list_content,
         ]
         self.update()
 
@@ -1182,7 +1323,7 @@ class ActivityLogsPanel(RightPanel):
         self.inner_column.controls = [
             self.title_container,
             ft.Divider(),
-            self.logs_view
+            self.logs_view,
         ]
 
         if self.page:
@@ -1191,29 +1332,46 @@ class ActivityLogsPanel(RightPanel):
 
 class Dashboard(ft.Container):
     bot: Bot | None
-    def __init__(self, app=None, config=None, page=None, bot: Bot = None, header=None, logger: Logger = None):
+
+    def __init__(
+        self,
+        app=None,
+        config=None,
+        page=None,
+        bot: Bot = None,
+        header=None,
+        logger: Logger = None,
+        login = None,
+    ):
         super().__init__()
         self.expand = True
         self.app = app
         self.config = config
         self.page = page
         self.bot = bot
+        self.login = login
         self.header = header
-        if logger == None: logger = Logger()
+        if logger == None:
+            logger = Logger()
         self.logger = logger
+        self.API_URL = self.config.API_URL
 
         self.app.overlay = None
         self.is_running_sequence = False
         self.loop_sequence = False
         self.bot_sequence = self.config.load_bot_loop() if self.config else []
 
-        self.dashboard_panel = DashboardPanel()
+        self.dashboard_panel = DashboardPanel(dashboard=self)
         self.bot_sequence_panel = BotSequencePanel(dashboard=self)
-        self.bot_activity_panel = ActivityLogsPanel(dashboard=self) # Pass self
+        self.bot_activity_panel = ActivityLogsPanel(dashboard=self)  # Pass self
         self.left_panel = LeftPanel()
 
-        self.seq_panel = self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
-        self.avail_panel = self.bot_sequence_panel.bot_control_panel.functions_avaliable_panel
+        self.seq_panel = (
+            self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
+        )
+        self.avail_panel = (
+            self.bot_sequence_panel.bot_control_panel.functions_avaliable_panel
+        )
 
         self.seq_panel.execution_functions_list.load_sequence(self.bot_sequence)
 
@@ -1228,16 +1386,17 @@ class Dashboard(ft.Container):
         }
 
         self.content = ft.ResponsiveRow(
-            controls=[self.left_panel, self.dashboard_panel], spacing=0,
+            controls=[self.left_panel, self.dashboard_panel],
+            spacing=0,
         )
 
         try:
-            keyboard.remove_hotkey('ctrl+p')
+            keyboard.remove_hotkey("ctrl+p")
         except:
             pass
-        
+
         try:
-            keyboard.add_hotkey('ctrl+p', lambda: self._on_global_hotkey())
+            keyboard.add_hotkey("ctrl+p", lambda: self._on_global_hotkey())
         except Exception as e:
             print(f"Failed to register global hotkey: {e}")
 
@@ -1247,13 +1406,16 @@ class Dashboard(ft.Container):
         self.seq_panel.wait_before_loop.disabled = locked
         self.avail_panel.disabled = locked
         self.seq_panel.execution_functions_list.disabled = locked
-        
+
         if self.page:
             self.update()
 
     def save_sequence(self):
-        self.bot_sequence = [c.get_serialized_data() for c in self.seq_panel.execution_functions_list.content.controls]
-        if self.config: 
+        self.bot_sequence = [
+            c.get_serialized_data()
+            for c in self.seq_panel.execution_functions_list.content.controls
+        ]
+        if self.config:
             self.config.save_bot_loop(self.bot_sequence)
 
     def _on_global_hotkey(self):
@@ -1262,9 +1424,9 @@ class Dashboard(ft.Container):
                 paused = self.bot.toggle_pause()
                 if self.app.overlay:
                     self.app.overlay.send_update(
-                        status="Paused" if paused else "Running", 
-                        task=self.bot.current_task_name, 
-                        paused=paused
+                        status="Paused" if paused else "Running",
+                        task=self.bot.current_task_name,
+                        paused=paused,
                     )
 
                 status = "PAUSED (Ctrl+P to Resume)" if paused else "Running"
@@ -1274,7 +1436,8 @@ class Dashboard(ft.Container):
                 print(f"Hotkey Error: {e}")
 
     def start_sequence(self):
-        if not self.bot_sequence: return
+        if not self.bot_sequence:
+            return
         if self.app.bot == None:
             self.bot = Bot(logger=self.logger)
             self.app.bot = self.bot
@@ -1293,11 +1456,14 @@ class Dashboard(ft.Container):
         self.set_ui_lock(False)
         self.seq_panel.update_status("Stopped", ft.Colors.RED_400)
 
-        self.seq_panel.run_button.content=ft.Row(
-            [ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED), ft.Text("RUN BOT", weight="bold", size=18)],
+        self.seq_panel.run_button.content = ft.Row(
+            [
+                ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED),
+                ft.Text("RUN BOT", weight="bold", size=18),
+            ],
             alignment=ft.MainAxisAlignment.CENTER,
         )
-        self.seq_panel.run_button.style=ft.ButtonStyle(
+        self.seq_panel.run_button.style = ft.ButtonStyle(
             color=ft.Colors.WHITE,
             bgcolor=ft.Colors.BLUE_600,
             shape=ft.RoundedRectangleBorder(radius=8),
@@ -1309,32 +1475,36 @@ class Dashboard(ft.Container):
             self.bot.destroy()
         self.bot = None
         self.seq_panel.run_button.data = "run"
-        if self.app: self.app.bot = self.bot
-        if self.page: self.update()
+        if self.app:
+            self.app.bot = self.bot
+        if self.page:
+            self.update()
 
     def sequence_worker(self):
         try:
             while self.is_running_sequence:
                 for item in self.bot_sequence:
-                    if not self.is_running_sequence: break
-                    if not self.bot: break
+                    if not self.is_running_sequence:
+                        break
+                    if not self.bot:
+                        break
 
                     while self.is_running_sequence and self.bot and self.bot.paused:
                         time.sleep(0.5)
-                    
+
                     task_type = item.get("type")
                     if not task_type or task_type not in COMMAND_TYPES:
                         continue
                     task_info = COMMAND_TYPES[task_type]
                     if self.app.overlay:
                         self.app.overlay.send_update(
-                            status="Running", 
-                            task=task_info['label'], 
-                            paused=False
+                            status="Running", task=task_info["label"], paused=False
                         )
 
                     func_name = COMMAND_TYPES[item["type"]]["func"]
-                    self.seq_panel.update_status(f"Executing: {item['type']}", ft.Colors.GREEN_400)
+                    self.seq_panel.update_status(
+                        f"Executing: {item['type']}", ft.Colors.GREEN_400
+                    )
                     self.bot.overlay = self.app.overlay
                     # Execute on bot
                     bot_func = getattr(self.bot, func_name, None)
@@ -1353,13 +1523,24 @@ class Dashboard(ft.Container):
                             time.sleep(1)
                             self.bot._wait_if_paused()
 
-                functions_list = self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.execution_functions_list.content.controls
-                travel_amount = len([function.function_type for function in functions_list if function.function_type == "travel_to"])
+                functions_list = (
+                    self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.execution_functions_list.content.controls
+                )
+                travel_amount = len(
+                    [
+                        function.function_type
+                        for function in functions_list
+                        if function.function_type == "travel_to"
+                    ]
+                )
                 if self.bot.current_location != "island" and travel_amount != 0:
                     bot_func = getattr(self.bot, "travel_to", None)
-                    bot_func(self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value)
+                    bot_func(
+                        self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value
+                    )
 
-                if self.loop_sequence == False: break
+                if self.loop_sequence == False:
+                    break
         except Exception as e:
             print(f"Sequence Error: {e}")
             self.stop_sequence()
@@ -1371,14 +1552,17 @@ class Dashboard(ft.Container):
         self.content = ft.ResponsiveRow(
             controls=[self.left_panel, self.right_panels[target_tab]], spacing=0
         )
-        
+
         # Check subscription when opening the sequence tab
         if target_tab == "sequence":
             self.bot_sequence_panel.show_tab()
         elif target_tab == "logs":
-            self.bot_activity_panel.refresh_logs() # Refresh list when opening logs
-            
+            self.bot_activity_panel.refresh_logs()  # Refresh list when opening logs
+        #elif target_tab == "dashboard":
+            #self.dashboard_panel.overview_panel.update_data()
+
         self.update()
+
 
 def main(page: ft.Page):
     page.padding = 0
@@ -1388,7 +1572,7 @@ def main(page: ft.Page):
     dashboard = Dashboard()
 
     page.add(dashboard)
-    # dashboard.dashboard_panel.overview_panel.subscribed_until.update_data("Data Updated")    
+    # dashboard.dashboard_panel.overview_panel.subscribed_until.update_data("Data Updated")
 
     page.update()
 

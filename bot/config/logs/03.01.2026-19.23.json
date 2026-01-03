@@ -1,0 +1,21 @@
+[
+    "app;Bot initialized!",
+    "app;Bot destroyed!",
+    "app;Bot initialized!",
+    "bot;Bot Starting to remove orders for fort_sterling",
+    "bot;Starting Buying 1254 items in fort_sterling",
+    "market;Item T6_2H_WARBOW is profitable, but price 18052.0 is above thresholds",
+    "market;Item T7_MAIN_NATURESTAFF_AVALON is profitable, but price 100135.0 is above thresholds",
+    "market;Item T6_2H_CROSSBOW is profitable, but price 25043.0 is above thresholds",
+    "market;Item T6_SHOES_LEATHER_FEY is profitable, but price 102500.0 is above thresholds",
+    "market;Item T7_2H_HOLYSTAFF_UNDEAD is profitable, but price 152008.0 is above thresholds",
+    "market;Item T6_2H_NATURESTAFF_HELL is profitable, but price 16759.0 is above thresholds",
+    "bot;Pause toggled status: Paused",
+    "market;Item T8_OFF_HORN_KEEPER@1 is profitable, but price 122227.0 is above thresholds",
+    "bot;Pause toggled status: Running",
+    "market;No black market data for T7_MAIN_HAMMER@1",
+    "market;Profit on T6_2H_TRIDENT_UNDEAD | Price: 25140.0 | Margin: 311.24% | Buying 1 units | SilverBalance: 234000000",
+    "market;No data for T7_MAIN_ARCANESTAFF_UNDEAD",
+    "market;Profit on T6_OFF_BOOK@1 | Price: 3025.0 | Margin: 1344.09% | Buying 1 units | SilverBalance: 233000000",
+    "bot;Pause toggled status: Paused"
+]

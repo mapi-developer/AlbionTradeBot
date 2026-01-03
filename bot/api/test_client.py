@@ -6,7 +6,6 @@ import random
 # ------------------------------------------------------
 # Replace this with your actual Cloud Run URL
 API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app" 
-# API_URL = "http://localhost:8080" # Use this if testing locally
 
 def test_price_update_flow():
     print(f"--- 1. Testing Connection to {API_URL} ---")

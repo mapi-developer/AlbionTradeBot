@@ -2,12 +2,8 @@ import time
 import threading
 import queue
 import requests
-import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("AlbionBotClient")
 
 class APIClient:
     def __init__(self, api_url: str, batch_size: int = 200, flush_interval: int = 120):
@@ -70,7 +66,6 @@ class APIClient:
                     last_flush = current_time
 
             except Exception as e:
-                logger.error(f"Worker loop error: {e}")
                 time.sleep(1)
 
     def _send_batch(self, items: List[Dict]):
@@ -82,12 +77,12 @@ class APIClient:
             response = requests.put(endpoint, json=items, timeout=10)
             
             if response.status_code == 200:
-                logger.info(f"Successfully synced {len(items)} items. Backend buffer size: {response.json().get('buffer_size')}")
+                print(f"Successfully synced {len(items)} items. Backend buffer size: {response.json().get('buffer_size')}")
             else:
-                logger.error(f"Failed to sync items: {response.status_code} - {response.text}")
+                print(f"Failed to sync items: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            logger.error(f"HTTP Connection error: {e}")
+            print(f"HTTP Connection error: {e}")
 
     def stop(self):
         """Gracefully stop the worker."""

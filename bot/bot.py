@@ -109,6 +109,10 @@ class Bot:
         self.paused = not self.paused
         self.status = "Paused" if self.paused else "Running"
         self.logger.add_log("bot", f"Pause toggled status: {self.status}")
+        if self.status == "Running":
+            self.settings.settings = self.settings.load_settings()
+            buy_mode = self.settings.get("general")["buy_mode"]
+            self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
 
         return self.paused
     
@@ -116,8 +120,6 @@ class Bot:
         while self.paused:
             time.sleep(.5)
         self.capture.set_foreground_window()
-        buy_mode = self.settings.get("general")["buy_mode"]
-        self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
 
     def parse_item_info(self, full_unique_name: str):
         if "@" in full_unique_name:

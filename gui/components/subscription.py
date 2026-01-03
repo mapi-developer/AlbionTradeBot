@@ -1,8 +1,6 @@
 import flet as ft
 import requests
 from datetime import datetime, timezone
-import threading
-import webbrowser
 import sys
 import os
 

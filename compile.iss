@@ -30,7 +30,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; 1. The Main Application Files
 ; Copies everything from the built dist/AlbionTradeBot folder
-Source: "AlbionTradeBot\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\AlbionTradeBot\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; 2. The Dependency Installers
 ; These assume you have a folder named 'redist' in your project root (two levels up from this .iss file)

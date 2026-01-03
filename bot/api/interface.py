@@ -1,18 +1,11 @@
 import os
 import requests
-import logging
 from typing import List, Dict, Optional
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Import the new API Client
-# Assuming client.py is in the same directory. 
-# If it's in a subfolder named 'api', use: from api.client import AlbionAPIClient
 from .client import APIClient 
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("DatabaseInterface")
 
 class DatabaseInterface:
     def __init__(self):
@@ -74,7 +67,6 @@ class DatabaseInterface:
             # The backend endpoint /items/ returns a list of all items
             response = requests.get(f"{self.api_url}/items/", timeout=10)
             if response.status_code != 200:
-                logger.error(f"Failed to fetch prices: {response.status_code}")
                 return {}
 
             items = response.json()
@@ -90,7 +82,6 @@ class DatabaseInterface:
             return result
 
         except Exception as e:
-            logger.error(f"API Read Error: {e}")
             return {}
 
     def get_last_update_at(self) -> Optional[datetime]:
@@ -113,13 +104,10 @@ class DatabaseInterface:
     # We keep the methods so your bot doesn't crash if it calls them.
 
     def add_order(self, order_dict):
-        # logger.warning("add_order is not supported by the new backend yet.")
         pass
 
     def add_history(self, history_list):
-        # logger.warning("add_history is not supported by the new backend yet.")
         pass
 
     def add_mail(self, mail_dict):
-        # logger.warning("add_mail is not supported by the new backend yet.")
         pass

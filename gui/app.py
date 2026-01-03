@@ -48,7 +48,7 @@ class GuiApp:
         #     content=Dashboard(self, self.config, self.page, self.bot, self.header),
         #     expand=True,
         # )
-        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger)
+        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger, login=self.login)
 
         self.shop = Shop(login_state=self.login.state)
         
