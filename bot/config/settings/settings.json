@@ -1,8 +1,8 @@
 {
     "general": {
-        "buy_mode": "fast",
+        "buy_mode": "order",
         "game_language": "EN-US",
-        "min_silver": "150000000"
+        "min_silver": "200000000"
     },
     "fast_buy": {
         "min_profit_rate": "50",
@@ -20,7 +20,7 @@
     },
     "order_buy": {
         "min_profit_rate": "80",
-        "default_buy_amount": "0",
+        "default_buy_amount": "20",
         "presets": {
             "caerleon": "Demo Preset.json",
             "martlock": "Demo Preset.json",
@@ -30,6 +30,35 @@
             "thetford": "Demo Preset.json",
             "brecilien": "Demo Preset.json"
         },
-        "buy_logic": []
+        "buy_logic": [
+            {
+                "amount_to_buy": "15",
+                "price_larger_then": "1000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "6000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "10000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "20000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "50000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "100000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "150000"
+            }
+        ]
     }
 }

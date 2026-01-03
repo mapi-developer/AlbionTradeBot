@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 
 if getattr(sys, 'frozen', False):
@@ -23,7 +23,7 @@ class Logger:
         Starts a new logging session by creating a JSON file 
         named with the current timestamp (DD.MM.YYYY-HH.MM.json).
         """
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         # Format: 23.12.2025-14.42.json
         filename = now.strftime("%d.%m.%Y-%H.%M.json")
         self.current_session_file = os.path.join(self.logs_dir, filename)
