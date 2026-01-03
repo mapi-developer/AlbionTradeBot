@@ -8,6 +8,22 @@ import gc
 import os
 import json
 import time
+import win32gui, win32api, win32con
+
+def change_keyboard_layout(language_id_hex = 0x04090409):
+    hwnd = win32gui.GetForegroundWindow()
+    
+    if hwnd:
+        win32api.PostMessage(
+            hwnd,
+            win32con.WM_INPUTLANGCHANGEREQUEST,
+            0,
+            language_id_hex
+        )
+        print(f"Request sent to switch layout to: {hex(language_id_hex)}")
+    else:
+        print("No active window found.")
+
 
 class Bot:
     def __init__(
@@ -120,6 +136,7 @@ class Bot:
         while self.paused:
             time.sleep(.5)
         self.capture.set_foreground_window()
+        change_keyboard_layout()
 
     def parse_item_info(self, full_unique_name: str):
         if "@" in full_unique_name:
@@ -163,6 +180,7 @@ class Bot:
         self.market_manager.change_tab("buy")
 
         try:
+            change_keyboard_layout()
             for item in items_to_check:
                 self._wait_if_paused()
                 self.current_item_name = f"Scanning: {item}"
@@ -221,8 +239,9 @@ class Bot:
         self.logger.add_log("bot", f"Bot Starting to remove orders for {self.current_location}")
         self.capture.set_foreground_window()
         self.market_manager.change_tab("my_orders_tab")
+        change_keyboard_layout()
         while self.market_manager.order_exists():
-            self._wait_if_paused
+            self._wait_if_paused()
             self.market_manager.remove_order(25)
             self.market_manager.scroll()
 
@@ -251,10 +270,9 @@ class Bot:
 
         try:
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
-            
+            change_keyboard_layout()
             for i, item_unique_name in enumerate(items_to_buy_list):
                 self._wait_if_paused()
-                self.market_manager.update_silver_balance()
                 self.sniffer.market_buffer.clear()
                 self.market_manager.search_item(item_unique_name, from_db=True)
                 self.market_manager.open_item()
@@ -318,7 +336,7 @@ class Bot:
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
-                        self.logger.add_log("market", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.market_manager.silver_amount}")
+                        self.logger.add_log("market", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.sniffer.current_silver}")
                         self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
                     else:
                         print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
@@ -327,10 +345,10 @@ class Bot:
                 else:
                     self.market_manager.close_item()
 
-                #if self.market_manager.silver_amount != 0 and int(min_silver) >= self.market_manager.silver_amount:
-                    #print("[Warning] Silver amount is less than minimum to continue")
-                    #self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
-                    #break
+                if self.sniffer.current_silver != 0 and int(min_silver) >= self.sniffer.current_silver:
+                    print("[Warning] Silver amount is less than minimum to continue")
+                    self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
+                    break
         except Exception as e:
             print(f"[Error] Buy items issue: {e}")
             self.logger.add_log("error", f"[Error] Buy items issue: {e}")
@@ -342,6 +360,7 @@ class Bot:
         self.current_task_name = "Traveling"
         self.logger.add_log("travel", f"Bot Starting traveling to {destination}")
         self.capture.set_foreground_window()
+        change_keyboard_layout()
         self.travel_manager.travel_to(destination=destination)
 
     def check_login(self):

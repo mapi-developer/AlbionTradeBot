@@ -1,22 +1,7 @@
 from ..core import WindowCapture, InputSender
 from ..managers import SettingsManager
-import re
 import random
 
-def ConvertSilverToNumber(string: str) -> int | None:
-    try:
-        string = string.strip().replace(" ", "")
-        multipliers = {'k': 1_000, 'm': 1_000_000, 'b': 1_000_000_000}
-
-        match = re.match(r'([\d\.]+)([kmb]?)$', string)
-        if match:
-            number, suffix = match.groups()
-            return int(float(number) * multipliers.get(suffix, 1))
-        else:
-            return None
-    except Exception as e:
-        print(f"[Error] Can't conver {string} to silver number")
-        return None
 
 class MarketManager(InputSender):
     def __init__(self, capture: WindowCapture = None, settings: SettingsManager = None):
@@ -26,7 +11,6 @@ class MarketManager(InputSender):
         if settings is None: 
             settings = SettingsManager()
 
-        self.silver_amount = 0
         self.capture = capture
         self.settings = settings
         
@@ -62,16 +46,6 @@ class MarketManager(InputSender):
         self.settings = None
         
         print("MarketManager destroyed.")
-
-    def get_silver_balance(self) -> int:
-        silver_string = self.capture.get_text_from_screenshot(self.capture_positions["silver_from_market"])
-        silver_amount = ConvertSilverToNumber(silver_string)
-        if silver_amount is None:
-            silver_amount = self.silver_amount
-        return silver_amount
-    
-    def update_silver_balance(self) -> None:
-        self.silver_amount = self.get_silver_balance()
 
     def get_name_from_unique(self, unique_name: str) -> str | None:
         if unique_name in self.items:
@@ -159,13 +133,11 @@ class MarketManager(InputSender):
         self.sleep(0.2)
         self.click(self.mouse_positions["button_crate_order_confirmation"])
         self.sleep(0.1)
-        self.silver_amount = self.get_silver_balance()
 
         self.sleep(0.5)
 
     def prepare(self):
         self.change_tab("buy")
-        self.silver_amount = self.get_silver_balance()
         self.click(self.mouse_positions["quality"])
         self.click(self.mouse_positions["quality_good"])
         self.change_tab("create_buy_order")

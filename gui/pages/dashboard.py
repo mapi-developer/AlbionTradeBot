@@ -228,7 +228,7 @@ class OverviewPanel(ft.Container):
                     last_update = data[0].get("updated_at")
                     if last_update:
                         dt_object = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
-                        formatted_date = dt_object.strftime("%d.%m.%Y")
+                        formatted_date = dt_object.strftime("%d.%m.%Y | %H:%M")
 
             headers = {"Authorization": f"Bearer {self.dashboard.login.state.token}"}
             res = requests.get(f"{self.dashboard.API_URL}/users/{self.dashboard.login.state.user_id}", headers=headers)
@@ -651,6 +651,7 @@ class FunctionToExecute(ft.Container):
                 self.remove_btn_container if can_be_removed else ft.Container(col=1),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
     def get_serialized_data(self):
@@ -1105,27 +1106,59 @@ class BotSequencePanel(RightPanel):
 
 
 class ActivityLogItem(ft.Container):
-    def __init__(self, title: str, on_click=None, data=None):
+    def __init__(self, dashboard, title: str, on_click=None, on_delete=None, data=None):
         super().__init__()
-        self.title = ft.Text(
-            value=title,
-            weight="bold",
-            size=22,
-            color="#ffffff",
-            col={"sm": 12, "md": 12, "xl": 12},
-        )
-
-        self.content = ft.ElevatedButton(
-            content=ft.ResponsiveRow(controls=[self.title]),
+        
+        current = dashboard.app.logger.current_session_file
+        self.open_button = ft.ElevatedButton(
+            content=ft.Row(
+                controls=[
+                    ft.Text(
+                        value=title,
+                        weight="bold",
+                        size=20,  # Slightly smaller to fit nicely
+                        color="#ffffff",
+                        expand=True,
+                    )
+                ]
+            ),
             style=ft.ButtonStyle(
-                padding=ft.padding.only(20, 20, 20, 20),
+                padding=ft.padding.all(20),
                 bgcolor="#415E7A",
                 shape=ft.RoundedRectangleBorder(radius=8),
             ),
-            on_click=on_click,  # Added on_click handler
-            data=data,  # Store filename
+            on_click=on_click,
+            data=data,
+            expand=True,  # This makes the button take all available space
         )
 
+        # 2. Delete Button
+        self.delete_button = ft.Container(
+            content=ft.IconButton(
+                icon=ft.Icons.DELETE_OUTLINE,
+                icon_color="#ff5252",
+                icon_size=24,
+                tooltip="Delete Log",
+                on_click=on_delete,
+                data=data,
+            ),
+            bgcolor="#2b3a4a",  # Darker background for the delete action
+            border_radius=8,
+            alignment=ft.alignment.center,
+            padding=5,
+        )
+
+        # 3. Layout
+        self.content = ft.Row(
+            controls=[
+                self.open_button
+            ],
+            spacing=10,
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+        )
+
+        if current and not os.path.basename(current) == data:
+            self.content.controls.append(self.delete_button)
 
 class LogsView(ft.Container):
     LOG_COLORS = {
@@ -1266,7 +1299,7 @@ class ActivityLogsPanel(RightPanel):
                     title += " | Current Session"
 
             self.logs_list_content.controls.append(
-                ActivityLogItem(title, on_click=self.handle_log_click, data=f)
+                ActivityLogItem(self.dashboard, title, on_click=self.handle_log_click, data=f)
             )
         if self.page:
             self.update()
@@ -1329,7 +1362,58 @@ class ActivityLogsPanel(RightPanel):
         if self.page:
             self.update()
 
+    def refresh_logs(self):
+        files = []
+        if self.dashboard and self.dashboard.config:
+            files = self.dashboard.config.get_logs()
 
+        self.logs_list_content.controls.clear()
+
+        for f in files:
+            title = self.format_log_title(f)
+
+            # Highlight current session
+            if (
+                self.dashboard
+                and self.dashboard.app
+                and hasattr(self.dashboard.app, "logger")
+            ):
+                current = self.dashboard.app.logger.current_session_file
+                if current and os.path.basename(current) == f:
+                    title += " | Current Session"
+
+            # UPDATED: Pass the on_delete handler
+            self.logs_list_content.controls.append(
+                ActivityLogItem(
+                    self.dashboard,
+                    title, 
+                    on_click=self.handle_log_click, 
+                    on_delete=self.handle_log_delete, 
+                    data=f
+                )
+            )
+        if self.page:
+            self.update()
+
+    def handle_log_delete(self, e):
+        """Deletes the log file and refreshes the list."""
+        filename = e.control.data
+        if not filename:
+            return
+
+        if self.dashboard and self.dashboard.config:
+            # Call the new delete method in settings
+            success = self.dashboard.config.delete_log(filename)
+            if success:
+                print(f"Deleted log: {filename}")
+                self.refresh_logs()
+                
+                # If we were looking at the log we just deleted, go back to the list
+                if self.logs_view.visible:
+                    self.show_logs_list()
+
+
+            
 class Dashboard(ft.Container):
     bot: Bot | None
 

@@ -41,6 +41,7 @@ class AlbionSniffer:
         self.running = False
         
         # --- BUFFERS ---
+        self.current_silver = 0
         self.market_buffer = []
         self.mail_buffer = []
         self.lock = threading.Lock()
@@ -87,6 +88,7 @@ class AlbionSniffer:
             stream.read(1)
             msg_type = ord(stream.read(1))
             op = 0
+
             if msg_type == 2: op = ord(stream.read(1))
             elif msg_type == 3: op = ord(stream.read(1)); stream.read(3)
             elif msg_type == 4: op = ord(stream.read(1))
@@ -97,11 +99,28 @@ class AlbionSniffer:
             # --- MAIL CONTENT (OpCode 1) ---
             if op == const.OP_GET_MAIL_INFOS and 1 in params:
                 self.handle_read_mail(params)
+                
+            if msg_type == 4:
+                event_code = params.get(252)
+                if event_code == const.OP_EVENT_UPDATE_SILVER:
+                    self.handle_silver_update(params)
 
             # --- MARKET DATA ---
             self.scan_for_market_data(params)
+        except Exception as e:
+            print(f"Sniffer Error: {e}")
 
-        except: pass
+    def handle_silver_update(self, params):
+        silver = params.get(1)
+        if silver is not None:
+            try:
+                silver_val = int(silver) 
+                
+                with self.lock:
+                    self.current_silver = int(f"{silver_val/10000:.0f}")
+                print(f">>> Updated Silver: {self.current_silver}") 
+            except Exception as e:
+                print(f"Error parsing silver: {e}")
 
     def handle_read_mail(self, params):
         mail_id = params.get(0)

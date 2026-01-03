@@ -4,7 +4,7 @@
             "stats": [1300, 460, 1450, 490],
             "title": [820, 280, 1300, 350],
             "order_exists": [1640, 580, 1740, 640],
-            "silver_from_market": [1716, 280, 1840, 350]
+            "silver_from_market": [1600, 280, 1840, 350]
         },
         "travel": {},
         "login": {
@@ -19,7 +19,7 @@
             "stats": [1290, 414, 1515, 440],
             "title": [867, 253, 1360, 315],
             "order_exists": [1620, 525, 1679, 563],
-            "silver_from_market": [1672, 268, 1785, 305]
+            "silver_from_market": [1600, 268, 1785, 305]
         },
         "travel": {},
         "login": {
@@ -34,7 +34,8 @@
             "stats": [975, 345, 1088, 375],
             "title": [615, 210, 1050, 262],
             "order_exists": [1230, 435, 1305, 480],
-            "silver_from_market": [1287, 215, 1376, 255]
+            "silver_from_market": [1250, 220, 1376, 260],
+            "silver_from_inventory": [1584, 490, 1649, 518]
         },
         "travel": {},
         "login": {

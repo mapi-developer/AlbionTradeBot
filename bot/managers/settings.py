@@ -226,3 +226,15 @@ class SettingsManager:
         except Exception as e:
             print(f"Error reading log {filename}: {e}")
             return []
+        
+    def delete_log(self, filename):
+        """Deletes a specific log file."""
+        path = os.path.join(self.LOGS_DIR, filename)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                return True
+            except Exception as e:
+                print(f"Error deleting log {filename}: {e}")
+                return False
+        return False
