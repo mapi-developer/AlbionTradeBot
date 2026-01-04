@@ -1,7 +1,11 @@
 import flet as ft
 import multiprocessing
 import time
-import os
+import os, sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from gui.components.style import GuiStyle
 
 def run_flet_overlay(status_queue):
     os.environ.pop("FLET_SERVER_PORT", None)

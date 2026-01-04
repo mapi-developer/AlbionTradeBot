@@ -7,6 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pages.login import Login
+from gui.components.style import GuiStyle
 
 class Header(ft.Container):
     def __init__(self, page: ft.Page, on_nav_click: Callable, login: Login):

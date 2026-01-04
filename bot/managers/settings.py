@@ -94,6 +94,12 @@ class SettingsManager:
     }
 
     API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
+    GOOGLE_CLIENT_ID = "1054089939982-e2umo92u5p7mh4gjm3hvknddprenho3k.apps.googleusercontent.com"
+    DISCORD_CLIENT_ID = "1447721013260456058"
+
+    LOCAL_AUTH_PORT = 5000
+    LOCAL_REDIRECT_URI = f"http://127.0.0.1:{LOCAL_AUTH_PORT}/oauth/callback"
+
     ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json"
     CACHE_FILE = os.path.join(BASE_DIR, "config/static", "items.json")
     BOT_ITEMS_FILE = os.path.join(BASE_DIR, "config/static", "bot_items.json")

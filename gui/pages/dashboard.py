@@ -8,7 +8,11 @@ from components import BotOverlay
 from bot import Bot
 import requests
 from datetime import datetime
+import sys
 
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from gui.components.style import GuiStyle
 
 COMMAND_TYPES = {
     "travel_to": {

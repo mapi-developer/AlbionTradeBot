@@ -14,7 +14,7 @@ AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputDir=Output
+OutputDir="dist\Output"
 ; Renamed output file to indicate it bundles dependencies
 OutputBaseFilename=AlbionTradeBot_Setup_Bundled
 Compression=lzma

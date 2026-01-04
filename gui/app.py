@@ -9,6 +9,7 @@ from gui import BotOverlay
 from gui import Dashboard
 from gui import Settings
 from gui import Shop
+from gui.components.style import GuiStyle
 
 from bot import Bot, SettingsManager, Logger
 
@@ -18,10 +19,10 @@ class GuiApp:
     def __init__(self, page: ft.Page):
         self.main_column = None
         self.page = page
-        self.page.title = "Albion Trade Bot"
+        self.page.title = "Market Trader"
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.padding = 0
-        self.page.bgcolor = "#131415"
+        self.page.bgcolor = GuiStyle.Colors.DARK_BLUE
         self.page.on_resized = self.on_page_resize
         self.page.fonts = {
             "Roboto Mono": "https://github.com/google/fonts/raw/main/apache/robotomono/RobotoMono-Regular.ttf"
@@ -33,7 +34,7 @@ class GuiApp:
         self.logger.start_session()
         self.logger.add_log("app", "Application started")
 
-        self.login = Login(self.page, on_login_success=self.show_main_app)
+        self.login = Login(self.page, on_login_success=self.show_main_app, settings=self.config)
 
         self.bot = Bot()
         self.overlay = BotOverlay()

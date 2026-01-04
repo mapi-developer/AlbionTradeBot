@@ -2,6 +2,8 @@ import flet as ft
 import requests
 import webbrowser
 
+from components.style import GuiStyle
+
 API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
 
 class ShopingCard(ft.Column):

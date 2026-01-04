@@ -59,6 +59,7 @@ class Bot:
         self.current_item_name = ""
         self.current_location = "island"
         self.sequence_settings = None
+        self.min_silver = 0
         self.overlay = overlay
 
         self.logger.add_log("app", f"Bot initialized!")
@@ -129,6 +130,7 @@ class Bot:
             self.settings.settings = self.settings.load_settings()
             buy_mode = self.settings.get("general")["buy_mode"]
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
+            self.min_silver = self.settings.get("general")["min_silver"]
 
         return self.paused
     
@@ -257,7 +259,7 @@ class Bot:
         is_fast_buy = buy_mode == "fast"
         items_to_buy_list = self.load_preset_items(market_title)
         items_prices = self.db.get_all_prices_for_city("black_market")
-        min_silver = self.settings.get("general")["min_silver"]
+        self.min_silver = self.settings.get("general")["min_silver"]
 
         if not items_to_buy_list:
             print("No items to buy. Please select a preset in Settings")
@@ -345,7 +347,7 @@ class Bot:
                 else:
                     self.market_manager.close_item()
 
-                if self.sniffer.current_silver != 0 and int(min_silver) >= self.sniffer.current_silver:
+                if self.sniffer.current_silver != 0 and int(self.min_silver) >= self.sniffer.current_silver:
                     print("[Warning] Silver amount is less than minimum to continue")
                     self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
                     break
