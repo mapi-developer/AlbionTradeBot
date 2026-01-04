@@ -30,7 +30,8 @@ class SettingsDropdown(ft.Dropdown):
             col={"sm": 12, "md": 6, "xl": 4},
             filled=True,
             fill_color=GuiStyle.Colors.GRAY_BLUE,
-            color=ft.Colors.WHITE,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
             text_style=ft.TextStyle(color=ft.Colors.WHITE),
             label_style=ft.TextStyle(color=ft.Colors.WHITE),
             enable_filter=filter,
@@ -105,8 +106,8 @@ class GeneralSettings(ft.Container):
 class BuyLogicItem(ft.Container):
     def __init__(self, index, on_remove, save_callback: Callable):
         super().__init__()
-        self.bgcolor = GuiStyle.Colors.DARK_BLUE
-        self.border = ft.border.all(1, GuiStyle.Colors.BLUE)
+        self.bgcolor = GuiStyle.Colors.INNER_BG
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.border_radius = 6
         self.index = index
         self.on_remove = on_remove
@@ -118,6 +119,8 @@ class BuyLogicItem(ft.Container):
             text_size=15,
             content_padding=10,
             border_color=GuiStyle.Colors.LIGHT_BLUE,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
             col={"sm": 2, "md": 2, "xl": 2},
             on_change=save_callback,
         )
@@ -129,6 +132,8 @@ class BuyLogicItem(ft.Container):
             text_size=15,
             content_padding=10,
             border_color=GuiStyle.Colors.LIGHT_BLUE,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
             col={"sm": 4, "md": 4, "xl": 4},
             on_change=save_callback,
         )
@@ -158,6 +163,7 @@ class BuyLogicItem(ft.Container):
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
+        self.padding = 5
 
 
 class BuyLogic(ft.Container):
@@ -275,7 +281,7 @@ class RightTab(ft.Container):
         self.config = config
         self.save_callback = save_callback
         self.settings = self.config.get(current_tab)
-        self.bgcolor = GuiStyle.Colors.LIGHT_BLUE
+        self.bgcolor = GuiStyle.Colors.CARD_BG
         self.padding = 20
         self.col={"sm": 12, "md": 8, "xl": 8}
 
@@ -518,7 +524,8 @@ class Settings(ft.Container):
 
     def update_settings(self):
         self.content_main.right_tab.update_on_new_preset()
-        
+
+
 def main(page: ft.Page):
     page.padding = 0
     page.scroll = ft.ScrollMode.AUTO

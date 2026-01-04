@@ -30,19 +30,19 @@ COMMAND_TYPES = {
     "buy_items": {
         "label": "Buy items",
         "icon": ft.Icons.SHOPPING_CART_ROUNDED,
-        "color": "#0d9259",
+        "color": GuiStyle.Colors.ACCENT_GREEN,
         "func": "buy_items",
     },
     "remove_orders": {
         "label": "Remove orders",
         "icon": ft.Icons.CANCEL_ROUNDED,
-        "color": "#b02d21",
+        "color": GuiStyle.Colors.ACCENT_RED,
         "func": "remove_orders",
     },
     "wait_time": {
         "label": "Wait time",
         "icon": ft.Icons.TIMER_OUTLINED,
-        "color": "#cd9316",
+        "color": GuiStyle.Colors.ACCENT_ORANGE,
         "func": "wait_time",
     },
 }
@@ -57,12 +57,13 @@ class LeftPanelButton(ft.Container):
             text=text,
             data=data,
             style=ft.ButtonStyle(
-                color="#ffffff",
+                color=GuiStyle.Colors.TEXT_PRIMARY,
                 shape=ft.RoundedRectangleBorder(radius=0),
-                bgcolor="#225BA1",
+                bgcolor=ft.Colors.TRANSPARENT,
                 shadow_color=ft.Colors.TRANSPARENT,
                 text_style=ft.TextStyle(size=18),
                 padding=ft.padding.only(0, 15, 0, 15),
+                overlay_color=GuiStyle.Colors.CARD_BG,
             ),
         )
 
@@ -73,15 +74,11 @@ class LeftPanel(ft.Column):
         self.expand = True
         self.spacing = 0
 
-        dashboard_panel_button = LeftPanelButton("Dashboard", "dashboard")
-        sequence_panel_button = LeftPanelButton("Bot Sequence", "sequence")
-        logs_panel_button = LeftPanelButton("Activity Logs", "logs")
+        self.dashboard_button = LeftPanelButton("Dashboard", "dashboard").content
+        self.sequence_button = LeftPanelButton("Bot Sequence", "sequence").content
+        self.logs_button = LeftPanelButton("Activity Logs", "logs").content
 
-        self.dashboard_button = dashboard_panel_button.content
-        self.sequence_button = sequence_panel_button.content
-        self.logs_button = logs_panel_button.content
-
-        self.upper_buttons = ft.Column(
+        upper_buttons = ft.Column(
             spacing=0,
             controls=[
                 ft.ResponsiveRow(
@@ -95,7 +92,7 @@ class LeftPanel(ft.Column):
             ],
         )
 
-        self.lower_buttons = ft.Column(
+        lower_buttons = ft.Column(
             spacing=0,
             controls=[
                 ft.ResponsiveRow(
@@ -113,10 +110,10 @@ class LeftPanel(ft.Column):
                 alignment=ft.alignment.top_left,
                 content=ft.Column(
                     spacing=0,
-                    controls=[self.upper_buttons, self.lower_buttons],
+                    controls=[upper_buttons, lower_buttons],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
-                bgcolor="#1C416C",
+                bgcolor=GuiStyle.Colors.SIDEBAR_BG,
             )
         ]
 
@@ -124,18 +121,14 @@ class LeftPanel(ft.Column):
 class InfoCard(ft.Container):
     def __init__(self, title: str, icon: str, value: str = "Data Loading..."):
         super().__init__()
-        
         self.col = {"xs": 12, "sm": 6, "md": 3}
-        
-        # 1. Create the Text control explicitly so we can hold a reference to it
         self.display_value = ft.Text(
             value=value,
             size=24,
             weight=ft.FontWeight.BOLD,
-            color="#ffffff",
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
-
-        self.content = ft.Card(
+        self.content = ft.Container(
             content=ft.Container(
                 padding=15,
                 content=ft.Column(
@@ -144,15 +137,12 @@ class InfoCard(ft.Container):
                             controls=[
                                 ft.Row(
                                     controls=[
-                                        ft.Icon(icon, color=ft.Colors.BLUE_ACCENT_100),
-                                        ft.Text(title, size=12, color=ft.Colors.WHITE70),
+                                        ft.Icon(icon, color=GuiStyle.Colors.GREY_TEXT),
+                                        ft.Text(title, size=12, color=GuiStyle.Colors.WHITE_70),
                                     ]
                                 ),
                                 ft.Column(
-                                    controls=[
-                                        # 2. Use the control we created above
-                                        self.display_value 
-                                    ],
+                                    controls=[self.display_value],
                                     spacing=5,
                                 ),
                             ]
@@ -160,13 +150,13 @@ class InfoCard(ft.Container):
                     ]
                 ),
             ),
-            color="#203064",
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            border_radius=15,
+            border=ft.border.all(width=1, color=GuiStyle.Colors.BORDER_DEFAULT),
+            margin=ft.margin.only(5, 0, 5, 0)
         )
 
     def set_data(self, new_value: str):
-        """
-        Updates the text control and refreshes just this card.
-        """
         self.display_value.value = str(new_value)
         self.update()
 
@@ -176,26 +166,10 @@ class OverviewPanel(ft.Container):
         super().__init__()
         self.dashboard = dashboard
 
-        # Create the cards and assign them to self variables
-        self.last_prices_update = InfoCard(
-            title="Last Prices Update (UTC)", 
-            icon=ft.Icons.UPDATE, 
-            value="Loading..."
-        )
-        self.database_status = InfoCard(
-            title="Database Status",
-            icon=ft.Icons.ACCOUNT_TREE,
-            value="Loading..."
-        )
-        self.bot_status = InfoCard(
-            title="Bot Status", 
-            icon=ft.Icons.ADB
-        )
-        self.subscribed_until = InfoCard(
-            title="Subscribed until",
-            icon=ft.Icons.ADD_TASK,
-            value="Loading..."
-        )
+        self.last_prices_update = InfoCard("Last Prices Update (UTC)", ft.Icons.UPDATE, "Loading...")
+        self.database_status = InfoCard("Database Status", ft.Icons.ACCOUNT_TREE, "Loading...")
+        self.bot_status = InfoCard("Bot Status", ft.Icons.ADB)
+        self.subscribed_until = InfoCard("Subscribed until", ft.Icons.ADD_TASK, "Loading...")
 
         self.content = ft.ResponsiveRow(
             controls=[
@@ -231,25 +205,34 @@ class OverviewPanel(ft.Container):
                 if data and len(data) > 0:
                     last_update = data[0].get("updated_at")
                     if last_update:
-                        dt_object = datetime.fromisoformat(last_update.replace('Z', '+00:00'))
+                        dt_object = datetime.fromisoformat(
+                            last_update.replace("Z", "+00:00")
+                        )
                         formatted_date = dt_object.strftime("%d.%m.%Y | %H:%M")
 
             headers = {"Authorization": f"Bearer {self.dashboard.login.state.token}"}
-            res = requests.get(f"{self.dashboard.API_URL}/users/{self.dashboard.login.state.user_id}", headers=headers)
+            res = requests.get(
+                f"{self.dashboard.API_URL}/users/{self.dashboard.login.state.user_id}",
+                headers=headers,
+            )
             sub_formatted_date = "Loading"
-            
+
             if res.status_code == 200:
                 data = res.json()
                 subscribed_until = data.get("subscribed_until")
                 if subscribed_until:
-                    dt_object = datetime.fromisoformat(subscribed_until.replace('Z', '+00:00'))
+                    dt_object = datetime.fromisoformat(
+                        subscribed_until.replace("Z", "+00:00")
+                    )
                     sub_formatted_date = dt_object.strftime("%d.%m.%Y")
                 else:
                     sub_formatted_date = "Not Active"
-            
+
             if self.page:
                 self.last_prices_update.set_data(formatted_date)
-                self.database_status.set_data("Connected" if status == "alive" else "Not Connected")
+                self.database_status.set_data(
+                    "Connected" if status == "alive" else "Not Connected"
+                )
                 self.bot_status.set_data("Alive")
                 self.subscribed_until.set_data(sub_formatted_date)
         except Exception as e:
@@ -260,8 +243,9 @@ class OrdersGraph(ft.Container):
     def __init__(self, max_y: int = 40):
         super().__init__()
         self.padding = 20
-        self.bgcolor = "#203064"
-        self.border_radius = 10
+        self.bgcolor = GuiStyle.Colors.CARD_BG
+        self.border_radius = 15
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.margin = ft.margin.only(top=10)
 
         self.chart_data = [
@@ -283,7 +267,7 @@ class OrdersGraph(ft.Container):
                 ft.LineChartData(
                     data_points=self.chart_data,
                     stroke_width=4,
-                    color=ft.Colors.WHITE70,
+                    color=GuiStyle.Colors.WHITE_70,
                     curved=False,
                     point=True,
                 )
@@ -310,7 +294,7 @@ class OrdersGraph(ft.Container):
                 labels_size=30,
             ),
             border=ft.border.all(3, ft.Colors.with_opacity(0.5, ft.Colors.ON_SURFACE)),
-            tooltip_bgcolor=ft.Colors.with_opacity(0.8, ft.Colors.BLUE_GREY_800),
+            tooltip_bgcolor=ft.Colors.with_opacity(0.8, GuiStyle.Colors.DARK_BLUE),
             horizontal_grid_lines=ft.ChartGridLines(
                 interval=max_y / 4,
                 color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
@@ -328,30 +312,22 @@ class OrdersGraph(ft.Container):
 
         self.content = ft.Column(
             [
-                ft.Text(
-                    "Order Activity (Last 3 Days)", size=16, weight=ft.FontWeight.BOLD
-                ),
+                ft.Text("Order Activity (Last 3 Days)", size=16, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY),
+                ft.Container(height=10),
                 ft.Container(content=self.chart, height=300),
             ]
         )
 
 
 class RightPanel(ft.Column):
-    def __init__(
-        self,
-        content_controls=[],
-        scroll_mode: ft.ScrollMode | None = ft.ScrollMode.AUTO,
-        expand_content=False,
-    ):
+    def __init__(self, content_controls=[], scroll_mode=ft.ScrollMode.AUTO, expand_content=False):
         super().__init__()
         self.scroll = scroll_mode
         self.expand = True
         self.col = {"sm": 10.5, "md": 10.5, "xl": 10.5}
         self.controls = [
             ft.Container(
-                content=ft.Column(
-                    spacing=0, controls=content_controls, expand=expand_content
-                ),
+                content=ft.Column(spacing=0, controls=content_controls, expand=expand_content),
                 bgcolor=ft.Colors.TRANSPARENT,
                 padding=ft.padding.only(20, 10, 20, 0),
                 expand=True,
@@ -363,26 +339,18 @@ class DashboardPanel(RightPanel):
     def __init__(self, dashboard):
         self.title = ft.Container(
             content=ft.ResponsiveRow(
-                controls=[
-                    ft.Text(
-                        value="Bot Overview",
-                        size=30,
-                        weight=ft.FontWeight.BOLD,
-                        col={"sm": 12, "md": 12, "xl": 12},
-                    )
-                ],
+                controls=[ft.Text("Bot Overview", size=30, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY)],
             ),
             padding=ft.padding.only(0, 0, 0, 10),
         )
-
         self.overview_panel = OverviewPanel(dashboard=dashboard)
         self.orders_graph = OrdersGraph()
         super().__init__(
             content_controls=[
                 self.title,
-                ft.Divider(),
+                ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 self.overview_panel,
-                ft.Divider(),
+                ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 self.orders_graph,
             ]
         )
@@ -393,25 +361,18 @@ class BotExecutionWarning(ft.Container):
         super().__init__()
         self.content = ft.Row(
             controls=[
-                ft.Icon(
-                    ft.Icons.INFO_OUTLINE,
-                    color=ft.Colors.BLUE_400,
-                    size=20,
-                    offset=ft.Offset(0, 0.1),
-                ),
+                ft.Icon(ft.Icons.INFO_OUTLINE, color=GuiStyle.Colors.WARNING_TRAVEL_TEXT, size=20, offset=ft.Offset(0, 0.1)),
                 ft.Text(
-                    "Bot will automatically travel from and to specified island at start and end.",
-                    size=16,
-                    color="#bfdbfe",
-                    expand=True,
+                    "Bot will automatically travel from and to specified island at start and end.", 
+                    size=16, color=GuiStyle.Colors.WARNING_TRAVEL_TEXT, expand=True
                 ),
             ],
             vertical_alignment=ft.CrossAxisAlignment.START,
         )
-        self.bgcolor = "#3272a0ff"
+        self.bgcolor = GuiStyle.Colors.LIGHT_BLUE
         self.padding = 15
         self.border_radius = 12
-        self.border = ft.border.all(1, "#bdbcb9ff")
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
 
 class AddSequenceFunctionButton(ft.ElevatedButton):
@@ -420,7 +381,7 @@ class AddSequenceFunctionButton(ft.ElevatedButton):
         self.data = cmd_id
         self.style = ft.ButtonStyle(
             padding=ft.padding.only(10, 15, 10, 15),
-            bgcolor="#255b85",
+            bgcolor=GuiStyle.Colors.GRAY_BLUE,
             shape=ft.RoundedRectangleBorder(radius=10),
         )
         self.content = ft.Row(
@@ -441,7 +402,7 @@ class AddSequenceFunctionButton(ft.ElevatedButton):
                     expand=True,
                     color=ft.Colors.WHITE,
                 ),
-                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, color="#e4e4e4", size=18),
+                ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE, color=ft.Colors.WHITE, size=18),
             ]
         )
 
@@ -453,14 +414,14 @@ class FunctionsAvaliablePanel(ft.Container):
             value="FUNCTIONS AVAILABLE",
             size=15,
             weight="bold",
-            color="#94a3b8",
+            color=GuiStyle.Colors.TEXT_SECONDARY,
             style=ft.TextStyle(letter_spacing=1.2),
             width=float("inf"),
         )
-        self.bgcolor = "#1e293b"
+        self.bgcolor = GuiStyle.Colors.CARD_BG
         self.padding = ft.padding.only(20, 15, 20, 20)
         self.border_radius = 15
-        self.border = ft.border.all(1, "#334155")
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
         self.travel_to_button = AddSequenceFunctionButton("travel_to")
         self.price_check_button = AddSequenceFunctionButton("price_check")
@@ -494,14 +455,8 @@ class TravelToAdditionalInfo(ft.Container):
         self.col = {"sm": 7, "md": 7, "xl": 7}
         self.on_change_callback = on_change_callback
 
-        dest_val = (
-            initial_data.get("destination", "market") if initial_data else "market"
-        )
-        market_val = (
-            initial_data.get("market_city", "black_market")
-            if initial_data
-            else "black_market"
-        )
+        dest_val = initial_data.get("destination", "market") if initial_data else "market"
+        market_val = initial_data.get("market_city", "black_market") if initial_data else "black_market"
         island_val = initial_data.get("island_name", "") if initial_data else ""
 
         self.destination_type = ft.Container(
@@ -514,6 +469,8 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="island", text="Island"),
                 ],
                 on_change=self.on_destination_type_change,
+                bgcolor=GuiStyle.Colors.DARK_BLUE,
+                color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
             col={"sm": 5, "md": 5, "xl": 4},
         )
@@ -534,6 +491,8 @@ class TravelToAdditionalInfo(ft.Container):
                     # ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
                 on_change=lambda _: self.trigger_save(),
+                bgcolor=GuiStyle.Colors.DARK_BLUE,
+                color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
             col={"sm": 7, "md": 7, "xl": 7},
             visible=(dest_val == "market"),
@@ -545,14 +504,14 @@ class TravelToAdditionalInfo(ft.Container):
                 value=island_val,
                 label="Island Name",
                 on_change=lambda _: self.trigger_save(),
+                bgcolor=GuiStyle.Colors.DARK_BLUE,
+                color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
             col={"sm": 7, "md": 7, "xl": 7},
             visible=(dest_val == "island"),
         )
 
-        self.content = ft.ResponsiveRow(
-            controls=[self.destination_type, self.market_name, self.island_name]
-        )
+        self.content = ft.ResponsiveRow(controls=[self.destination_type, self.market_name, self.island_name])
 
     def trigger_save(self):
         if self.on_change_callback:
@@ -586,6 +545,8 @@ class WaitTimeAdditionalInfo(ft.Container):
                 value=val,
                 label="Minutes",
                 on_change=lambda _: self.trigger_save(),
+                bgcolor=GuiStyle.Colors.DARK_BLUE,
+                color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
             col={"sm": 7, "md": 7, "xl": 7},
         )
@@ -610,10 +571,12 @@ class FunctionToExecute(ft.Container):
         super().__init__()
         self.function_type = function_type
         self.index = ft.Container(
-            content=ft.Text("0"), col={"sm": 0.6}, alignment=ft.alignment.center
+            content=ft.Text("0", color=GuiStyle.Colors.TEXT_PRIMARY), 
+            col={"sm": 0.6}, alignment=ft.alignment.center,
         )
         self.title = ft.Text(
-            COMMAND_TYPES[function_type]["label"], size=18, weight="bold", col={"sm": 3}
+            COMMAND_TYPES[function_type]["label"], size=18, weight="bold", 
+            col={"sm": 3}, color=GuiStyle.Colors.TEXT_PRIMARY,
         )
         self.icon = ft.Container(
             col={"sm": 0.7},
@@ -625,7 +588,7 @@ class FunctionToExecute(ft.Container):
         )
 
         self.remove_btn_container = ft.Container(
-            content=ft.IconButton(icon=ft.Icons.DELETE, icon_color="#b32525"),
+            content=ft.IconButton(icon=ft.Icons.DELETE, icon_color=GuiStyle.Colors.ACCENT_RED),
             col={"sm": 1},
             alignment=ft.alignment.center_right,
         )
@@ -633,16 +596,12 @@ class FunctionToExecute(ft.Container):
 
         self.additional_info = ft.Container(col={"sm": 7, "md": 7, "xl": 7})
         if function_type == "travel_to":
-            self.additional_info = TravelToAdditionalInfo(
-                initial_data, on_change_callback
-            )
+            self.additional_info = TravelToAdditionalInfo(initial_data, on_change_callback)
         elif function_type == "wait_time":
-            self.additional_info = WaitTimeAdditionalInfo(
-                initial_data, on_change_callback
-            )
+            self.additional_info = WaitTimeAdditionalInfo(initial_data, on_change_callback)
 
         self.padding = 10
-        self.bgcolor = "#2D3A55"
+        self.bgcolor =  GuiStyle.Colors.INNER_BG
         self.border_radius = 8
         self.content = ft.ResponsiveRow(
             controls=[
@@ -794,12 +753,15 @@ class ExecutionSequencePanel(ft.Container):
             size=25,
             col=8,
             offset=ft.Offset(0, 0.1),
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
         self.home_island = ft.TextField(
             label="End Island Name",
             text_size=12,
             col=4,
             prefix_icon=ft.Icons.MAP_OUTLINED,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
 
         self.wait_before_loop = ft.TextField(
@@ -815,14 +777,14 @@ class ExecutionSequencePanel(ft.Container):
                     ft.Text(
                         "Bot State:",
                         size=12,
-                        color="#64748b",
+                        color=GuiStyle.Colors.GREY_TEXT,
                         weight="bold",
                     ),
                     self.status_text,
                 ],
                 spacing=10,
             ),
-            bgcolor="#020617",
+            bgcolor=GuiStyle.Colors.BOT_STATUS_BG,
             padding=ft.padding.symmetric(15, 10),
             border_radius=10,
             border=ft.border.all(1, "#1e293b"),
@@ -868,10 +830,10 @@ class ExecutionSequencePanel(ft.Container):
             data="run",
         )
 
-        self.bgcolor = "#1e293b"
+        self.bgcolor = GuiStyle.Colors.CARD_BG
         self.padding = ft.padding.only(20, 15, 20, 20)
         self.border_radius = 15
-        self.border = ft.border.all(1, "#334155")
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.content = ft.Column(
             controls=[
                 ft.ResponsiveRow(
@@ -881,9 +843,9 @@ class ExecutionSequencePanel(ft.Container):
                     ],
                     vertical_alignment=ft.VerticalAlignment.CENTER,
                 ),
-                ft.Divider(),
+                ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 self.execution_functions_list,
-                ft.Divider(),
+                ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 ft.Container(
                     content=self.lower_row, padding=ft.padding.only(0, 0, 0, 10)
                 ),
@@ -905,7 +867,7 @@ class ExecutionSequencePanel(ft.Container):
         )
         self.run_button.style = ft.ButtonStyle(
             color=ft.Colors.WHITE,
-            bgcolor="#312e2e",
+            bgcolor=GuiStyle.Colors.RUN_BUTTON_TOGGLE,
             shape=ft.RoundedRectangleBorder(radius=8),
         )
         self.run_button.update()
@@ -924,7 +886,7 @@ class ExecutionSequencePanel(ft.Container):
             )
             self.run_button.style = ft.ButtonStyle(
                 color=ft.Colors.WHITE,
-                bgcolor=ft.Colors.RED_600,
+                bgcolor=GuiStyle.Colors.ACCENT_RED,
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
             self.dashboard.start_sequence()
@@ -941,7 +903,7 @@ class ExecutionSequencePanel(ft.Container):
             )
             self.run_button.style = ft.ButtonStyle(
                 color=ft.Colors.WHITE,
-                bgcolor=ft.Colors.BLUE_600,
+                bgcolor=GuiStyle.Colors.ACCENT_BLUE,
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
             if self.dashboard.bot.status == "Running":
@@ -1017,19 +979,19 @@ class SubscriptionBlocker(ft.Container):
         self.border_radius = 10
         self.content = ft.Column(
             controls=[
-                ft.Icon(ft.Icons.LOCK_OUTLINE, size=64, color=ft.Colors.RED_400),
-                ft.Text("Subscription Required", size=24, weight=ft.FontWeight.BOLD),
+                ft.Icon(ft.Icons.LOCK_OUTLINE, size=64, color=GuiStyle.Colors.ACCENT_RED),
+                ft.Text("Subscription Required", size=24, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY),
                 ft.Text(
                     "This feature is only available for active subscribers.",
                     size=16,
-                    color=ft.Colors.GREY_400,
+                    color=GuiStyle.Colors.TEXT_SECONDARY,
                 ),
                 ft.Container(height=20),
                 ft.ElevatedButton(
                     text="Go to Shop",
                     icon=ft.Icons.SHOPPING_BAG,
                     style=ft.ButtonStyle(
-                        bgcolor="#1d9dec", color=ft.Colors.WHITE, padding=20
+                        bgcolor=GuiStyle.Colors.ACCENT_ORANGE, color=GuiStyle.Colors.WHITE, padding=20
                     ),
                     on_click=on_shop_click,
                 ),
@@ -1050,6 +1012,7 @@ class BotSequencePanel(RightPanel):
                         size=30,
                         weight=ft.FontWeight.BOLD,
                         col={"sm": 12, "md": 12, "xl": 12},
+                        color=GuiStyle.Colors.TEXT_PRIMARY
                     )
                 ],
             ),
@@ -1063,7 +1026,7 @@ class BotSequencePanel(RightPanel):
             content=ft.Column(
                 controls=[
                     self.title,
-                    ft.Divider(),
+                    ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                     self.bot_control_panel,
                 ],
                 spacing=0,
@@ -1128,8 +1091,9 @@ class ActivityLogItem(ft.Container):
             ),
             style=ft.ButtonStyle(
                 padding=ft.padding.all(20),
-                bgcolor="#415E7A",
+                bgcolor=GuiStyle.Colors.CARD_BG,
                 shape=ft.RoundedRectangleBorder(radius=8),
+                side=ft.BorderSide(1, GuiStyle.Colors.BORDER_DEFAULT),
             ),
             on_click=on_click,
             data=data,
@@ -1140,42 +1104,32 @@ class ActivityLogItem(ft.Container):
         self.delete_button = ft.Container(
             content=ft.IconButton(
                 icon=ft.Icons.DELETE_OUTLINE,
-                icon_color="#ff5252",
+                icon_color=GuiStyle.Colors.ACCENT_RED,
                 icon_size=24,
                 tooltip="Delete Log",
                 on_click=on_delete,
                 data=data,
             ),
-            bgcolor="#2b3a4a",  # Darker background for the delete action
+            bgcolor=GuiStyle.Colors.CARD_BG,  # Darker background for the delete action
             border_radius=8,
             alignment=ft.alignment.center,
             padding=5,
+            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         )
 
         # 3. Layout
         self.content = ft.Row(
-            controls=[
-                self.open_button
-            ],
+            controls=[self.open_button],
             spacing=10,
-            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
 
         if current and not os.path.basename(current) == data:
             self.content.controls.append(self.delete_button)
+            self.open_button.content.controls[0].color = GuiStyle.Colors.TEXT_SECONDARY            
+
 
 class LogsView(ft.Container):
-    LOG_COLORS = {
-        "app": "#d8d7d7",
-        "bot": "#6f178f",
-        "system": ft.Colors.BLUE_400,
-        "activity": ft.Colors.GREEN_400,
-        "orders": ft.Colors.AMBER_500,
-        "error": ft.Colors.RED_400,
-        "market": ft.Colors.PURPLE_400,
-        "travel": ft.Colors.CYAN_400,
-    }
-
     class LogRow(ft.Row):
         def __init__(self, category: str, message: str, color: str):
             super().__init__()
@@ -1224,7 +1178,7 @@ class LogsView(ft.Container):
         for entry in log_list:
             if ";" in entry:
                 category, message = entry.split(";", 1)
-                color = self.LOG_COLORS.get(category.lower(), ft.Colors.GREY_400)
+                color = GuiStyle.Colors.LOG_COLORS.get(category.lower(), ft.Colors.GREY_400)
                 self.log_column.controls.append(self.LogRow(category, message, color))
         if self.page:
             self.update()
@@ -1241,12 +1195,13 @@ class ActivityLogsPanel(RightPanel):
             icon_size=20,
             on_click=lambda _: self.show_logs_list(),
             visible=False,
-            icon_color="#ffffff",
+            icon_color=GuiStyle.Colors.WHITE,
         )
         self.title_text = ft.Text(
             value="Bot Activity Logs",
             size=30,
             weight=ft.FontWeight.BOLD,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
         self.title_container = ft.Container(
             content=ft.Row(
@@ -1292,7 +1247,6 @@ class ActivityLogsPanel(RightPanel):
         for f in files:
             title = self.format_log_title(f)
 
-            # Optional: Highlight current session if matching
             if (
                 self.dashboard
                 and self.dashboard.app
@@ -1303,7 +1257,9 @@ class ActivityLogsPanel(RightPanel):
                     title += " | Current Session"
 
             self.logs_list_content.controls.append(
-                ActivityLogItem(self.dashboard, title, on_click=self.handle_log_click, data=f)
+                ActivityLogItem(
+                    self.dashboard, title, on_click=self.handle_log_click, data=f
+                )
             )
         if self.page:
             self.update()
@@ -1318,7 +1274,7 @@ class ActivityLogsPanel(RightPanel):
 
         self.inner_column.controls = [
             self.title_container,
-            ft.Divider(),
+            ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
             self.logs_list_content,
         ]
 
@@ -1340,7 +1296,7 @@ class ActivityLogsPanel(RightPanel):
 
         self.inner_column.controls = [
             self.title_container,
-            ft.Divider(),
+            ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
             self.logs_list_content,
         ]
         self.update()
@@ -1359,7 +1315,7 @@ class ActivityLogsPanel(RightPanel):
 
         self.inner_column.controls = [
             self.title_container,
-            ft.Divider(),
+            ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
             self.logs_view,
         ]
 
@@ -1376,7 +1332,6 @@ class ActivityLogsPanel(RightPanel):
         for f in files:
             title = self.format_log_title(f)
 
-            # Highlight current session
             if (
                 self.dashboard
                 and self.dashboard.app
@@ -1386,14 +1341,13 @@ class ActivityLogsPanel(RightPanel):
                 if current and os.path.basename(current) == f:
                     title += " | Current Session"
 
-            # UPDATED: Pass the on_delete handler
             self.logs_list_content.controls.append(
                 ActivityLogItem(
                     self.dashboard,
-                    title, 
-                    on_click=self.handle_log_click, 
-                    on_delete=self.handle_log_delete, 
-                    data=f
+                    title,
+                    on_click=self.handle_log_click,
+                    on_delete=self.handle_log_delete,
+                    data=f,
                 )
             )
         if self.page:
@@ -1406,18 +1360,15 @@ class ActivityLogsPanel(RightPanel):
             return
 
         if self.dashboard and self.dashboard.config:
-            # Call the new delete method in settings
             success = self.dashboard.config.delete_log(filename)
             if success:
                 print(f"Deleted log: {filename}")
                 self.refresh_logs()
-                
-                # If we were looking at the log we just deleted, go back to the list
+
                 if self.logs_view.visible:
                     self.show_logs_list()
 
 
-            
 class Dashboard(ft.Container):
     bot: Bot | None
 
@@ -1429,7 +1380,7 @@ class Dashboard(ft.Container):
         bot: Bot = None,
         header=None,
         logger: Logger = None,
-        login = None,
+        login=None,
     ):
         super().__init__()
         self.expand = True
@@ -1646,8 +1597,8 @@ class Dashboard(ft.Container):
             self.bot_sequence_panel.show_tab()
         elif target_tab == "logs":
             self.bot_activity_panel.refresh_logs()  # Refresh list when opening logs
-        #elif target_tab == "dashboard":
-            #self.dashboard_panel.overview_panel.update_data()
+        # elif target_tab == "dashboard":
+        # self.dashboard_panel.overview_panel.update_data()
 
         self.update()
 

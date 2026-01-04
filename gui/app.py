@@ -59,7 +59,7 @@ class GuiApp:
 
         self.body = ft.Container(content=self.dashboard, expand=True)
 
-        self.main_column = ft.Column([self.header, self.body], expand=True)
+        self.main_column = ft.Column([self.header, self.body], expand=True, spacing=0)
         saved_token = self.config.get("auth_token")
         saved_user_id = self.config.get("user_id")
 
@@ -101,7 +101,20 @@ class GuiApp:
                     threading.Thread(target=task_to_run, daemon=True).start()
 
     def go_to_subscription(self):
-        """Switches the view to the Subscription Tab."""
+        for control in self.header.nav_rows.controls:
+            control.style = ft.ButtonStyle(
+                text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
+                color=GuiStyle.Colors.GREY_TEXT,
+                bgcolor=GuiStyle.Colors.HEADER_BG,
+                shape=ft.RoundedRectangleBorder(radius=8),
+            )
+        self.header.nav_rows.controls[2].style = ft.ButtonStyle(
+            text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
+            color=GuiStyle.Colors.WHITE,
+            bgcolor=GuiStyle.Colors.HEADER_NAV_BUTTON_ACTIVE,
+            shape=ft.RoundedRectangleBorder(radius=8),
+            side={ft.ControlState.DEFAULT: ft.BorderSide(1, "#CDC7C7")},
+        )
         self.body.content = self.shop
         if self.page:
             self.page.update()

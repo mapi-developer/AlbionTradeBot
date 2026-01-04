@@ -19,6 +19,7 @@ class GuiStyle:
         ACCENT_BLUE = "#1d9dec"    # Primary Actions
         ACCENT_GREEN = "#0d962b"   # Success Actions
         ACCENT_RED = "#b02d21"     # Destructive Actions
+        ACCENT_ORANGE = "#cd9316"
 
         # Semantic Names (Use these in pages)
         PAGE_BG = DARK_BLUE
@@ -26,10 +27,24 @@ class GuiStyle:
         HEADER_NAV_BUTTON_ACTIVE = OCEAN_BLUE
         SIDEBAR_BG = GRAY_BLUE
         CARD_BG = LIGHT_BLUE
-        INNER_BG = DEEP_BLUE
+        INNER_BG = GRAY_BLUE
         TEXT_PRIMARY = WHITE
-        TEXT_SECONDARY = GREY_TEXT
+        TEXT_SECONDARY = "#adbcd1"
         BORDER_DEFAULT = WHITE_24
+        WARNING_TRAVEL_TEXT = "#b9d3f2"
+        RUN_BUTTON_TOGGLE = "#2D2D2D"
+        BOT_STATUS_BG = "#020617"
+
+        LOG_COLORS = {
+            "app": "#d8d7d7",
+            "bot": "#6f178f",
+            "system": ft.Colors.BLUE_400,
+            "activity": ft.Colors.GREEN_400,
+            "orders": ft.Colors.AMBER_500,
+            "error": ft.Colors.RED_400,
+            "market": ft.Colors.PURPLE_400,
+            "travel": ft.Colors.CYAN_400,
+        }
 
     class TextSize:
         TITLE = 20

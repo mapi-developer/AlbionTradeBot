@@ -23,7 +23,7 @@ class Subscription(ft.Container):
         self.open_subscriptions_offer = ft.ElevatedButton(
             text="Buy Subscription", 
             icon=ft.Icons.CURRENCY_BITCOIN,
-            style=ft.ButtonStyle(bgcolor="#ce7a13", color=ft.Colors.WHITE),
+            style=ft.ButtonStyle(bgcolor=GuiStyle.Colors.ACCENT_ORANGE, color=ft.Colors.WHITE),
             on_click=self.pay_click
         )
 
@@ -32,7 +32,8 @@ class Subscription(ft.Container):
                 "Status Loading...",
                 style=ft.TextStyle(
                     size=12,
-                    color="#1f9f06"
+                    color=GuiStyle.Colors.ACCENT_GREEN,
+                    weight=ft.FontWeight.BOLD
                 ),
             ),
             padding=ft.padding.only(0, 0, 20, 0)
@@ -52,7 +53,7 @@ class Subscription(ft.Container):
         if not self.state.user_id or not self.state.token: 
             self.is_active = False
             self.status.content.value = "Not Logged In"
-            self.status.content.style.color = "#efaa08"
+            self.status.content.style.color = GuiStyle.Colors.ACCENT_ORANGE
             self.open_subscriptions_offer.visible = True
             if self.page:
                 self.page.update()
@@ -69,16 +70,18 @@ class Subscription(ft.Container):
                 if sub_date:
                     if datetime.strptime(sub_date, '%Y-%m-%dT%H:%M:%S.%f%z') < datetime.now(timezone.utc):
                         self.status.content.value = "Subscription expired"
-                        self.status.content.style.color = "#efaa08"
+                        self.status.content.style.color = GuiStyle.Colors.ACCENT_RED
                         self.open_subscriptions_offer.visible = True
                         self.is_active = False
                     else:
                         self.status.content.value = "Subscription active"
+                        self.status.content.style.color = GuiStyle.Colors.ACCENT_GREEN
                         self.open_subscriptions_offer.visible = False
                         self.is_active = True
                 else:
                     self.status.content.value = "Subscription not active"
                     self.open_subscriptions_offer.visible = True
+                    self.status.content.style.color = GuiStyle.Colors.ACCENT_ORANGE
                     self.is_active = False
                 
                 if self.page:
