@@ -40,15 +40,11 @@ class GuiApp:
         self.overlay = BotOverlay()
 
         self.presets = self.config.get_presets_list()
-        self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login)
+        self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login, settings=self.config)
         
         # Initialize views
         self.settings = Settings(page=self.page, config=self.config)
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
-        # self.dashboard = ft.Container(
-        #     content=Dashboard(self, self.config, self.page, self.bot, self.header),
-        #     expand=True,
-        # )
         self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger, login=self.login)
 
         self.shop = Shop(login_state=self.login.state)
@@ -64,7 +60,19 @@ class GuiApp:
         self.body = ft.Container(content=self.dashboard, expand=True)
 
         self.main_column = ft.Column([self.header, self.body], expand=True)
-        self.page.add(self.login)
+        saved_token = self.config.get("auth_token")
+        saved_user_id = self.config.get("user_id")
+
+        if saved_token and saved_user_id:
+            print("Auto-login found. Skipping login screen.")
+            self.login.state.token = saved_token
+            self.login.state.user_id = saved_user_id
+            
+            # Show the main app directly
+            self.show_main_app()
+        else:
+            # No token found, show login screen
+            self.page.add(self.login)
 
         self.page.update()
 

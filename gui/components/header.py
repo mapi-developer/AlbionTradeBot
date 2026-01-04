@@ -7,11 +7,15 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pages.login import Login
+from bot import SettingsManager
 from gui.components.style import GuiStyle
 
 class Header(ft.Container):
-    def __init__(self, page: ft.Page, on_nav_click: Callable, login: Login):
+    def __init__(self, page: ft.Page, on_nav_click: Callable, login: Login, settings: SettingsManager = None):
         super().__init__()
+        if settings == None: settings = SettingsManager()
+        self.settings = settings
+        self.login = login
         self.page = page
         self.margin = 0
 
@@ -72,9 +76,42 @@ class Header(ft.Container):
 
         self.subscription = Subscription(self.page, login)
 
+        self.logout_button = ft.ElevatedButton(
+            text="Logout",
+            style=ft.ButtonStyle(
+                text_style=ft.TextStyle(color="#C2C2C2"),
+                color="#CDCDCD",
+                bgcolor="#0A2449",
+                shape=ft.RoundedRectangleBorder(radius=8),
+            ),
+            on_click=self.logout
+        )
+
+        self.right_part = ft.Container(
+            content=ft.Row(
+                controls=[
+                    self.subscription,
+                    self.logout_button
+                ]
+            )
+        )
+
         self.content = ft.Row(
-            controls=[self.nav_rows, self.subscription],
+            controls=[self.nav_rows, self.right_part],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
         self.bgcolor = "#15181F"
         self.padding = 10
+
+    def logout(self, e):
+        self.login.state.token = None
+        self.login.state.user_id = None
+        
+        self.settings.set("auth_token", None)
+        self.settings.set("user_id", None)
+        
+        self.page.controls.clear()
+        self.page.add(self.login)
+
+        if self.page:
+            self.page.update()

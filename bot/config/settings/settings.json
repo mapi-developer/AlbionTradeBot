@@ -60,5 +60,7 @@
                 "price_larger_then": "150000"
             }
         ]
-    }
+    },
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3NTQ0MjA5fQ.AlBHKzbcWQ8OavK80X5RiR301EeZcitGlkxoJU3Cpw8",
+    "user_id": "1"
 }

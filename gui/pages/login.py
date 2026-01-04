@@ -269,6 +269,10 @@ class Login(ft.Container):
                     self.state.token = httpd.token
                     self.state.user_id = httpd.user_id
 
+                    # Save credentials to settings.json so they persist after restart
+                    self.settings.set("auth_token", httpd.token)
+                    self.settings.set("user_id", httpd.user_id)
+
                     # Call the success callback
                     if self.on_login_success:
                         self.on_login_success()

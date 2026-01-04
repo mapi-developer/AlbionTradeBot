@@ -54,7 +54,8 @@ class Subscription(ft.Container):
             self.status.content.value = "Not Logged In"
             self.status.content.style.color = "#efaa08"
             self.open_subscriptions_offer.visible = True
-            self.page.update()
+            if self.page:
+                self.page.update()
             return
         
         headers = {"Authorization": f"Bearer {self.state.token}"}
@@ -80,13 +81,15 @@ class Subscription(ft.Container):
                     self.open_subscriptions_offer.visible = True
                     self.is_active = False
                 
-                self.page.update()
+                if self.page:
+                    self.page.update()
             
             elif res.status_code == 404:
                 print("Error to check subscription status")
                 self.is_active = False
             
-            self.page.update()
+            if self.page:
+                self.page.update()
 
         except Exception as e:
             print(f"Connection error during status check: {e}")
