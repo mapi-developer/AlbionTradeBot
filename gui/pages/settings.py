@@ -84,7 +84,7 @@ class GeneralSettings(ft.Container):
             color=ft.Colors.WHITE,
             label_style=ft.TextStyle(color=ft.Colors.WHITE),
             fill_color=GuiStyle.Colors.DARK_BLUE,
-            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_BLUE,
             on_change=save_callback
         )
 
@@ -117,7 +117,7 @@ class BuyLogicItem(ft.Container):
             dense=True,
             text_size=15,
             content_padding=10,
-            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_BLUE,
             col={"sm": 2, "md": 2, "xl": 2},
             on_change=save_callback,
         )
@@ -128,7 +128,7 @@ class BuyLogicItem(ft.Container):
             dense=True,
             text_size=15,
             content_padding=10,
-            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_BLUE,
             col={"sm": 4, "md": 4, "xl": 4},
             on_change=save_callback,
         )
@@ -286,7 +286,7 @@ class RightTab(ft.Container):
             fill_color=GuiStyle.Colors.DARK_BLUE,
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
-            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_BLUE,
             suffix_text="%",
             
             on_change=save_callback
@@ -299,7 +299,7 @@ class RightTab(ft.Container):
             fill_color=GuiStyle.Colors.DARK_BLUE,
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
-            border_color=GuiStyle.Colors.LIGHT_GRAY_BLUE,
+            border_color=GuiStyle.Colors.LIGHT_BLUE,
             suffix_text="items",
             on_change=save_callback
         )
@@ -403,7 +403,7 @@ class UpperRow(ft.Container):
         general_title = ft.Text(
             value="General",
             style=ft.TextStyle(
-                size=GuiStyle.TextSize.SETTINGS_TITLE+5,
+                size=GuiStyle.TextSize.TITLE+5,
                 color=ft.Colors.WHITE,
                 weight=ft.FontWeight.BOLD,
             )

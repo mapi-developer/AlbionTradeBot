@@ -72,15 +72,18 @@ class GuiApp:
             self.show_main_app()
         else:
             # No token found, show login screen
-            self.page.add(self.login)
+            if self.page:
+                self.page.add(self.login)
 
-        self.page.update()
+        if self.page:
+            self.page.update()
 
     def show_main_app(self):
         self.header.subscription.check_subscription()
         self.page.controls.clear()
         self.page.add(self.main_column)
-        self.page.update()
+        if self.page:
+            self.page.update()
         #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
@@ -100,20 +103,21 @@ class GuiApp:
     def go_to_subscription(self):
         """Switches the view to the Subscription Tab."""
         self.body.content = self.shop
-        self.page.update()
+        if self.page:
+            self.page.update()
 
     def on_nav_click(self, event):
         for control in self.header.nav_rows.controls:
             control.style = ft.ButtonStyle(
-                text_style=ft.TextStyle(color="#FFFFFF"),
-                color="#B8B7B7",
-                bgcolor="#1C2F4D",
+                text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
+                color=GuiStyle.Colors.GREY_TEXT,
+                bgcolor=GuiStyle.Colors.HEADER_BG,
                 shape=ft.RoundedRectangleBorder(radius=8),
             )
         event.control.style = ft.ButtonStyle(
-            text_style=ft.TextStyle(color="#FFFFFF"),
-            color="#FFFFFF",
-            bgcolor="#0C2E5D",
+            text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
+            color=GuiStyle.Colors.WHITE,
+            bgcolor=GuiStyle.Colors.HEADER_NAV_BUTTON_ACTIVE,
             shape=ft.RoundedRectangleBorder(radius=8),
             side={ft.ControlState.DEFAULT: ft.BorderSide(1, "#CDC7C7")},
         )
@@ -143,7 +147,8 @@ class GuiApp:
                 padding=50,
             )
 
-        self.page.update()
+        if self.page:
+            self.page.update()
 
     def on_page_resize(self, e):
         if self.main_column.page:

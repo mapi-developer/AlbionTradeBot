@@ -2,7 +2,7 @@
     "general": {
         "buy_mode": "order",
         "game_language": "EN-US",
-        "min_silver": "200000000"
+        "min_silver": "55000000"
     },
     "fast_buy": {
         "min_profit_rate": "50",
@@ -61,6 +61,6 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3NTQ0MjA5fQ.AlBHKzbcWQ8OavK80X5RiR301EeZcitGlkxoJU3Cpw8",
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3NTQ5NTIzfQ.Y2pTnwL13jAIy85-1yOadLWss8y1ZxOOz-sWkVu5Trk",
     "user_id": "1"
 }
