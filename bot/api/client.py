@@ -8,7 +8,7 @@ from typing import List, Dict
 class APIClient:
     def __init__(self, api_url: str, batch_size: int = 200, flush_interval: int = 120):
         """
-        :param api_url: The URL of your Cloud Run service (e.g. https://trade-backend...run.app)
+        :param api_url: The URL of your Cloud Run service
         :param batch_size: How many items to send in one HTTP request
         :param flush_interval: Max time (seconds) to wait before sending a partial batch
         """
@@ -22,64 +22,87 @@ class APIClient:
         self.worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
         self.worker_thread.start()
 
-    def update_item_price(self, unique_name: str, city: str, price: int):
+    def update_item_price(self, unique_name: str, city_key: str, price: int, item_type: str = "fast"):
         """
         Queue a price update.
-        City should be 'Caerleon', 'Martlock', etc. Case insensitive.
+        :param item_type: 'fast' or 'order' (matches backend API)
+        :param city_key: e.g. 'price_caerleon'
         """
-        
-        # 2. Add to queue
+        # Add to queue with a special key for routing
         self.queue.put({
             "unique_name": unique_name,
-            city: price
+            city_key: price,
+            "_type": item_type 
         })
 
     def _worker_loop(self):
         """Background thread to batch updates and POST them to the API."""
-        batch = {}
-        last_flush = time.time()
+        # Separate batches for Fast and Order items
+        batches = {
+            "fast": {},
+            "order": {}
+        }
+        last_flush = {
+            "fast": time.time(),
+            "order": time.time()
+        }
 
         while self.running:
             try:
-                # Attempt to get an item from queue with a short timeout
+                # 1. Dequeue and Sort
                 try:
                     item = self.queue.get(timeout=0.5)
                     
-                    # Merge logic: If we have multiple updates for the same item in the buffer, merge them
+                    # Extract type (default to 'fast' if missing)
+                    i_type = item.pop("_type", "fast")
+                    if i_type not in batches:
+                        i_type = "fast"
+                    
                     u_name = item["unique_name"]
-                    if u_name not in batch:
-                        batch[u_name] = item
+                    
+                    # Merge logic for the specific batch
+                    if u_name not in batches[i_type]:
+                        batches[i_type][u_name] = item
                     else:
-                        batch[u_name].update(item)
+                        batches[i_type][u_name].update(item)
                         
                 except queue.Empty:
                     pass
 
-                # Check if we should flush
+                # 2. Check Flush Conditions for each type
                 current_time = time.time()
-                is_batch_full = len(batch) >= self.batch_size
-                is_time_up = (current_time - last_flush >= self.flush_interval) and len(batch) > 0
+                
+                for t in ["fast", "order"]:
+                    batch = batches[t]
+                    is_batch_full = len(batch) >= self.batch_size
+                    is_time_up = (current_time - last_flush[t] >= self.flush_interval) and len(batch) > 0
 
-                if is_batch_full or is_time_up:
-                    self._send_batch(list(batch.values()))
-                    batch = {}
-                    last_flush = current_time
+                    if is_batch_full or is_time_up:
+                        self._send_batch(list(batch.values()), item_type=t)
+                        batches[t] = {} # Clear batch
+                        last_flush[t] = current_time
 
             except Exception as e:
+                print(f"Worker Loop Error: {e}")
                 time.sleep(1)
 
-    def _send_batch(self, items: List[Dict]):
-        """Sends the HTTP PUT request to the backend."""
+    def _send_batch(self, items: List[Dict], item_type: str):
+        """Sends the HTTP PUT request to the backend with the correct type parameter."""
         try:
-            # Your main.py endpoint is PUT /items/prices
             endpoint = f"{self.api_url}/items/prices"
             
-            response = requests.put(endpoint, json=items, timeout=10)
+            # Updated to pass 'type' as a query parameter
+            response = requests.put(
+                endpoint, 
+                json=items, 
+                params={"type": item_type}, 
+                timeout=10
+            )
             
             if response.status_code == 200:
-                print(f"Successfully synced {len(items)} items. Backend buffer size: {response.json().get('buffer_size')}")
+                print(f"Successfully synced {len(items)} items ({item_type}).")
             else:
-                print(f"Failed to sync items: {response.status_code} - {response.text}")
+                print(f"Failed to sync items ({item_type}): {response.status_code} - {response.text}")
                 
         except Exception as e:
             print(f"HTTP Connection error: {e}")

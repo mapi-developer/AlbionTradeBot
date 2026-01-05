@@ -252,7 +252,7 @@ class Bot:
                         payload.append(item_data)
                     
                     if payload:
-                        self.db.update_item_prices(payload)
+                        self.db.update_item_prices(payload, item_type="fast")
         except KeyboardInterrupt:
             print("Stopping bot...")
 
@@ -316,11 +316,11 @@ class Bot:
                 if current_market_orders_offer == [] and current_market_orders_request == []:
                     print(f"No data for {item_unique_name}")
                     self.logger.add_log("orders", f"No data for {item_unique_name}")
-                    self.market_manager.close_item()
-                    continue
+                    if is_fast_buy:
+                        continue
                 
                 lowest_price = float('inf')
-                order_price = 0
+                order_price = 1
 
                 if current_market_orders_offer != []:
                     for order in current_market_orders_offer:
@@ -350,7 +350,7 @@ class Bot:
                     continue
 
                 profit = black_market_price * 0.96 - lowest_price
-                profit_margin = (profit / lowest_price) if lowest_price > 0 else 0
+                profit_margin = (profit / lowest_price) if lowest_price > 0 else profit
 
                 if profit_margin >= min_profit_rate:
                     buy_logic_rules = [i for i in self.sequence_settings.get("buy_logic", []) if i["amount_to_buy"] != "" and i["price_larger_then"] != ""]

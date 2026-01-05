@@ -22,7 +22,7 @@
         "min_profit_rate": "10",
         "default_buy_amount": "20",
         "presets": {
-            "caerleon": "Demo Preset.json",
+            "caerleon": "test.json",
             "martlock": "Demo Preset.json",
             "lymhurst": "Demo Preset.json",
             "fort_sterling": "Demo Preset.json",
@@ -61,6 +61,6 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3NjM5NTQ2fQ.HM1ckXG_V4Je0t5StyFPQn9NwI28WLmYgnND5Y6_w8U",
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3NjQwNjc4fQ.AzY9LaSb9dGw_kS1P2EtQDY8zLZLlTo4XSCSkm40Lr8",
     "user_id": "1"
 }

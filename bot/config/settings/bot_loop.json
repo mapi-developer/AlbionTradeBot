@@ -1,1 +1,8 @@
-[]
+[
+    {
+        "type": "remove_orders"
+    },
+    {
+        "type": "buy_items"
+    }
+]

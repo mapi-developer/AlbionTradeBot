@@ -1,0 +1,23 @@
+[
+    "bot;Bot initialized!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting to remove orders for caerleon",
+    "market;Starting Buying 1254 items in caerleon",
+    "orders;Profit on T8_MAIN_FIRESTAFF_KEEPER | Price: 103231.0 | Margin: 234.79% | Buying 10 units | SilverBalance: 296129737",
+    "orders;Profit on T7_MAIN_NATURESTAFF_AVALON | Price: 13121.0 | Margin: 1875.46% | Buying 10 units | SilverBalance: 295071609",
+    "orders;Profit on T7_MAIN_NATURESTAFF_KEEPER | Price: 102435.0 | Margin: 175.30% | Buying 10 units | SilverBalance: 294937109",
+    "orders;Profit on T8_2H_HOLYSTAFF@1 | Price: 201017.0 | Margin: 488.81% | Buying 10 units | SilverBalance: 293887140",
+    "orders;Profit on T6_2H_CROSSBOW | Price: 44580.0 | Margin: 131.18% | Buying 10 units | SilverBalance: 291826705",
+    "bot;Pause toggled status: Paused",
+    "app;Bot destroyed!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting to remove orders for caerleon",
+    "market;Starting Buying 16 items in caerleon",
+    "orders;No data for T8_MAIN_CURSEDSTAFF@4",
+    "orders;No data for T8_2H_CURSEDSTAFF@4",
+    "orders;No data for T7_MAIN_CURSEDSTAFF_UNDEAD@4",
+    "bot;Pause toggled status: Paused",
+    "orders;No data for T7_2H_SKULLORB_HELL@4"
+]

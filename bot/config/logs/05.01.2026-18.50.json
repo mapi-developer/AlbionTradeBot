@@ -1,0 +1,18 @@
+[
+    "bot;Bot initialized!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting to remove orders for caerleon",
+    "market;Starting Buying 16 items in caerleon",
+    "orders;No data for T7_2H_DEMONICSTAFF@4",
+    "orders;Profit on T7_2H_DEMONICSTAFF@4 | Price: 0 | Margin: 1051644768.00% | Buying 20 units | SilverBalance: 0",
+    "bot;Pause toggled status: Paused",
+    "bot;Pause toggled status: Running",
+    "bot;Pause toggled status: Paused",
+    "bot;Pause toggled status: Running",
+    "orders;No data for T8_MAIN_CURSEDSTAFF@4",
+    "orders;Profit on T8_MAIN_CURSEDSTAFF@4 | Price: 0 | Margin: 3766099008.00% | Buying 20 units | SilverBalance: 296013619",
+    "bot;Pause toggled status: Paused",
+    "app;Bot destroyed!",
+    "app;Bot destroyed!"
+]

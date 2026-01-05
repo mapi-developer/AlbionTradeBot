@@ -15,7 +15,6 @@ class DatabaseInterface:
         self.api_url = os.getenv('API_URL', "https://trade-backend-service-1054089939982.europe-west4.run.app")
         
         # 2. Initialize the background worker client
-        # This handles the queuing and batching automatically
         self.client = APIClient(api_url=self.api_url)
         
         print(f"✅ Interface initialized with API: {self.api_url}")
@@ -36,7 +35,11 @@ class DatabaseInterface:
             print(f"❌ Backend API connection failed. Error: {e}")
             return False
 
-    def update_item_prices(self, price_data_list: List[Dict]):
+    def update_item_prices(self, price_data_list: List[Dict], item_type: str = "fast"):
+        """
+        Queue item price updates.
+        :param item_type: 'fast' or 'order' (default: 'fast')
+        """
         for entry in price_data_list:
             # We copy to avoid modifying the original dict inside the loop
             data = entry.copy()
@@ -48,18 +51,22 @@ class DatabaseInterface:
             # Iterate over keys to find prices (e.g., 'price_caerleon', 'price_martlock')
             for key, price in data.items():
                 if key.startswith('price_') and isinstance(price, (int, float)):
-                    # Extract city name: 'price_caerleon' -> 'caerleon'
-                    
-                    # Queue the update using the client
-                    self.client.update_item_price(unique_name, key, int(price))
+                    # Queue the update using the client, passing the item_type
+                    self.client.update_item_price(unique_name, key, int(price), item_type=item_type)
 
-    def get_all_prices_for_city(self, city: str) -> Dict[str, int]:
+    def get_all_prices_for_city(self, city: str, item_type: str = "fast") -> Dict[str, int]:
         """
         Retrieves all item prices for a specific city via API.
+        :param item_type: 'fast' or 'order' to select which table to fetch from.
         """
         try:
-            # The backend endpoint /items/ returns a list of all items
-            response = requests.get(f"{self.api_url}/items/", timeout=10)
+            # Pass the type param to the backend
+            response = requests.get(
+                f"{self.api_url}/items/", 
+                params={"type": item_type},
+                timeout=10
+            )
+            
             if response.status_code != 200:
                 return {}
 
@@ -81,27 +88,9 @@ class DatabaseInterface:
     def get_last_update_at(self) -> Optional[datetime]:
         """
         Fetches the latest timestamp from the DB. 
-        Note: Requires calling the API.
         """
         try:
-            # We can fetch a small batch or a specific endpoint if you create one.
-            # For now, we fetch items and find the max 'updated_at'
-            # (In production, you should make a lightweight /status endpoint for this)
-            response = requests.get(f"{self.api_url}/items/last_update", timeout=5) # You might need to add this endpoint
-            # Fallback if endpoint doesn't exist: return current time or None
+            # Placeholder: In production, you might want a specific lightweight endpoint
             return datetime.utcnow() 
         except Exception:
             return None
-
-    # --- DEPRECATED METHODS ---
-    # These functionalities are not yet supported by your new 'main.py' endpoints.
-    # We keep the methods so your bot doesn't crash if it calls them.
-
-    def add_order(self, order_dict):
-        pass
-
-    def add_history(self, history_list):
-        pass
-
-    def add_mail(self, mail_dict):
-        pass
