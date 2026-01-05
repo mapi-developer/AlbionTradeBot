@@ -1,39 +1,8 @@
 [
     {
-        "type": "travel_to",
-        "data": {
-            "destination": "market",
-            "market_city": "black_market",
-            "island_name": ""
-        }
-    },
-    {
-        "type": "price_check"
-    },
-    {
-        "type": "wait_time",
-        "data": {
-            "minutes": ""
-        }
-    },
-    {
-        "type": "travel_to",
-        "data": {
-            "destination": "island",
-            "market_city": "fort_sterling",
-            "island_name": "test"
-        }
-    },
-    {
         "type": "remove_orders"
     },
     {
         "type": "buy_items"
-    },
-    {
-        "type": "wait_time",
-        "data": {
-            "minutes": "5"
-        }
     }
 ]

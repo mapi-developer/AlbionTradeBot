@@ -61,8 +61,9 @@ class Bot:
         self.sequence_settings = None
         self.min_silver = 0
         self.overlay = overlay
+        self.recent_items = []
 
-        self.logger.add_log("app", f"Bot initialized!")
+        self.logger.add_log("bot", f"Bot initialized!")
 
     def destroy(self):
         print("Destroying Bot instance...")
@@ -75,7 +76,7 @@ class Bot:
             self.sniffer_thread.join(timeout=1.0)
             if self.sniffer_thread.is_alive():
                 print("Warning: Sniffer thread did not shut down cleanly.")
-                self.logger.add_log("app", f"Warning: Sniffer thread did not shut down cleanly.")
+                self.logger.add_log("bot", f"Warning: Sniffer thread did not shut down cleanly.")
 
         if self.market_manager != None:
             self.market_manager.destroy()
@@ -160,7 +161,23 @@ class Bot:
 
         return base_name, tier, enchant
 
+    def update_overlay(self):
+        if self.overlay:
+            self.overlay.send_update(
+                status=self.status,
+                task=self.current_task_name,
+                paused=self.paused,
+                recent_items=self.recent_items
+            )
+
+    def add_recent_item(self, name, price, type="check"):
+        self.recent_items.insert(0, {"name": name, "price": str(price), "type": type})
+        if len(self.recent_items) > 5:
+            self.recent_items.pop()
+        self.update_overlay()
+
     def check_price(self):
+        self.recent_items
         self.status = "Running"
         self.current_task_name = "Price Check"
         self.capture.set_foreground_window()
@@ -183,10 +200,14 @@ class Bot:
 
         try:
             change_keyboard_layout()
-            for item in items_to_check:
+            for i, item in enumerate(items_to_check):
                 self._wait_if_paused()
                 self.current_item_name = f"Scanning: {item}"
-                
+
+                if not self.paused:
+                    self.current_task_name = f"Cheking Price: {i+1}/{len(items_to_check)}"
+                    self.update_overlay()
+
                 if is_black_market:
                     self.market_manager.search_item(item, black_market=True)
                 else:
@@ -199,6 +220,7 @@ class Bot:
                 if not current_market_orders:
                     print(f"No market data captured for: {item}")
                     self.logger.add_log("market", f"No market data captured for: {item} (price_check)")
+                    self.add_recent_item(item, "N/A", "check")
 
                 found_prices = {}
                 for order in current_market_orders:
@@ -216,6 +238,7 @@ class Bot:
                             found_prices[key] = raw_price
 
                 if found_prices:
+                    self.add_recent_item(item, f"updated!", "check")
                     payload = []
                     for (base, tier, enc), price in found_prices.items():
                         if enc > 0: unique_name = f"{tier}_{base}@{enc}"
@@ -235,6 +258,7 @@ class Bot:
         self.status = "Ready"
 
     def remove_orders(self):
+        self.recent_items
         self.status = "Running"
         self.current_task_name = "Removing Orders"
         self.current_location = self.market_manager.get_market_title()
@@ -250,6 +274,7 @@ class Bot:
         self.status = "Ready"
 
     def buy_items(self):
+        self.recent_items
         self.status = "Running"
         self.current_task_name = "Buying Items"
         self.capture.set_foreground_window()
@@ -281,11 +306,8 @@ class Bot:
                 self.market_manager.sleep(.5)
 
                 if not self.paused:
-                    self.overlay.send_update(
-                        status="Running", 
-                        task=f"Buy Items: {i+1}/{len(items_to_buy_list)}", 
-                        paused=False
-                    )
+                    self.current_task_name = f"Buy Items: {i+1}/{len(items_to_buy_list)}"
+                    self.update_overlay()
 
                 current_market_orders = self.sniffer.get_market_buffer()
                 if not current_market_orders:
@@ -340,6 +362,7 @@ class Bot:
                         print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
                         self.logger.add_log("market", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.sniffer.current_silver}")
                         self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
+                        self.add_recent_item(self.market_manager.get_name_from_unique(item_unique_name), f"{int(lowest_price)} x{quantity_to_buy}", "buy")
                     else:
                         print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
                         self.logger.add_log("market", f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
@@ -358,6 +381,7 @@ class Bot:
         self.status = "Ready"
 
     def travel_to(self, destination: str):
+        self.recent_items
         self.status = "Running"
         self.current_task_name = "Traveling"
         self.logger.add_log("travel", f"Bot Starting traveling to {destination}")

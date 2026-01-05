@@ -18,17 +18,25 @@ def run_flet_overlay(status_queue):
         page.window.always_on_top = True
         page.window.bgcolor = ft.Colors.TRANSPARENT
         page.bgcolor = ft.Colors.TRANSPARENT
-        page.window.width = 280
-        page.window.height = 110
+        page.window.width = 350
+        page.window.height = 250  # Increased height for list
         page.window.skip_task_bar = True
 
-        status_text = ft.Text("BOT ACTIVE", color=ft.Colors.GREEN_ACCENT, weight="bold", size=16)
-        task_text = ft.Text("Waiting...", color=ft.Colors.WHITE, size=13)
+        status_text = ft.Text("BOT ACTIVE", color=ft.Colors.GREEN_ACCENT, weight="bold", size=14)
+        task_text = ft.Text("Waiting...", color=ft.Colors.WHITE, size=12)
+        
+        # Container for the list of items
+        items_column = ft.Column(spacing=2)
 
         page.add(
             ft.Container(
-                content=ft.Column([status_text, task_text], spacing=5),
-                bgcolor="#CC131415",
+                content=ft.Column([
+                    status_text, 
+                    task_text,
+                    ft.Divider(height=1, color=ft.Colors.WHITE24),
+                    items_column
+                ], spacing=5),
+                bgcolor="#CC131415", # Semi-transparent dark
                 padding=15,
                 border_radius=10,
                 border=ft.border.all(1, "#294D7C")
@@ -47,7 +55,21 @@ def run_flet_overlay(status_queue):
                     if isinstance(data, dict):
                         status_text.value = f"STATUS: {data.get('status', '').upper()}"
                         task_text.value = data.get('task', '')
-                        status_text.color = ft.Colors.ORANGE_400 if data.get('paused') else ft.Colors.GREEN_400
+                        status_text.color = GuiStyle.Colors.ACCENT_ORANGE if data.get('paused') else GuiStyle.Colors.ACCENT_GREEN
+                        
+                        # Update Recent Items List
+                        recent_items = data.get('recent_items', [])
+                        items_column.controls.clear()
+                        for item in recent_items:
+                             # item is a dict {name, price, type}
+                             if isinstance(item, dict):
+                                 price_color = ft.Colors.GREEN_ACCENT if item.get('type') == 'buy' else GuiStyle.Colors.ACCENT_BLUE
+                                 items_column.controls.append(
+                                     ft.Row([
+                                         ft.Text(item.get('name'), size=11, color=ft.Colors.WHITE, overflow=ft.TextOverflow.ELLIPSIS, width=150, no_wrap=True),
+                                         ft.Text(item.get('price'), size=11, color=price_color, weight="bold"),
+                                     ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                                 )
                 
                 page.update()
             except:
@@ -61,18 +83,17 @@ class BotOverlay:
     def __init__(self):
         self.status_queue = multiprocessing.Queue()
         self.process = None
+        self.last_items = [] # Cache to store items between status updates
 
     def start(self):
         if self.process and self.process.is_alive():
             return
-        # Ensure the process is created safely
         self.process = multiprocessing.Process(target=run_flet_overlay, args=(self.status_queue,), daemon=True)
         self.process.start()
 
     def stop(self):
         if self.process and self.process.is_alive():
             try:
-                # Clear queue and send stop signal
                 while not self.status_queue.empty():
                     self.status_queue.get_nowait()
                 
@@ -86,9 +107,21 @@ class BotOverlay:
             finally:
                 self.process = None
 
-    def send_update(self, status, task, paused):
+    def send_update(self, status, task, paused, recent_items=None):
+        """
+        Sends an update to the overlay.
+        :param recent_items: List of dicts. If None, uses the last cached list.
+        """
+        if recent_items is not None:
+            self.last_items = recent_items
+
         if self.process and self.process.is_alive():
             try:
-                self.status_queue.put_nowait({"status": status, "task": task, "paused": paused})
+                self.status_queue.put_nowait({
+                    "status": status, 
+                    "task": task, 
+                    "paused": paused,
+                    "recent_items": self.last_items
+                })
             except:
                 pass
