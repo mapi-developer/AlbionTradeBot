@@ -10,10 +10,6 @@ from components.style import GuiStyle
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from components.popup import show_popup
 
-THEME_PANEL_BG = "#294D7C"  # Main container color
-THEME_INNER_BG = "#203064"  # Inner cards/inputs color
-THEME_BORDER_C = ft.Colors.with_opacity(0.1, ft.Colors.WHITE)
-
 
 class ItemData:
     def __init__(self, unique_name, localized_name, category, sub_category):
@@ -33,11 +29,6 @@ class ItemData:
 
 
 class ItemListPanel(ft.Container):
-    """
-    Reusable panel for displaying lists of items (Used in Presets tab).
-    Updated to match Dashboard theme.
-    """
-
     def __init__(
         self,
         title,
@@ -51,9 +42,9 @@ class ItemListPanel(ft.Container):
         super().__init__()
         self.expand = True
         self.padding = 5
-        self.bgcolor = THEME_PANEL_BG
+        self.bgcolor = GuiStyle.Colors.CARD_BG
         self.border_radius = 10
-        self.border = ft.border.all(1, THEME_BORDER_C)
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.on_action_click = on_action_click
         self.on_item_click = on_item_click
         self.item_icon = item_icon
@@ -86,7 +77,7 @@ class ItemListPanel(ft.Container):
                 ft.Container(
                     content=self.item_list,
                     expand=True,
-                    bgcolor=THEME_INNER_BG,
+                    bgcolor=GuiStyle.Colors.INNER_BG,
                     border_radius=5,
                     padding=2,
                     height=420,
@@ -184,6 +175,7 @@ class Presets(ft.Column):
         self.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
         self.spacing = 3
         self.padding = 20
+        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
         self.raw_json = self.load_json_data()
         self.all_item_objects = self.parse_items(self.raw_json)
@@ -205,20 +197,19 @@ class Presets(ft.Column):
             dense=True,
             height=35,
             on_change=lambda e: self.apply_filters(),
-            bgcolor=THEME_INNER_BG,
-            border_color=ft.Colors.TRANSPARENT,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
 
         def create_chip(text, data, callback):
             return ft.Chip(
-                label=ft.Text(text, size=11, color="#FFFFFF"),
+                label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
                 on_select=callback,
                 data=data,
                 label_padding=ft.padding.symmetric(horizontal=4),
-                bgcolor=THEME_INNER_BG,
-                # 🛠️ FIX: Use 'border' instead of 'border_side' or 'side'
+                bgcolor=GuiStyle.Colors.INNER_BG,
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
-                selected_color="#1B223D",
+                selected_color=GuiStyle.Colors.DARK_BLUE,
             )
 
         def remove_filters(e):
@@ -266,7 +257,7 @@ class Presets(ft.Column):
             "Available",
             "Add Filtered",
             ft.Icons.ADD,
-            ft.Colors.GREEN_700,
+            GuiStyle.Colors.ACCENT_GREEN,
             self.add_items_bulk,
             self.add_single_item,
             ft.Icons.ADD_CIRCLE_OUTLINE,
@@ -275,7 +266,7 @@ class Presets(ft.Column):
             "In Preset",
             "Remove Filtered",
             ft.Icons.DELETE,
-            ft.Colors.RED_700,
+            GuiStyle.Colors.ACCENT_RED,
             self.remove_items_bulk,
             self.remove_single_item,
             ft.Icons.HIGHLIGHT_OFF,
@@ -287,9 +278,10 @@ class Presets(ft.Column):
             text_size=12,
             content_padding=8,
             dense=True,
-            bgcolor="#1e293b",
-            border_color="#1e293b",
-            fill_color=THEME_INNER_BG,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
+            border_color=GuiStyle.Colors.DARK_BLUE,
+            fill_color=GuiStyle.Colors.INNER_BG,
             filled=True,
         )
         self.update_preset_dropdown()
@@ -301,8 +293,8 @@ class Presets(ft.Column):
             expand=True,
             dense=True,
             height=35,
-            bgcolor=THEME_INNER_BG,
-            border_color=ft.Colors.TRANSPARENT,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
         )
 
         filter_container = ft.Container(
@@ -372,9 +364,9 @@ class Presets(ft.Column):
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             ),
             padding=5,
-            bgcolor=THEME_PANEL_BG,
+            bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=5,
-            border=ft.border.all(1, THEME_BORDER_C),
+            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
             margin=10,
         )
 
@@ -398,10 +390,10 @@ class Presets(ft.Column):
                         ft.IconButton(
                             icon=ft.Icons.DELETE_FOREVER,
                             on_click=self.delete_preset_click,
-                            icon_color=ft.Colors.RED_400,
+                            icon_color=GuiStyle.Colors.ACCENT_RED,
                             tooltip="Delete",
                         ),
-                        ft.VerticalDivider(width=10, color=ft.Colors.WHITE24),
+                        ft.VerticalDivider(width=10, color=GuiStyle.Colors.BORDER_DEFAULT),
                         ft.Text(
                             "Save:",
                             weight=ft.FontWeight.BOLD,
@@ -412,7 +404,7 @@ class Presets(ft.Column):
                         ft.IconButton(
                             icon=ft.Icons.SAVE,
                             on_click=self.save_preset_click,
-                            icon_color=ft.Colors.GREEN_400,
+                            icon_color=GuiStyle.Colors.ACCENT_GREEN,
                             tooltip="Save",
                         ),
                     ],
@@ -420,9 +412,10 @@ class Presets(ft.Column):
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 padding=5,
-                bgcolor=THEME_PANEL_BG,
+                bgcolor=GuiStyle.Colors.CARD_BG,
                 border_radius=5,
                 margin=10,
+                border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
             ),
             filter_container,
             ft.Divider(height=10, color=ft.Colors.TRANSPARENT),  # Padding
@@ -465,13 +458,13 @@ class Presets(ft.Column):
     def load_category_chips(self):
         self.cat_row.controls = [
             ft.Chip(
-                label=ft.Text(cat, size=11, color="#FFFFFF"),
+                label=ft.Text(cat, size=11, color=GuiStyle.Colors.WHITE),
                 on_select=self.on_cat_toggle,
                 data=cat,
                 label_padding=ft.padding.symmetric(horizontal=4),
-                bgcolor=THEME_INNER_BG,
+                bgcolor=GuiStyle.Colors.INNER_BG,
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
-                selected_color="#1B223D",
+                selected_color=GuiStyle.Colors.DARK_BLUE,
             )
             for cat in self.raw_json.keys()
         ]
@@ -505,10 +498,10 @@ class Presets(ft.Column):
                         on_select=self.on_sub_toggle,
                         data=sub,
                         label_padding=ft.padding.symmetric(horizontal=4),
-                        bgcolor=THEME_INNER_BG,
+                        bgcolor=GuiStyle.Colors.INNER_BG,
                         # 🛠️ FIX: Use 'border' here too
                         border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
-                        selected_color="#1B223D",
+                        selected_color=GuiStyle.Colors.DARK_BLUE,
                     )
                 )
         if self.sub_row.page:

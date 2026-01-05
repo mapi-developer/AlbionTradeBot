@@ -3,13 +3,12 @@ import requests
 import webbrowser
 
 from components.style import GuiStyle
+from bot import SettingsManager
 
-API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
 
 class ShopingCard(ft.Column):
     def __init__(self, title: str, description: str, price: str, plan_id: str, on_select):
         super().__init__()
-
         self.on_select = on_select
         self.selected = False
         self.plan_id = plan_id 
@@ -17,14 +16,14 @@ class ShopingCard(ft.Column):
 
         self.check_icon = ft.Icon(
             name=ft.Icons.CHECK_CIRCLE,
-            color="#1d9dec",
+            color=GuiStyle.Colors.WHITE,
             size=24,
             opacity=0,
             animate_opacity=200,
         )
 
         self.card_container = ft.Container(
-            bgcolor="#ffffff",
+            bgcolor=GuiStyle.Colors.CARD_BG,
             padding=20,
             border_radius=15,
             border=ft.border.all(5, ft.Colors.TRANSPARENT),
@@ -40,7 +39,7 @@ class ShopingCard(ft.Column):
                                 value=title,
                                 size=20,
                                 weight="bold",
-                                color="black",
+                                color=GuiStyle.Colors.WHITE,
                                 text_align=ft.TextAlign.CENTER,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
@@ -60,7 +59,7 @@ class ShopingCard(ft.Column):
                         controls=[
                             self.check_icon,
                             ft.Text(
-                                value=price, size=22, weight="w900", color="#1d9dec"
+                                value=price, size=22, weight="w900", color=GuiStyle.Colors.WHITE
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -76,7 +75,7 @@ class ShopingCard(ft.Column):
     def handle_hover(self, e):
         if not self.selected:
             if e.data == "true":
-                self.card_container.border = ft.border.all(5, "#1d9dec")
+                self.card_container.border = ft.border.all(5, GuiStyle.Colors.BORDER_DEFAULT)
 
                 self.card_container.shadow = ft.BoxShadow(
                     blur_radius=20, color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK)
@@ -93,13 +92,12 @@ class ShopingCard(ft.Column):
 
     def update_state(self):
         if self.selected:
-            self.card_container.border = ft.border.all(5, "#1d9dec")
-            self.card_container.bgcolor = "#F0F9FF"
+            self.card_container.border = ft.border.all(5, GuiStyle.Colors.WHITE)
+            self.card_container.bgcolor = GuiStyle.Colors.CARD_BG
             self.check_icon.opacity = 1
-
         else:
             self.card_container.border = ft.border.all(5, ft.Colors.TRANSPARENT)
-            self.card_container.bgcolor = "#ffffff"
+            self.card_container.bgcolor = GuiStyle.Colors.CARD_BG
             self.check_icon.opacity = 0
 
         self.card_container.update()
@@ -155,7 +153,7 @@ class GiftInfo(ft.Container):
             label="Is it a Gift?",
             label_style=ft.TextStyle(color="white", weight="bold"),
             fill_color=ft.Colors.WHITE,
-            check_color="#1d9dec",
+            check_color=GuiStyle.Colors.ACCENT_BLUE,
             on_change=self.toggle_gift_fields,
             col={"sm": 4, "md": 3, "xl": 1},
         )
@@ -164,7 +162,7 @@ class GiftInfo(ft.Container):
             label="Recipient User ID",
             hint_text="e.g. 123",
             border_color="white",
-            focused_border_color="#1d9dec",
+            focused_border_color=GuiStyle.Colors.ACCENT_BLUE,
             label_style=ft.TextStyle(color="white"),
             color="white",
             text_size=14,
@@ -199,8 +197,9 @@ class GiftInfo(ft.Container):
 
 
 class Shop(ft.Container):
-    def __init__(self, login_state=None, page=None):
+    def __init__(self, settings: SettingsManager, login_state=None, page=None):
         super().__init__()
+        self.settings = settings
         self.padding = ft.padding.all(30)
         self.login_state = login_state
         self.page = page
@@ -222,7 +221,7 @@ class Shop(ft.Container):
                     icon=ft.Icons.SHOPPING_CART,
                     style=ft.ButtonStyle(
                         color="white",
-                        bgcolor="#1d9dec",
+                        bgcolor=GuiStyle.Colors.ACCENT_BLUE,
                         padding=20,
                         shape=ft.RoundedRectangleBorder(radius=10),
                     ),
@@ -239,7 +238,6 @@ class Shop(ft.Container):
         plan_id = self.shop_cards.chosen_plan_id
         is_gift = self.gift_info.gift_checkbox.value
         
-        # Determine target user
         if is_gift:
              print("gift")
              target_user_id = self.gift_info.recipient_id.value
@@ -259,11 +257,8 @@ class Shop(ft.Container):
             return
 
         try:
-            print("Call backend")
-            # Call Backend with Updated Structure
-            # user_id in params, plan_id in body
             res = requests.post(
-                f"{API_URL}/payments/create", 
+                f"{self.settings.API_URL}/payments/create", 
                 params={"user_id": target_user_id},
                 json={"plan_id": plan_id}
             )
@@ -277,7 +272,6 @@ class Shop(ft.Container):
                 else:
                     self.show_snack("Error: Payment URL not found")
             else:
-                print(res.text)
                 self.show_snack(f"Error starting payment: {res.status_code}")
 
         except Exception as ex:
@@ -290,12 +284,12 @@ class Shop(ft.Container):
             self.page.snack_bar.open = True
             self.page.update()
 
+
 def main(page: ft.Page):
     page.padding = 0
     page.title = "Subscription Shop"
     page.scroll = "auto"
     
-    # Mock login state for testing
     class MockState:
         user_id = 1
         

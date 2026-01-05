@@ -47,7 +47,7 @@ class GuiApp:
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
         self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger, login=self.login)
 
-        self.shop = Shop(login_state=self.login.state)
+        self.shop = Shop(settings=self.config, login_state=self.login.state)
         
         # Pass the Header's subscription widget to the Tab so it can update status after purchase
         self.subscription_tab = Subscription(

@@ -24,7 +24,7 @@ class GuiStyle:
         # Semantic Names (Use these in pages)
         PAGE_BG = DARK_BLUE
         HEADER_BG = GRAY_BLUE
-        HEADER_NAV_BUTTON_ACTIVE = OCEAN_BLUE
+        HEADER_NAV_BUTTON_ACTIVE = DARK_BLUE
         SIDEBAR_BG = GRAY_BLUE
         CARD_BG = LIGHT_BLUE
         INNER_BG = GRAY_BLUE
