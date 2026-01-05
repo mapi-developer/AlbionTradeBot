@@ -132,6 +132,7 @@ class Bot:
             buy_mode = self.settings.get("general")["buy_mode"]
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
             self.min_silver = self.settings.get("general")["min_silver"]
+            change_keyboard_layout()
 
         return self.paused
     
@@ -139,7 +140,6 @@ class Bot:
         while self.paused:
             time.sleep(.5)
         self.capture.set_foreground_window()
-        change_keyboard_layout()
 
     def parse_item_info(self, full_unique_name: str):
         if "@" in full_unique_name:
@@ -179,7 +179,6 @@ class Bot:
     def check_price(self):
         self.recent_items
         self.status = "Running"
-        self.current_task_name = "Price Check"
         self.capture.set_foreground_window()
         self.logger.add_log("bot", f"Bot Starting price checking for {self.current_location}")
         market_title = self.market_manager.get_market_title()
@@ -195,8 +194,10 @@ class Bot:
                 print("[Warning] No items to check. Please select a preset in Settings")
                 return
             print(f"Starting Price Check for {len(items_to_check)} items in {market_title}")
-
+        
+        self.current_task_name = f"Cheking Price: {i+1}/{len(items_to_check)}"
         self.market_manager.change_tab("buy")
+        self.update_overlay()
 
         try:
             change_keyboard_layout()

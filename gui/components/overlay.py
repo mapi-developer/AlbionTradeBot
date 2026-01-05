@@ -86,12 +86,14 @@ class BotOverlay:
         self.last_items = [] # Cache to store items between status updates
 
     def start(self):
+        self.last_items = []
         if self.process and self.process.is_alive():
             return
         self.process = multiprocessing.Process(target=run_flet_overlay, args=(self.status_queue,), daemon=True)
         self.process.start()
 
     def stop(self):
+        self.last_items = []
         if self.process and self.process.is_alive():
             try:
                 while not self.status_queue.empty():
@@ -108,10 +110,6 @@ class BotOverlay:
                 self.process = None
 
     def send_update(self, status, task, paused, recent_items=None):
-        """
-        Sends an update to the overlay.
-        :param recent_items: List of dicts. If None, uses the last cached list.
-        """
         if recent_items is not None:
             self.last_items = recent_items
 
