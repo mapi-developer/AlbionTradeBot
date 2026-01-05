@@ -1,11 +1,5 @@
-BUILD COMMANDS:
-
-python build.py
+1. сделать выбор между закупом по фаст сейлу или по ценам ордеров.
 
 
-
-_______ TO DO ______
-
-1. FULL HD  travaler support
-4. Полировка
-5. Ранжомный тык по рынку
+offer -> Sell Orders
+request -> Buy Orders

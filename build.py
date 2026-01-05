@@ -22,7 +22,7 @@ def copy_external_assets():
     """Copies config and other required files to the dist folder."""
     print(">>> Copying external assets...")
     
-    source_dist = os.path.join('dist', 'AlbionTradeBot')
+    source_dist = os.path.join('dist', 'MarketTrader')
 
     # 1. Copy Config Folder (This makes it editable)
     src_config = os.path.join('bot', 'config') 
@@ -44,12 +44,12 @@ def copy_external_assets():
         print("   [!] WARNING: .env file not found. User will need to create one.")
 
     # 3. Create a README instruction
-    with open(os.path.join(source_dist, 'README.txt'), 'w') as f:
-        f.write("Albion Trade Bot\n")
-        f.write("----------------\n")
-        f.write("1. Edit settings in the 'config' folder.\n")
-        f.write("2. Ensure 'Npcap' is installed on your machine (needed for sniffer).\n")
-        f.write("3. Ensure 'Tesseract OCR' is installed or configured.\n")
+    # with open(os.path.join(source_dist, 'README.txt'), 'w') as f:
+    #     f.write("Albion Trade Bot\n")
+    #     f.write("----------------\n")
+    #     f.write("1. Edit settings in the 'config' folder.\n")
+    #     f.write("2. Ensure 'Npcap' is installed on your machine (needed for sniffer).\n")
+    #     f.write("3. Ensure 'Tesseract OCR' is installed or configured.\n")
     
     print(">>> Build Complete! Output is in 'dist/AlbionTradeBot'")
 

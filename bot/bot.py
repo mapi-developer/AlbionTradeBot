@@ -177,7 +177,7 @@ class Bot:
         self.update_overlay()
 
     def check_price(self):
-        self.recent_items
+        self.recent_items = []
         self.status = "Running"
         self.capture.set_foreground_window()
         self.logger.add_log("bot", f"Bot Starting price checking for {self.current_location}")
@@ -217,7 +217,7 @@ class Bot:
                 self.market_manager.sleep(.3)
                 self.market_manager.check_pages()
 
-                current_market_orders = self.sniffer.get_market_buffer()
+                current_market_orders = self.sniffer.get_market_buffer(type="request")
                 if not current_market_orders:
                     print(f"No market data captured for: {item}")
                     self.logger.add_log("market", f"No market data captured for: {item} (price_check)")
@@ -259,7 +259,8 @@ class Bot:
         self.status = "Ready"
 
     def remove_orders(self):
-        self.recent_items
+        self.sniffer.request_market_buffer.clear()
+        self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Removing Orders"
         self.current_location = self.market_manager.get_market_title()
@@ -267,15 +268,16 @@ class Bot:
         self.capture.set_foreground_window()
         self.market_manager.change_tab("my_orders_tab")
         change_keyboard_layout()
-        while self.market_manager.order_exists():
+        self.market_manager.remove_order(5)
+        while self.sniffer.get_market_buffer(type="request") != []:
             self._wait_if_paused()
-            self.market_manager.remove_order(25)
+            self.market_manager.remove_order(5)
             self.market_manager.scroll()
 
         self.status = "Ready"
 
     def buy_items(self):
-        self.recent_items
+        self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Buying Items"
         self.capture.set_foreground_window()
@@ -310,8 +312,8 @@ class Bot:
                     self.current_task_name = f"Buy Items: {i+1}/{len(items_to_buy_list)}"
                     self.update_overlay()
 
-                current_market_orders = self.sniffer.get_market_buffer()
-                if not current_market_orders:
+                current_market_orders_offer, current_market_orders_request = self.sniffer.get_market_buffer()
+                if current_market_orders_offer == [] and current_market_orders_request == []:
                     print(f"No data for {item_unique_name}")
                     self.logger.add_log("orders", f"No data for {item_unique_name}")
                     self.market_manager.close_item()
@@ -320,18 +322,20 @@ class Bot:
                 lowest_price = float('inf')
                 order_price = 0
 
-                for order in current_market_orders:
-                    if order.get("AuctionType") == "offer":
-                        price = order.get("UnitPriceSilver", 0) / 10000
-                        if price < lowest_price and price > 0:
-                            lowest_price = price
+                if current_market_orders_offer != []:
+                    for order in current_market_orders_offer:
+                        if order.get("AuctionType") == "offer":
+                            price = order.get("UnitPriceSilver", 0) / 10000
+                            if price < lowest_price and price > 0:
+                                lowest_price = price
 
                 if not is_fast_buy:
-                    for order in current_market_orders:
-                        if order.get("AuctionType") == "request":
-                            price = order.get("UnitPriceSilver", 0) / 10000
-                            if price > order_price and price > 0:
-                                order_price = price
+                    if current_market_orders_request != []:
+                        for order in current_market_orders_request:
+                            if order.get("AuctionType") == "request":
+                                price = order.get("UnitPriceSilver", 0) / 10000
+                                if price > order_price and price > 0:
+                                    order_price = price
 
                     lowest_price = order_price
                 min_profit_rate = float(self.sequence_settings["min_profit_rate"])/100 or 0.0
@@ -382,7 +386,7 @@ class Bot:
         self.status = "Ready"
 
     def travel_to(self, destination: str):
-        self.recent_items
+        self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Traveling"
         self.logger.add_log("travel", f"Bot Starting traveling to {destination}")

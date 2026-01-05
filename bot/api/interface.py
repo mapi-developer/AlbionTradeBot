@@ -37,12 +37,6 @@ class DatabaseInterface:
             return False
 
     def update_item_prices(self, price_data_list: List[Dict]):
-        """
-        Accepts a list of dicts to update the items.
-        Old format: [{'unique_name': 'T4_BAG', 'price_caerleon': 50000}]
-        
-        This translates the dictionary format into the API client's format.
-        """
         for entry in price_data_list:
             # We copy to avoid modifying the original dict inside the loop
             data = entry.copy()

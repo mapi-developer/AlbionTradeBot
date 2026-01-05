@@ -68,6 +68,8 @@ class MarketManager(InputSender):
             return "brecilien"
         elif "black" in raw_title:
             return "black_market"
+        elif "caerleon" in raw_title:
+            return "caerleon"
         else:
             return None
     

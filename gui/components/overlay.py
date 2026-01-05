@@ -8,6 +8,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from gui.components.style import GuiStyle
 
+def get_asset_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 def get_active_window_title():
     """Returns the title of the currently active (foreground) window."""
     try:
@@ -100,7 +110,7 @@ def run_flet_overlay(status_queue):
             time.sleep(0.3)
 
     # Use port=0 to allow the OS to pick any available port, avoiding conflicts
-    ft.app(target=overlay_main, port=0, host="127.0.0.1", view=ft.AppView.FLET_APP)
+    ft.app(target=overlay_main, port=0, host="127.0.0.1", view=ft.AppView.FLET_APP, assets_dir=get_asset_path("assets"))
 
 class BotOverlay:
     def __init__(self):

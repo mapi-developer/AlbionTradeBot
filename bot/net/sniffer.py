@@ -43,6 +43,8 @@ class AlbionSniffer:
         # --- BUFFERS ---
         self.current_silver = 0
         self.market_buffer = []
+        self.offer_market_buffer = []
+        self.request_market_buffer = []
         self.mail_buffer = []
         self.lock = threading.Lock()
 
@@ -200,18 +202,28 @@ class AlbionSniffer:
     def _handle_market_order(self, order):
         try:
             with self.lock:
-                self.market_buffer.append(order)
+                if order.get("AuctionType") == "offer":
+                    self.offer_market_buffer.append(order)
+                elif order.get("AuctionType") == "request":
+                    self.request_market_buffer.append(order)
         except Exception:
             pass
 
     # --- EXTERNAL METHODS (For Bot Instance) ---
 
-    def get_market_buffer(self):
-        """Returns the list of buffered market orders and clears the buffer."""
+    def get_market_buffer(self, type: str = None):
+        
         with self.lock:
-            data = list(self.market_buffer)
-            self.market_buffer.clear()
-            return data
+            offer_data = list(self.offer_market_buffer)
+            request_data = list(self.request_market_buffer)
+            self.offer_market_buffer.clear()
+            self.request_market_buffer.clear()
+            if type == "offer":
+                return offer_data
+            elif type == "request":
+                return request_data
+            else:
+                return offer_data, request_data
 
     def get_mail_buffer(self):
         """Returns the list of buffered mails and clears the buffer."""

@@ -6,7 +6,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],  # We will NOT bundle config here, we copy it manually
+    datas=[('assets', 'assets')],
     hiddenimports=[
         # --- YOUR APP MODULES ---
         'gui.pages.login',      # Fixes the crash you saw
@@ -41,7 +41,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='AlbionTradeBot',
+    name='MarketTrader',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -52,7 +52,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None, # Add 'assets/icon.ico' here if you have one
+    icon='assets\\app_icon.ico',
 )
 
 coll = COLLECT(
@@ -63,5 +63,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='AlbionTradeBot',
+    name='MarketTrader',
 )

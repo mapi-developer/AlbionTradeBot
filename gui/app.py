@@ -20,6 +20,7 @@ class GuiApp:
         self.main_column = None
         self.page = page
         self.page.title = "Market Trader"
+        self.page.window.icon = "app_icon.ico"
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.padding = 0
         self.page.bgcolor = GuiStyle.Colors.DARK_BLUE
