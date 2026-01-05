@@ -195,7 +195,7 @@ class Bot:
                 return
             print(f"Starting Price Check for {len(items_to_check)} items in {market_title}")
         
-        self.current_task_name = f"Cheking Price: {i+1}/{len(items_to_check)}"
+        self.current_task_name = f"Cheking Price: 0/{len(items_to_check)}"
         self.market_manager.change_tab("buy")
         self.update_overlay()
 
@@ -293,7 +293,7 @@ class Bot:
             return
     
         print(f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
-        self.logger.add_log("bot", f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
+        self.logger.add_log("market", f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
         self.market_manager.prepare()
 
         try:
@@ -313,7 +313,7 @@ class Bot:
                 current_market_orders = self.sniffer.get_market_buffer()
                 if not current_market_orders:
                     print(f"No data for {item_unique_name}")
-                    self.logger.add_log("market", f"No data for {item_unique_name}")
+                    self.logger.add_log("orders", f"No data for {item_unique_name}")
                     self.market_manager.close_item()
                     continue
                 
@@ -341,7 +341,7 @@ class Bot:
                     black_market_price = items_prices[item_unique_name] / 10000
                 else:
                     print(f"No black market data for {item_unique_name}")
-                    self.logger.add_log("market", f"No black market data for {item_unique_name}")
+                    self.logger.add_log("orders", f"No black market data for {item_unique_name}")
                     self.market_manager.close_item()
                     continue
 
@@ -361,19 +361,19 @@ class Bot:
 
                     if quantity_to_buy > 0:
                         print(f"Profitable trade for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units")
-                        self.logger.add_log("market", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.sniffer.current_silver}")
+                        self.logger.add_log("orders", f"Profit on {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Buying {quantity_to_buy} units | SilverBalance: {self.sniffer.current_silver}")
                         self.market_manager.buy_item(amount=quantity_to_buy, fast_buy=is_fast_buy, fast_buy_price=int(lowest_price*1.05))
                         self.add_recent_item(self.market_manager.get_name_from_unique(item_unique_name), f"{int(lowest_price)} x{quantity_to_buy}", "buy")
                     else:
                         print(f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
-                        self.logger.add_log("market", f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
+                        self.logger.add_log("orders", f"Item {item_unique_name} is profitable, but price {lowest_price} is above thresholds")
                         self.market_manager.close_item()
                 else:
                     self.market_manager.close_item()
 
                 if self.sniffer.current_silver != 0 and int(self.min_silver) >= self.sniffer.current_silver:
                     print("[Warning] Silver amount is less than minimum to continue")
-                    self.logger.add_log("market", "[Warning] Silver amount is less than minimum to continue")
+                    self.logger.add_log("orders", "[Warning] Silver amount is less than minimum to continue")
                     break
         except Exception as e:
             print(f"[Error] Buy items issue: {e}")

@@ -870,7 +870,8 @@ class ExecutionSequencePanel(ft.Container):
             bgcolor=GuiStyle.Colors.RUN_BUTTON_TOGGLE,
             shape=ft.RoundedRectangleBorder(radius=8),
         )
-        self.run_button.update()
+        if self.page:
+            self.run_button.update()
 
         if self.run_button.data == "run":
             if self.dashboard.bot != None:
@@ -913,7 +914,8 @@ class ExecutionSequencePanel(ft.Container):
             self.run_button.data = "run"
             self.run_button.disabled = False
 
-        self.run_button.update()
+        if self.page:
+            self.run_button.update()
 
     def loop_toggle(self, e):
         if self.loop_checkbox.value:

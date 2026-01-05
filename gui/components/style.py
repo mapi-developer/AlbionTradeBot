@@ -42,7 +42,7 @@ class GuiStyle:
             "activity": ft.Colors.GREEN_400,
             "orders": ft.Colors.AMBER_500,
             "error": ft.Colors.RED_400,
-            "market": ft.Colors.PURPLE_400,
+            "market": "#088408",
             "travel": ft.Colors.CYAN_400,
         }
 

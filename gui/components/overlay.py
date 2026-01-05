@@ -2,10 +2,22 @@ import flet as ft
 import multiprocessing
 import time
 import os, sys
+import ctypes
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from gui.components.style import GuiStyle
+
+def get_active_window_title():
+    """Returns the title of the currently active (foreground) window."""
+    try:
+        hwnd = ctypes.windll.user32.GetForegroundWindow()
+        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+        buff = ctypes.create_unicode_buffer(length + 1)
+        ctypes.windll.user32.GetWindowTextW(hwnd, buff, length + 1)
+        return buff.value
+    except:
+        return ""
 
 def run_flet_overlay(status_queue):
     os.environ.pop("FLET_SERVER_PORT", None)
@@ -45,6 +57,17 @@ def run_flet_overlay(status_queue):
 
         while True:
             try:
+                active_title = get_active_window_title()
+
+                if "Market Trader" in active_title:
+                    if page.window.visible:
+                        page.window.visible = False
+                        page.update()
+                else:
+                    if not page.window.visible:
+                        page.window.visible = True
+                        page.update()
+
                 if not status_queue.empty():
                     data = status_queue.get_nowait()
                     
