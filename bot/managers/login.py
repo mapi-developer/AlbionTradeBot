@@ -34,4 +34,22 @@ class LoginManager(InputSender):
         self.click(self.mouse_positions["button_enter_world"])
         self.sleep(5)
         self.press("esc")
+        if self.capture.get_text_from_screenshot(self.capture_positions["activities"]) == "activities":
+            self.click(self.mouse_positions["button_close_activities"])
+
+    def logout(self):
+        if self.bot.current_location in self.settings.MARKETS:
+            self.press("esc")
+        self.press("esc")
+        self.click(self.mouse_positions["button_logout"])
+        self.sleep(14)
         
+    def login_into_account(self, email: str, password: str):
+        self.click(self.mouse_positions["button_email"])
+        self.typewrite(email)
+        self.click(self.mouse_positions["button_password"])
+        self.typewrite(password)
+
+    def change_account(self, email: str, password: str):
+        self.logout()
+        self.login_into_account(email=email, password=password)

@@ -1,8 +1,5 @@
 [
     {
-        "type": "remove_orders"
-    },
-    {
-        "type": "buy_items"
+        "type": "price_check_order"
     }
 ]

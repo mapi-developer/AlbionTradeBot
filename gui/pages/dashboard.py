@@ -27,6 +27,12 @@ COMMAND_TYPES = {
         "color": ft.Colors.PURPLE_500,
         "func": "check_price",
     },
+    "price_check_order": {
+        "label": "Price Check (Orders)",
+        "icon": ft.Icons.SEARCH_ROUNDED,
+        "color": ft.Colors.PURPLE_800,
+        "func": "check_price_order",
+    },
     "buy_items": {
         "label": "Buy items",
         "icon": ft.Icons.SHOPPING_CART_ROUNDED,
@@ -197,7 +203,7 @@ class OverviewPanel(ft.Container):
                 status = data.get("status")
 
             last_update_res = requests.get(
-                f"{self.dashboard.API_URL}/items/?city=black_market&item_names=T4_SHOES_PLATE_UNDEAD"
+                f"{self.dashboard.API_URL}/items/?item_names=T4_SHOES_PLATE_UNDEAD&type=fast"
             )
             formatted_date = "Unknown"
             if last_update_res.status_code == 200:
@@ -425,6 +431,7 @@ class FunctionsAvaliablePanel(ft.Container):
 
         self.travel_to_button = AddSequenceFunctionButton("travel_to")
         self.price_check_button = AddSequenceFunctionButton("price_check")
+        self.price_check_order_button = AddSequenceFunctionButton("price_check_order")
         self.buy_items_button = AddSequenceFunctionButton("buy_items")
         self.remove_orders_button = AddSequenceFunctionButton("remove_orders")
         self.wait_time_button = AddSequenceFunctionButton("wait_time")
@@ -432,6 +439,7 @@ class FunctionsAvaliablePanel(ft.Container):
         self.buttons = {
             "travel_to": self.travel_to_button,
             "price_check": self.price_check_button,
+            "price_check_order": self.price_check_order_button,
             "buy_items": self.buy_items_button,
             "remove_orders": self.remove_orders_button,
             "wait_time": self.wait_time_button,
@@ -442,6 +450,7 @@ class FunctionsAvaliablePanel(ft.Container):
                 self.title,
                 self.travel_to_button,
                 self.price_check_button,
+                self.price_check_order_button,
                 self.buy_items_button,
                 self.remove_orders_button,
                 self.wait_time_button,

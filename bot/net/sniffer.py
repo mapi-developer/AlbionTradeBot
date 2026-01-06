@@ -1,18 +1,25 @@
-import socket
-from scapy.all import get_if_list, get_if_addr, conf, sniff, UDP
-import struct
-import io
 import gzip
-import json
+import io
+import struct
+import socket
 import threading
+import json
 from datetime import datetime, timezone
+from scapy.all import get_if_list, get_if_addr, conf, sniff, UDP
 
-# Import your local modules
 from . import constants as const
 from .layer import PhotonLayerDecoder
 from .decoder import PhotonDataDecoder
 
-# --- Fragment Handling ---
+
+def get_default_interface():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        return [i for i in get_if_list() if get_if_addr(i) == s.getsockname()[0]][0]
+    except: return conf.iface
+
+
 class FragmentBuffer:
     def __init__(self):
         self.buffers = {} 
@@ -26,215 +33,271 @@ class FragmentBuffer:
             parts = self.buffers.pop(seq_id)["parts"]
             return b"".join([parts[i] for i in range(frag_count)])
         return None
-
-def get_default_interface():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        return [i for i in get_if_list() if get_if_addr(i) == s.getsockname()[0]][0]
-    except: return conf.iface
+    
 
 class AlbionSniffer:
     def __init__(self):
         self.layer_decoder = PhotonLayerDecoder()
         self.frag_buffer = FragmentBuffer()
         self.running = False
-        
-        # --- BUFFERS ---
+        self.lock = threading.Lock()
+
         self.current_silver = 0
-        self.market_buffer = []
+        self.characters = {}
+        self.inventory = {}
+        self.equipment = {}
+
         self.offer_market_buffer = []
         self.request_market_buffer = []
         self.mail_buffer = []
-        self.lock = threading.Lock()
-
+        
     def start(self):
         iface = get_default_interface()
-        print(f">>> Sniffer Started on Interface: {iface}")
+        print(f"[Sniffer] >>> Started on Interface: {iface}")
         self.running = True
-        
-        # MODIFIED: Loop with timeout to allow stopping
+
         while self.running:
-            # timeout=1 yields control back every 1 second so we can check self.running
             sniff(
-                filter="udp port 5056", 
-                iface=iface, 
-                prn=self.packet_callback, 
+                filter="udp port 5056",
+                iface=iface,
+                prn=self.packet_callback,
                 store=0,
-                timeout=1  # <--- CRITICAL ADDITION
+                timeout=1
             )
-        print(">>> Sniffer Stopped")
+        print(f"[Sniffer] >>> Stoped.")
 
     def stop(self):
-        """Signal the sniffer loop to stop."""
         self.running = False
 
     def packet_callback(self, packet):
-        if not self.running: return # Extra safety check
+        if not self.running: return
         if not packet.haslayer(UDP): return
         try:
             for cmd in self.layer_decoder.decode_packet(bytes(packet[UDP].payload)):
-                if cmd.type == const.COMMAND_SEND_RELIABLE: self.process(cmd.payload)
+                if cmd.type == const.COMMAND_SEND_RELIABLE:
+                    self.process(cmd.payload)
                 elif cmd.type == const.COMMAND_SEND_FRAGMENT:
                     msg = self.frag_buffer.handle(cmd.payload)
                     if msg: self.process(msg)
-        except: pass
+        except Exception as e:
+            print(f"[Sniffer] >>> Packet Callback Exception: {e}")
 
     def process(self, payload):
-        if payload[:2] == b'\x1f\x8b': 
+        if payload[:2] == b'\x1f\x8b':
             try: payload = gzip.decompress(payload)
             except: return
-        
-        stream = io.BytesIO(payload)
+
         try:
-            stream.read(1)
-            msg_type = ord(stream.read(1))
-            op = 0
+            if len(payload) < 3: return
+            msg_type, op_code = payload[1], payload[2]
 
-            if msg_type == 2: op = ord(stream.read(1))
-            elif msg_type == 3: op = ord(stream.read(1)); stream.read(3)
-            elif msg_type == 4: op = ord(stream.read(1))
-            else: return
+            if msg_type == 3:
+                offset = 6
+            elif msg_type in (2, 4):
+                offset = 3
+            else:
+                return
 
+            stream = io.BytesIO(payload[offset:])
             params = PhotonDataDecoder(stream).decode()
 
-            # --- MAIL CONTENT (OpCode 1) ---
-            if op == const.OP_GET_MAIL_INFOS and 1 in params:
-                self.handle_read_mail(params)
-                
             if msg_type == 4:
                 event_code = params.get(252)
-                if event_code == const.OP_EVENT_UPDATE_SILVER:
-                    self.handle_silver_update(params)
+                if not event_code: event_code = op_code
 
-            # --- MARKET DATA ---
+                elif event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
+                    self.handle_equipment_changed(params)
+                elif event_code == const.EVENT_NEW_ITEM:
+                    self.handle_new_item(params)
+                elif event_code == const.OP_NEW_CHARACTER:
+                    self.handle_new_character(params)
+                elif event_code == const.OP_EVENT_UPDATE_SILVER:
+                    self.handle_silver_update(params)
+            elif msg_type == 2:
+                event_code = params.get(252)
+                # print(params)
+                if event_code == 2:
+                    self.handle_join_response(params)
+            elif op_code == const.OP_GET_MAIL_INFOS and 1 in params:
+                self.handle_read_mail(params)
+
             self.scan_for_market_data(params)
         except Exception as e:
-            print(f"Sniffer Error: {e}")
+            print(f"[Sniffer] >>> Processing Exception: {e}")
 
-    def handle_silver_update(self, params):
+    def handle_join_response(self, params: dict):
+        try:
+            if 0 in params:
+                self.local_player_id = params[0]
+                # print(f"[Sniffer] >>> Join Complete! Local Player ID: {self.local_player_id}")
+            if 2 in params:
+                self.character_name = params[2]
+                # print(f"[Sniffer] >>> Character Name: {self.character_name}")
+        except Exception as e:
+            print(f"[Sniffer] >>> Handle Join Error: {e}")
+
+    def handle_equipment_changed(self,  params: dict):
+        user_id = params.get(0)
+        equipment = params.get(2)
+
+        if equipment and isinstance(equipment, list):
+            equipment_names = [x if x > 0 else None for x in equipment]
+            # print(f"[Sniffer] >>> User {user_id} equipment changed:")
+            # print(f"[Sniffer] >>> Equipment: {equipment_names}")
+            
+            if user_id in self.characters.keys():
+                self.characters[user_id] = equipment
+            else:
+                self.equipment = equipment
+
+
+    def handle_new_item(self, params: dict):
+        try:
+            # print(params)
+            local_item_id = params.get(0)
+            item_index = params.get(1)
+            if local_item_id is not None and item_index is not None:
+                with self.lock:
+                    if item_index not in self.equipment:
+                        self.inventory[local_item_id] = item_index
+        except Exception as e:
+            print(f"[Sniffer] >>> Handling new item Exception: {e}")
+
+    def handle_new_character(self, params: dict):
+        character_name = params.get(1)
+        character_id = params.get(0)
+
+        if character_name and isinstance(character_name, str):
+            # print(f"[Sniffer] >>> New Player/Mob: {character_name}")
+            equipment = params.get(40)
+            if equipment and isinstance(equipment, list):
+                # print(f"[Sniffer] >>> Equipment: {equipment}")
+                self.characters[character_id] = {"name": character_name, "equipment": equipment}
+
+    def handle_silver_update(self, params: dict):
         silver = params.get(1)
         if silver is not None:
             try:
-                silver_val = int(silver) 
-                
+                silver_val = int(silver)
                 with self.lock:
                     self.current_silver = int(f"{silver_val/10000:.0f}")
-                print(f">>> Updated Silver: {self.current_silver}") 
-            except Exception as e:
-                print(f"Error parsing silver: {e}")
+            except: pass
 
-    def handle_read_mail(self, params):
+    def handle_read_mail(self, params: dict):
         mail_id = params.get(0)
         content_raw = params.get(1)
-        
         if mail_id and content_raw:
             try:
-                if isinstance(content_raw, (bytes, bytearray, list)):
-                    if isinstance(content_raw, list): content_raw = bytes(content_raw)
-                    content_str = content_raw.decode('utf-8', errors='ignore')
-                else:
-                    content_str = str(content_raw)
-                
-                content_str = content_str.replace('\x00', '')
-                
+                if isinstance(content_raw, list): content_raw = bytes(content_raw)
+                content_str = content_raw.decode('utf-8', errors='ignore').replace('\x00', '')
                 if '|' in content_str:
                     self.parse_smart_mail(mail_id, content_str)
             except: pass
 
-    def parse_smart_mail(self, mail_id, content):
+    def parse_smart_mail(self, mail_id, content: str):
         parts = content.split('|')
         if len(parts) < 4: return
+        data = {'mail_id': mail_id, 'timestamp': datetime.now(timezone.utc)}
+        
+        try:
+            if len(parts[1]) > 2 and parts[0].replace('.', '').isdigit():
+                data.update({
+                    'transaction_type': "MARKETPLACE_FINISHED",
+                    'amount': int(float(parts[0])),
+                    'item_unique_name': parts[1],
+                    'total_silver': int(float(parts[2])) // 10000,
+                    'unit_price': int(float(parts[3])) // 10000
+                })
+                with self.lock: self.mail_buffer.append(data)
+            elif len(parts[3]) > 2 and parts[1].replace('.', '').isdigit():
+                data.update({
+                    'transaction_type': "MARKETPLACE_EXPIRED",
+                    'amount': int(float(parts[1])),
+                    'item_unique_name': parts[3],
+                    'total_silver': int(float(parts[2])) // 10000,
+                    'unit_price': 0
+                })
+                with self.lock: self.mail_buffer.append(data)
+        except Exception as e:
+            print(f"[Sniffer] >>> Parsing mail Exception: {e}")
 
-        def is_item_name(s):
-            return (len(s) > 2 and not s.replace('.', '').isdigit())
-
-        data = {
-            'mail_id': mail_id,
-            'timestamp': datetime.now(timezone.utc)
-        }
-
-        # CHECK 1: FINISHED ORDER
-        if is_item_name(parts[1]) and parts[0].replace('.', '').isdigit():
-            try:
-                data['transaction_type'] = "MARKETPLACE_FINISHED"
-                data['amount'] = int(float(parts[0]))
-                data['item_unique_name'] = parts[1]
-                data['total_silver'] = int(float(parts[2])) // 10000
-                data['unit_price'] = int(float(parts[3])) // 10000
-                
-                with self.lock:
-                    self.mail_buffer.append(data)
-                return
-            except: pass
-
-        # CHECK 2: EXPIRED ORDER
-        if is_item_name(parts[3]) and parts[1].replace('.', '').isdigit():
-            try:
-                data['transaction_type'] = "MARKETPLACE_EXPIRED"
-                data['amount'] = int(float(parts[1]))
-                data['item_unique_name'] = parts[3]
-                data['total_silver'] = int(float(parts[2])) // 10000
-                data['unit_price'] = 0
-                
-                with self.lock:
-                    self.mail_buffer.append(data)
-                return
-            except: pass
-
-    def scan_for_market_data(self, data):
-        if isinstance(data, dict):
-            if "ItemTypeId" in data and "UnitPriceSilver" in data:
-                self._handle_market_order(data)
+    def scan_for_market_data(self, params: dict | list | str):
+        if isinstance(params, dict):
+            if "ItemTypeId" in params and "UnitPriceSilver" in params:
+                self.handle_market_order(params)
             else:
-                for v in data.values():
-                    self.scan_for_market_data(v)
-        elif isinstance(data, list):
-            for item in data:
-                self.scan_for_market_data(item)
-        elif isinstance(data, str):
-            if data.startswith('{') or data.startswith('['):
-                try:
-                    parsed = json.loads(data)
-                    self.scan_for_market_data(parsed)
+                for v in params.values(): self.scan_for_market_data(v)
+        elif isinstance(params, list):
+            for item in params: self.scan_for_market_data(item)
+        elif isinstance(params, str):
+            if params.startswith('{') or params.startswith('['):
+                try: self.scan_for_market_data(json.loads(params))
                 except: pass
 
-    def _handle_market_order(self, order):
+    def handle_market_order(self, params: dict):
         try:
             with self.lock:
-                if order.get("AuctionType") == "offer":
-                    self.offer_market_buffer.append(order)
-                elif order.get("AuctionType") == "request":
-                    self.request_market_buffer.append(order)
-        except Exception:
-            pass
+                if params.get("AuctionType") == "offer":
+                    self.offer_market_buffer.append(params)
+                elif params.get("AuctionType") == "request":
+                    self.request_market_buffer.append(params)
+        except: pass
 
-    # --- EXTERNAL METHODS (For Bot Instance) ---
+    # PUBLIC FUNCTIONS
+
+    def get_characters(self):
+        with self.lock:
+            return dict(self.characters)
+
+    def get_equipment(self):
+        with self.lock:
+            return list(self.equipment)
+
+    def get_inventory(self) -> dict:
+        with self.lock:
+            inventory_data = dict(self.inventory)
+            return inventory_data
+        
+    def clear_inventory(self):
+        self.inventory.clear()
 
     def get_market_buffer(self, type: str = None):
-        
         with self.lock:
             offer_data = list(self.offer_market_buffer)
             request_data = list(self.request_market_buffer)
             self.offer_market_buffer.clear()
             self.request_market_buffer.clear()
-            if type == "offer":
-                return offer_data
-            elif type == "request":
-                return request_data
-            else:
-                return offer_data, request_data
 
+        print(self.offer_market_buffer)
+        print(self.request_market_buffer)
+            
+        if type == "offer": return offer_data
+        elif type == "request": return request_data
+        return offer_data, request_data
+    
     def get_mail_buffer(self):
-        """Returns the list of buffered mails and clears the buffer."""
         with self.lock:
             data = list(self.mail_buffer)
             self.mail_buffer.clear()
             return data
+        
+    def reset_session(self):
+        """
+        Clears all session-specific data AND resets network decoders.
+        """
+        with self.lock:
+            # 1. Clear Data Buffers
+            self.inventory.clear()
+            self.characters.clear()
+            self.equipment = {}
+            self.offer_market_buffer.clear()
+            self.request_market_buffer.clear()
+            self.mail_buffer.clear()
 
-if __name__ == "__main__":
-    sniffer = AlbionSniffer()
-    try:
-        sniffer.start()
-    except KeyboardInterrupt:
-        sniffer.stop()
+            # 2. CRITICAL: Reset Network State
+            # The new session starts with Sequence Number 0. 
+            # We must recreate the decoder so it accepts them.
+            self.frag_buffer = FragmentBuffer()
+            self.layer_decoder = PhotonLayerDecoder()
+            
+        print("[Sniffer] >>> Session & Network State Reset (Ready for New Account)")

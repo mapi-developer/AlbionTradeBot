@@ -73,7 +73,7 @@ class Bot:
             self.sniffer.stop()
 
         if self.sniffer_thread and self.sniffer_thread.is_alive():
-            self.sniffer_thread.join(timeout=1.0)
+            self.sniffer_thread.join(timeout=0.5)
             if self.sniffer_thread.is_alive():
                 print("Warning: Sniffer thread did not shut down cleanly.")
                 self.logger.add_log("bot", f"Warning: Sniffer thread did not shut down cleanly.")
@@ -249,14 +249,88 @@ class Bot:
                             "unique_name": unique_name,
                             f"price_{market_title}": int(price)
                         }
+                        
                         payload.append(item_data)
-                    
+                    self.logger.add_log("market", f"{item} fast sale price checked")
                     if payload:
                         self.db.update_item_prices(payload, item_type="fast")
         except KeyboardInterrupt:
             print("Stopping bot...")
 
         self.status = "Ready"
+
+    def check_price_order(self):
+        self.status = "Running"
+        self.capture.set_foreground_window()
+        self.current_task_name = f"Cheking Price: 0/X"
+        
+        try:
+            change_keyboard_layout()
+            for _ in range (2):
+                self.check_login()
+                self.market_manager.click([975, 468])
+                self.market_manager.change_tab("sell")
+                market_title = self.market_manager.get_market_title()
+                self.current_location = market_title
+                self.logger.add_log("bot", f"Bot Starting order price checking for {self.current_location}")
+                inventory_items = list(self.sniffer.get_inventory().values())
+                self.sniffer.clear_inventory()
+                for i, item in enumerate(inventory_items):
+                    self._wait_if_paused()
+                    item_name = self.market_manager.get_name_from_index(str(item))
+                    self.current_item_name = f"Scanning: {item_name}"
+
+                    if not self.paused:
+                        self.current_task_name = f"Cheking Price: {i+1}/{len(inventory_items)}"
+                        self.update_overlay()
+                    
+                    self.market_manager.search_item(item_name, black_market=True)
+                    self.market_manager.open_item()
+                    self.market_manager.sleep(.3)
+                    self.market_manager.check_all_item_orders(minimal_item_tier=self.settings.SPECIAL_ITEMS.get(str(item), 4))
+                    self.market_manager.close_item()
+
+                    current_market_orders = self.sniffer.get_market_buffer(type="offer")
+                    if not current_market_orders:
+                        print(f"No market data captured for: {item}")
+                        self.logger.add_log("market", f"No market data captured for: {item} (price_check)")
+                        self.add_recent_item(item, "N/A", "check")
+
+                    found_prices = {}
+                    for order in current_market_orders:
+                        quality = order.get("QualityLevel", 1)
+                        if quality > 3: continue
+
+                        full_name = order.get("ItemTypeId", "Unknown")
+                        base_name, tier, enchant = self.parse_item_info(full_unique_name=full_name)
+                        raw_price = order.get("UnitPriceSilver", 0)
+                        key = (base_name, tier, enchant)
+                        if key not in found_prices:
+                            found_prices[key] = raw_price
+                        else:
+                            if raw_price < found_prices[key]:
+                                found_prices[key] = raw_price
+
+                    if found_prices:
+                        self.add_recent_item(item, f"updated!", "check")
+                        payload = []
+                        for (base, tier, enc), price in found_prices.items():
+                            if enc > 0: unique_name = f"{tier}_{base}@{enc}"
+                            else: unique_name = f"{tier}_{base}"
+
+                            item_data = {
+                                "unique_name": unique_name,
+                                f"price_{market_title}": int(price)
+                            }
+                            payload.append(item_data)
+                        self.logger.add_log("market", f"{item_name} order sale price checked")
+                        if payload:
+                            self.db.update_item_prices(payload, item_type="order")
+                self.login_manager.change_account(self.settings.ORDER_PRICE_CHECK_ACCOUNTS[0]["email"], self.settings.ORDER_PRICE_CHECK_ACCOUNTS[0]["password"])
+                self.sniffer.reset_session()
+        except Exception as e:
+            self.logger.add_log("market", f"Order price cheking Error: {e}")
+
 
     def remove_orders(self):
         self.sniffer.request_market_buffer.clear()
@@ -303,7 +377,8 @@ class Bot:
             change_keyboard_layout()
             for i, item_unique_name in enumerate(items_to_buy_list):
                 self._wait_if_paused()
-                self.sniffer.market_buffer.clear()
+                self.sniffer.offer_market_buffer.clear()
+                self.sniffer.request_market_buffer.clear()
                 self.market_manager.search_item(item_unique_name, from_db=True)
                 self.market_manager.open_item()
                 self.market_manager.sleep(.5)

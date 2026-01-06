@@ -20,6 +20,44 @@ class SettingsManager:
     CAPTURE_POSITIONS = load_json_config('capture_positions.json')
     ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
     
+    ORDER_PRICE_CHECK_ACCOUNTS = [
+        {"email": "matvey4a.alt.1@gmail.com", "password": "matvey4a_alt"},
+    ]
+
+    SPECIAL_ITEMS = {
+        "2452": 2,
+        "2831": 2,
+        "8473": 2,
+        "6239": 2,
+        "6843": 2,
+        "1997": 2,
+        "2149": 2,
+        "3383": 2,
+        "3410": 2,
+        "3437": 2,
+        "3990": 2,
+        "4018": 2,
+        "4046": 2,
+        "4598": 2,
+        "4625": 2,
+        "4652": 2,
+        "2910": 3,
+        "9076": 3,
+        "8875": 3,
+        "9277": 3,
+        "6440": 3,
+        "7848": 3,
+        "8069": 3,
+        "8674": 3,
+        "9478": 3,
+        "7647": 3,
+        "2300": 3,
+        "7446": 3,
+        "7245": 3,
+        "7044": 3,
+        "6641": 3,
+    }
+
     MARKETS = [
         "fort_sterling",
         "lymhurst",

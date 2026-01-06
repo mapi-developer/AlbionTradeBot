@@ -21,6 +21,7 @@ class MarketManager(InputSender):
         self.capture_positions = self.settings.CAPTURE_POSITIONS[self.resolution]["market"]
         self.mouse_positions = self.settings.MOUSE_POSITIONS[self.resolution]["market"]
         self.items = {item["UniqueName"]: item for item in self.settings.ITEM_DATA}
+        self.items_idx = {item["Index"]: item for item in self.settings.ITEM_DATA}
         self.lang = "EN-US" 
 
     def destroy(self):
@@ -50,6 +51,11 @@ class MarketManager(InputSender):
     def get_name_from_unique(self, unique_name: str) -> str | None:
         if unique_name in self.items:
             return self.items[unique_name]["LocalizedNames"].get(self.lang, "Language not found")
+        return None
+    
+    def get_name_from_index(self, name_index: str) -> str | None:
+        if name_index in self.items_idx:
+            return self.items_idx[name_index]["LocalizedNames"].get(self.lang, "Language not found")
         return None
 
     def get_market_title(self) -> str | None:
@@ -88,16 +94,32 @@ class MarketManager(InputSender):
             self.click(self.mouse_positions["button_extend_item_statistic"])
             self.sleep(0.5)
 
-    def search_item(self, name: str, from_db: bool = False, black_market: bool = False) -> None:
-        tier = name.split("_")[0][1]
-        enchant = "0"
-        if name.split("@")[-1][0] != "T":
-            enchant = name.split("@")[-1][0]
+    def check_all_item_orders(self, minimal_item_tier: int = 4):
+        self.click(self.mouse_positions["button_opened_quality"])
+        self.click(self.mouse_positions["button_opened_quality_good"])
+        for x in range(5 - minimal_item_tier):
+            self.click(self.mouse_positions["button_opened_tier"])
+            self.click(self.mouse_positions[f"button_opened_tier_{x+2}"])
+        for y in range(5):
+                self.click(self.mouse_positions["button_opened_enchantment"])
+                self.click(self.mouse_positions[f"button_opened_enchantment_{y}"])
+        for i in range(4):
+            self.click(self.mouse_positions["button_opened_tier"])
+            self.click(self.mouse_positions[f"button_opened_tier_{i+3}"])
+            for j in range(5):
+                self.click(self.mouse_positions["button_opened_enchantment"])
+                self.click(self.mouse_positions[f"button_opened_enchantment_{j}"])
 
+    def search_item(self, name: str, from_db: bool = False, black_market: bool = False) -> None:
         if from_db == True:
             name_from_unique = self.get_name_from_unique(name)
             if name_from_unique is not None:
                 name = name_from_unique
+        else:
+            tier = name.split("_")[0][1]
+            enchant = "0"
+            if name.split("@")[-1][0] != "T":
+                enchant = name.split("@")[-1][0]        
 
         self.click(self.mouse_positions["search_reset"])
         pos = self.mouse_positions["search"]

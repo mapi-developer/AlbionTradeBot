@@ -38,7 +38,23 @@
             "button_logout": [2309, 247],
             "button_email": [1172, 691],
             "button_password": [1172, 749],
-            "button_remove_order": [1804, 591]
+            "button_remove_order": [1804, 591],
+            "button_opened_quality": [990, 586],
+            "button_opened_quality_good": [990, 670],
+            "button_opened_tier": [533, 588],
+            "button_opened_tier_2": [533, 628],
+            "button_opened_tier_3": [533, 665],
+            "button_opened_tier_4": [533, 705],
+            "button_opened_tier_5": [533, 747],
+            "button_opened_tier_6": [533, 790],
+            "button_opened_tier_7": [533, 824],
+            "button_opened_tier_8": [533, 864],
+            "button_opened_enchantment": [762, 587],
+            "button_opened_enchantment_0": [762, 628],
+            "button_opened_enchantment_1": [762, 665],
+            "button_opened_enchantment_2": [762, 708],
+            "button_opened_enchantment_3": [762, 748],
+            "button_opened_enchantment_4": [762, 786]
         },
         "travel": {
             "guild_island_to_travaler": [1092, 450],
@@ -73,7 +89,11 @@
         "login": {
             "button_login": [1433, 1056],
             "button_enter_world": [1569, 1367],
-            "button_try_again_ok": [1270, 801]
+            "button_try_again_ok": [1270, 801],
+            "button_logout": [2309, 290],
+            "button_email": [1172, 742],
+            "button_password": [1172, 807],
+            "button_close_activities": [1733, 318]
         }
     },
     "2560x1440": {
