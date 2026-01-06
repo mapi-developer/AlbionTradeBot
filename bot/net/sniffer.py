@@ -307,5 +307,8 @@ class AlbionSniffer:
             self.mail_buffer.clear()
 
             self.frag_buffer.buffers.clear()
+
+            self.frag_buffer = FragmentBuffer()
+            self.layer_decoder = PhotonLayerDecoder()
             
         print("[Sniffer] >>> Session & Network State Reset (Ready for New Account)")
