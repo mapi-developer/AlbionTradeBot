@@ -42,6 +42,9 @@ class AlbionSniffer:
         self.running = False
         self.lock = threading.Lock()
 
+        self.local_player_id = ""
+        self.character_name = ""
+
         self.current_silver = 0
         self.characters = {}
         self.inventory = {}
@@ -114,8 +117,12 @@ class AlbionSniffer:
                 elif event_code == const.OP_EVENT_UPDATE_SILVER:
                     self.handle_silver_update(params)
             elif msg_type == 2:
+                # Fallback: If 252 is missing, use the Header OpCode
                 event_code = params.get(252)
-                # print(params)
+                if not event_code: 
+                    event_code = op_code 
+
+                # OpCode 2 = Join Request Response
                 if event_code == 2:
                     self.handle_join_response(params)
             elif op_code == const.OP_GET_MAIL_INFOS and 1 in params:
@@ -127,12 +134,17 @@ class AlbionSniffer:
 
     def handle_join_response(self, params: dict):
         try:
+            print("join response")
+            # --- FIX: CALL RESET SESSION HERE ---
+            self.reset_session() 
+            # ------------------------------------
+
             if 0 in params:
                 self.local_player_id = params[0]
-                # print(f"[Sniffer] >>> Join Complete! Local Player ID: {self.local_player_id}")
+                print(f"[Sniffer] >>> Join Complete! Local Player ID: {self.local_player_id}")
             if 2 in params:
                 self.character_name = params[2]
-                # print(f"[Sniffer] >>> Character Name: {self.character_name}")
+                print(f"[Sniffer] >>> Character Name: {self.character_name}")
         except Exception as e:
             print(f"[Sniffer] >>> Handle Join Error: {e}")
 
@@ -294,10 +306,6 @@ class AlbionSniffer:
             self.request_market_buffer.clear()
             self.mail_buffer.clear()
 
-            # 2. CRITICAL: Reset Network State
-            # The new session starts with Sequence Number 0. 
-            # We must recreate the decoder so it accepts them.
-            self.frag_buffer = FragmentBuffer()
-            self.layer_decoder = PhotonLayerDecoder()
+            self.frag_buffer.buffers.clear()
             
         print("[Sniffer] >>> Session & Network State Reset (Ready for New Account)")
