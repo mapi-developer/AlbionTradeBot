@@ -279,9 +279,6 @@ class AlbionSniffer:
             request_data = list(self.request_market_buffer)
             self.offer_market_buffer.clear()
             self.request_market_buffer.clear()
-
-        print(self.offer_market_buffer)
-        print(self.request_market_buffer)
             
         if type == "offer": return offer_data
         elif type == "request": return request_data

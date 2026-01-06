@@ -11,7 +11,7 @@ from gui import Settings
 from gui import Shop
 from gui.components.style import GuiStyle
 
-from bot import Bot, SettingsManager, Logger
+from bot import Bot, SettingsManager, Logger, AlbionSniffer
 
 class GuiApp:
     overlay:BotOverlay
@@ -37,7 +37,7 @@ class GuiApp:
 
         self.login = Login(self.page, on_login_success=self.show_main_app, settings=self.config)
 
-        self.bot = Bot()
+        self.bot = Bot(logger=self.logger)
         self.overlay = BotOverlay()
 
         self.presets = self.config.get_presets_list()
@@ -91,7 +91,7 @@ class GuiApp:
             if self.bot: self.bot.destroy()
             if not self.bot:
                 try:
-                    self.bot = Bot(self.logger)
+                    self.bot = Bot(logger=self.logger)
                 except Exception as e:
                     self.logger.add_log("error", f"Bot initialization failed: {e}")
                     return
