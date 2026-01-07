@@ -10,6 +10,9 @@ import json
 import time
 import win32gui, win32api, win32con
 
+GLOBAL_SNIFFER = None
+GLOBAL_SNIFFER_THREAD = None
+
 def change_keyboard_layout(language_id_hex = 0x04090409):
     hwnd = win32gui.GetForegroundWindow()
     
@@ -36,6 +39,19 @@ class Bot:
             sniffer: AlbionSniffer = None,
             overlay = None
         ):
+
+        global GLOBAL_SNIFFER, GLOBAL_SNIFFER_THREAD
+
+        # Logic: If a global sniffer exists, use it. If not, create it ONCE.
+        if sniffer is None:
+            if GLOBAL_SNIFFER is None:
+                print("Initializing Global Sniffer...")
+                GLOBAL_SNIFFER = AlbionSniffer()
+                GLOBAL_SNIFFER_THREAD = threading.Thread(target=GLOBAL_SNIFFER.start, daemon=True)
+                GLOBAL_SNIFFER_THREAD.start()
+            
+            self.sniffer = GLOBAL_SNIFFER
+
         self.settings = SettingsManager()
         self.status = "Initializing"
         self.paused = False
@@ -45,15 +61,11 @@ class Bot:
         if travel_manager == None: travel_manager = TravelManager(self, capture=capture, settings=self.settings)
         if login_manager == None: login_manager = LoginManager(bot=self, capture=capture, settings=self.settings)
         if logger == None: logger = Logger()
-        if sniffer == None: sniffer = AlbionSniffer()
         self.capture = capture
         self.market_manager = market_manager
         self.travel_manager = travel_manager
         self.login_manager = login_manager
         self.logger = logger
-        self.sniffer = sniffer
-        self.sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
-        self.sniffer_thread.start()
         self.status = "Ready"
         self.current_task_name = "Ready"
         self.current_item_name = ""
@@ -68,15 +80,6 @@ class Bot:
     def destroy(self):
         print("Destroying Bot instance...")
         self.status = "Destroying"
-
-        if self.sniffer:
-            self.sniffer.stop()
-
-        if self.sniffer_thread and self.sniffer_thread.is_alive():
-            self.sniffer_thread.join(timeout=0.5)
-            if self.sniffer_thread.is_alive():
-                print("Warning: Sniffer thread did not shut down cleanly.")
-                self.logger.add_log("bot", f"Warning: Sniffer thread did not shut down cleanly.")
 
         if self.market_manager != None:
             self.market_manager.destroy()

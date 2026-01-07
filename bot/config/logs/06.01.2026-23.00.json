@@ -1,0 +1,12 @@
+[
+    "bot;Bot initialized!",
+    "bot;Warning: Sniffer thread did not shut down cleanly.",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting order price checking for black_market",
+    "market;Adept's Cape order sale price checked",
+    "bot;Bot Starting order price checking for black_market",
+    "market;No market data captured for: 4625 (price_check)",
+    "market;Order price cheking Error: PyAutoGUI fail-safe triggered from mouse moving to a corner of the screen. To disable this fail-safe, set pyautogui.FAILSAFE to False. DISABLING FAIL-SAFE IS NOT RECOMMENDED.",
+    "app;Bot destroyed!"
+]
