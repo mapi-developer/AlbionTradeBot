@@ -266,7 +266,17 @@ class Bot:
         
         try:
             change_keyboard_layout()
+            # HARD TEST
+            print("TEST")
+            self.market_manager.click([1172, 742])
+            self.market_manager.click([1172, 742])
+            self.market_manager.click([1172, 742])
+            self.market_manager.typewrite("matveypisarevqa@gmail.com")
+            self.market_manager.click([1172, 807])
+            self.market_manager.typewrite("matvey_0902")
+            print("TEST")
             for _ in range (2):
+                print("NE TEST")
                 self.check_login()
                 self.market_manager.click([975, 468])
                 self.market_manager.change_tab("sell")

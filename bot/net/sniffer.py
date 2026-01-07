@@ -149,6 +149,7 @@ class AlbionSniffer:
                 self.characters[user_id] = equipment
             else:
                 self.equipment = equipment
+                print(self.equipment)
 
 
     def handle_new_item(self, params: dict):
