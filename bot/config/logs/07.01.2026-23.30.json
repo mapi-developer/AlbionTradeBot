@@ -1,0 +1,18 @@
+[
+    "app;Application started",
+    "bot;Bot initialized!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting order price checking for black_market",
+    "market;Adept's Broadsword order sale price checked",
+    "market;Adept's Broadsword fast sale price checked",
+    "market;Adept's Mercenary Jacket order sale price checked",
+    "market;Adept's Mercenary Jacket fast sale price checked",
+    "market;Adept's Mercenary Hood order sale price checked",
+    "market;Adept's Mercenary Hood fast sale price checked",
+    "market;Adept's Mercenary Shoes order sale price checked",
+    "market;Adept's Mercenary Shoes fast sale price checked",
+    "market;Adept's Shield order sale price checked",
+    "market;Adept's Shield fast sale price checked",
+    "travel;Bot Starting traveling to Matvey4a Guild's Island - Caerleon"
+]

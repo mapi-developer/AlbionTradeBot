@@ -17,6 +17,15 @@ class APIClient:
         self.batch_size = batch_size
         self.flush_interval = flush_interval
         self.running = True
+
+        self.batches = {
+            "fast": {},
+            "order": {}
+        }
+        self.last_flush = {
+            "fast": time.time(),
+            "order": time.time()
+        }
         
         # Start the background worker
         self.worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
@@ -37,15 +46,7 @@ class APIClient:
 
     def _worker_loop(self):
         """Background thread to batch updates and POST them to the API."""
-        # Separate batches for Fast and Order items
-        batches = {
-            "fast": {},
-            "order": {}
-        }
-        last_flush = {
-            "fast": time.time(),
-            "order": time.time()
-        }
+        # Separate  self.batches for Fast and Order items
 
         while self.running:
             try:
@@ -55,16 +56,16 @@ class APIClient:
                     
                     # Extract type (default to 'fast' if missing)
                     i_type = item.pop("_type", "fast")
-                    if i_type not in batches:
+                    if i_type not in  self.batches:
                         i_type = "fast"
                     
                     u_name = item["unique_name"]
                     
                     # Merge logic for the specific batch
-                    if u_name not in batches[i_type]:
-                        batches[i_type][u_name] = item
+                    if u_name not in  self.batches[i_type]:
+                         self.batches[i_type][u_name] = item
                     else:
-                        batches[i_type][u_name].update(item)
+                         self.batches[i_type][u_name].update(item)
                         
                 except queue.Empty:
                     pass
@@ -73,18 +74,26 @@ class APIClient:
                 current_time = time.time()
                 
                 for t in ["fast", "order"]:
-                    batch = batches[t]
+                    batch =  self.batches[t]
                     is_batch_full = len(batch) >= self.batch_size
-                    is_time_up = (current_time - last_flush[t] >= self.flush_interval) and len(batch) > 0
+                    is_time_up = (current_time - self.last_flush[t] >= self.flush_interval) and len(batch) > 0
 
                     if is_batch_full or is_time_up:
                         self._send_batch(list(batch.values()), item_type=t)
-                        batches[t] = {} # Clear batch
-                        last_flush[t] = current_time
+                        self.batches[t] = {} # Clear batch
+                        self.last_flush[t] = current_time
 
             except Exception as e:
                 print(f"Worker Loop Error: {e}")
                 time.sleep(1)
+
+    def force_update(self):
+        current_time = time.time()
+        for t in ["fast", "order"]:
+            batch =  self.batches[t]
+            self._send_batch(list(batch.values()), item_type=t)
+            self.batches[t] = {} # Clear batch
+            self.last_flush[t] = current_time
 
     def _send_batch(self, items: List[Dict], item_type: str):
         """Sends the HTTP PUT request to the backend with the correct type parameter."""

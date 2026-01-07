@@ -83,6 +83,8 @@
             "from_thetford": [[438, 319, 6], [535, 81, 6], [1968, 1081, 6], [2139, 434, 6]],
             "to_brecilien": [[2103, 233, 6], [2103, 233, 6], [1114, 0, 6], [1400, 112, 6], [615, 118, 6], [615, 115, 6], [805, 6, 6]],
             "from_brecilien": [[1663, 1367, 6], [1960, 1114, 6], [1960, 1110, 6], [1878, 1481, 6], [1369, 1409, 6], [485, 1442, 6], [281, 1337, 6], [281, 1337, 6], [808, 187, 6]],
+            "from_travaler_to_chest": [2116, 102, 6],
+            "from_island_chest_to_travaler": [[423, 1185, 5], [828, 598, 3]],
             "to_caerleon": [],
             "from_caerleon": []
         },
@@ -94,6 +96,30 @@
             "button_email": [1172, 742],
             "button_password": [1172, 807],
             "button_close_activities": [1733, 318]
+        },
+        "chest": {
+            "extend_second_tab": [785, 220],
+            "close_second_tab": [1506, 224],
+            "bank_second_tab": [835, 207],
+            "bank_second_tab_1": [835, 244],
+            "bank_second_tab_2": [835, 287],
+            "bank_second_tab_3": [835, 328],
+            "bank_tab": [200, 300],
+            "bank_tab_1": [90, 342],
+            "bank_tab_2": [90, 377],
+            "bank_tab_3": [90, 417],
+            "bank_tab_move_all": [83, 1404],
+            "bank_tab_move_all_from_inventory": [79, 1331],
+            "bank_tab_move_all_to_inventory": [79, 1285],
+            "bank_tab_move_all_to_tab": [79, 1238],
+            "bank_second_tab_move_all": [833, 1373],
+            "bank_second_tab_move_all_from_inventory": [833, 1304],
+            "bank_second_tab_move_all_to_inventory": [833, 1257],
+            "bank_second_tab_move_all_to_tab": [833, 1212],
+            "bank_tab_sort": [453, 1400],
+            "bank_tab_slot_1": [86, 490],
+            "bank_tab_many_items_okay": [1216, 766],
+            "inventory_mount": [2229, 602]
         }
     },
     "2560x1440": {

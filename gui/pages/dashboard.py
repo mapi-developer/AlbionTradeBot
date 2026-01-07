@@ -1448,12 +1448,12 @@ class Dashboard(ft.Container):
         )
 
         try:
-            keyboard.remove_hotkey("ctrl+p")
+            keyboard.remove_hotkey("f1")
         except:
             pass
 
         try:
-            keyboard.add_hotkey("ctrl+p", lambda: self._on_global_hotkey())
+            keyboard.add_hotkey("f1", lambda: self._on_global_hotkey())
         except Exception as e:
             print(f"Failed to register global hotkey: {e}")
 
@@ -1486,7 +1486,7 @@ class Dashboard(ft.Container):
                         paused=paused,
                     )
 
-                status = "PAUSED (Ctrl+P to Resume)" if paused else "Running"
+                status = "PAUSED (F1 to Resume)" if paused else "Running"
                 color = ft.Colors.ORANGE_400 if paused else ft.Colors.GREEN_400
                 self.seq_panel.update_status(status, color)
             except Exception as e:

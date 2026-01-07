@@ -21,5 +21,30 @@ class InputSender():
     def right_click(self, position: list[int]) -> None:
         pyautogui.rightClick(position)
 
+    def click_with_key(self, position: list[int], key: str, clicks: int = 1) -> None:
+        """
+        Holds down a key (shift, ctrl, alt), performs a click, then releases the key.
+        """
+        with pyautogui.hold(key):
+            self.click(position, clicks=clicks)
+            self.sleep(.1)
+
+    def right_click_with_key(self, position: list[int], key: str) -> None:
+        """
+        Holds down a key (shift, ctrl, alt), performs a click, then releases the key.
+        """
+        with pyautogui.hold(key):
+            self.right_click(position)
+            self.sleep(.1)
+
+    def drag(self, start_pos: list[int], end_pos: list[int], duration: float = 0.5) -> None:
+        """
+        Moves to start_pos, holds left click, moves to end_pos, and releases.
+        """
+        pyautogui.moveTo(start_pos[0], start_pos[1])
+        pyautogui.mouseDown(button='left')
+        pyautogui.moveTo(end_pos[0], end_pos[1], duration=duration)
+        pyautogui.mouseUp(button='left')
+
     def scroll(self, clicks: int = 15) -> None:
         pyautogui.scroll(clicks)

@@ -1,6 +1,6 @@
 from .api import APIClient, DatabaseInterface
 from .core import WindowCapture, InputSender
-from .managers import MarketManager, TravelManager, SettingsManager, LoginManager, Logger
+from .managers import MarketManager, TravelManager, SettingsManager, LoginManager, Logger, ChestManager
 from .net import AlbionSniffer, PhotonDataDecoder, PhotonLayerDecoder
 from .bot import Bot
 
@@ -18,4 +18,5 @@ __all__ = [
     "Logger",
     "PhotonDataDecoder",
     "PhotonLayerDecoder",
+    "ChestManager"
 ]

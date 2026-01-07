@@ -54,6 +54,9 @@ class DatabaseInterface:
                     # Queue the update using the client, passing the item_type
                     self.client.update_item_price(unique_name, key, int(price), item_type=item_type)
 
+    def force_price_update(self):
+        self.client.force_update()
+
     def get_all_prices_for_city(self, city: str, item_type: str = "fast") -> Dict[str, int]:
         """
         Retrieves all item prices for a specific city via API.

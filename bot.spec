@@ -6,7 +6,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('assets', 'assets')],
+    datas=[('config', 'config')],
     hiddenimports=[
         # --- YOUR APP MODULES ---
         'gui.pages.login',      # Fixes the crash you saw
@@ -52,7 +52,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='assets\\app_icon.ico',
+    icon='bot\\config\\app_icon.ico',
 )
 
 coll = COLLECT(

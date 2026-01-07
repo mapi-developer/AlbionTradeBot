@@ -25,7 +25,7 @@ def copy_external_assets():
     source_dist = os.path.join('dist', 'MarketTrader')
 
     # 1. Copy Config Folder (This makes it editable)
-    src_config = os.path.join('bot', 'config') 
+    src_config = os.path.join('bot', 'config')
     
     dst_config = os.path.join(source_dist, 'config')
     

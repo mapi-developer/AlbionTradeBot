@@ -15,6 +15,25 @@ class TravelManager(InputSender):
         self.capture_positions = self.settings.CAPTURE_POSITIONS[capture.get_window_resolution()]["travel"]
         self.mouse_positions = self.settings.MOUSE_POSITIONS[capture.get_window_resolution()]["travel"]
     
+    def from_island_to_chest(self):
+        pos = self.mouse_positions["from_travaler_to_chest"]
+        print(pos)
+        self.click([pos[0], pos[1]])
+        self.sleep(pos[2])
+        print("ok")
+
+    def from_island_chest_to_black_market(self):
+        for i, item in enumerate(self.mouse_positions["from_island_chest_to_travaler"]):
+            if i+1 == len(self.mouse_positions["from_island_chest_to_travaler"]):
+                self.click([item[0], item[1]])
+            else:
+                self.right_click([item[0], item[1]])
+            self.sleep(item[2])
+            self.bot._wait_if_paused()
+
+        self.choose_destination("black_market")
+        self.from_travel_to_market("black_market")
+
     def from_island_to_traveler(self):
         self.click(self.mouse_positions["character_middle"])
         self.press("enter")
