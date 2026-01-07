@@ -22,7 +22,7 @@ COMMAND_TYPES = {
         "func": "travel_to",
     },
     "price_check": {
-        "label": "Price Check",
+        "label": "Price Check (Fast Sale)",
         "icon": ft.Icons.SEARCH_ROUNDED,
         "color": ft.Colors.PURPLE_500,
         "func": "check_price",
@@ -414,8 +414,9 @@ class AddSequenceFunctionButton(ft.ElevatedButton):
 
 
 class FunctionsAvaliablePanel(ft.Container):
-    def __init__(self):
+    def __init__(self, login):
         super().__init__()
+        self.login = login
         self.title = ft.Text(
             value="FUNCTIONS AVAILABLE",
             size=15,
@@ -450,12 +451,14 @@ class FunctionsAvaliablePanel(ft.Container):
                 self.title,
                 self.travel_to_button,
                 self.price_check_button,
-                self.price_check_order_button,
                 self.buy_items_button,
                 self.remove_orders_button,
                 self.wait_time_button,
             ]
         )
+
+        if login.state.user_id == "1":
+            self.content.controls.append(self.price_check_order_button)
 
 
 class TravelToAdditionalInfo(ft.Container):
@@ -944,14 +947,14 @@ class ExecutionSequencePanel(ft.Container):
 
 
 class BotControlPanel(ft.Container):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, login):
         super().__init__()
         left_side_size = 3
         self.padding = ft.padding.only(0, 10, 0, 0)
 
         self.execution_warning = BotExecutionWarning()
         self.execution_sequence_panel = ExecutionSequencePanel(dashboard)
-        self.functions_avaliable_panel = FunctionsAvaliablePanel()
+        self.functions_avaliable_panel = FunctionsAvaliablePanel(login)
 
         for key in self.functions_avaliable_panel.buttons:
             execution_list = self.execution_sequence_panel.execution_functions_list
@@ -1013,7 +1016,7 @@ class SubscriptionBlocker(ft.Container):
 
 
 class BotSequencePanel(RightPanel):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard, login):
         self.dashboard = dashboard
         self.title = ft.Container(
             content=ft.ResponsiveRow(
@@ -1030,7 +1033,7 @@ class BotSequencePanel(RightPanel):
             padding=ft.padding.only(0, 0, 0, 10),
         )
 
-        self.bot_control_panel = BotControlPanel(dashboard=dashboard)
+        self.bot_control_panel = BotControlPanel(dashboard=dashboard, login=login)
 
         # 1. Main UI content inside the layout container with padding
         self.content_layout = ft.Container(
@@ -1078,7 +1081,11 @@ class BotSequencePanel(RightPanel):
             is_subscribed = self.dashboard.header.subscription.is_active
             self.blocker.visible = not is_subscribed
             self.bot_control_panel.disabled = not is_subscribed
-
+            avaliable_functions = self.bot_control_panel.functions_avaliable_panel
+            if avaliable_functions.login.state.user_id == "1" and not avaliable_functions.price_check_order_button in avaliable_functions.content.controls:
+                avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
+            elif avaliable_functions.price_check_order_button in avaliable_functions.content.controls:
+                avaliable_functions.content.controls.remove(avaliable_functions.price_check_order_button)
             if self.page:
                 self.update()
 
@@ -1412,7 +1419,7 @@ class Dashboard(ft.Container):
         self.bot_sequence = self.config.load_bot_loop() if self.config else []
 
         self.dashboard_panel = DashboardPanel(dashboard=self)
-        self.bot_sequence_panel = BotSequencePanel(dashboard=self)
+        self.bot_sequence_panel = BotSequencePanel(dashboard=self, login=self.login)
         self.bot_activity_panel = ActivityLogsPanel(dashboard=self)  # Pass self
         self.left_panel = LeftPanel()
 

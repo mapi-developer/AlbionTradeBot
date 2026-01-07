@@ -59,15 +59,16 @@ class AlbionSniffer:
         print(f"[Sniffer] >>> Started on Interface: {iface}")
         self.running = True
 
-        while self.running:
+        try:
             sniff(
-                filter="udp port 5056",
+                filter="udp portrange 5050-5100",
                 iface=iface,
                 prn=self.packet_callback,
                 store=0,
-                timeout=1
+                stop_filter=lambda x: not self.running # Optional: cleaner exit
             )
-        print(f"[Sniffer] >>> Stoped.")
+        except Exception as e:
+            print(f"[Sniffer] Error: {e}")
 
     def stop(self):
         self.running = False
@@ -75,6 +76,7 @@ class AlbionSniffer:
     def packet_callback(self, packet):
         if not self.running: return
         if not packet.haslayer(UDP): return
+
         try:
             for cmd in self.layer_decoder.decode_packet(bytes(packet[UDP].payload)):
                 if cmd.type == const.COMMAND_SEND_RELIABLE:
@@ -103,6 +105,19 @@ class AlbionSniffer:
 
             stream = io.BytesIO(payload[offset:])
             params = PhotonDataDecoder(stream).decode()
+
+            if msg_type == 3: # Client -> Server
+                # print(f"\n[HANDSHAKE] >>> CLIENT SENT KEYS (Op: {op_code})")
+                # print(f"[HANDSHAKE] >>> Data: {params}") 
+                # Look for a 32-byte or 64-byte array here! 
+                # It will be the "ClientNonce" or "ClientKey"
+                pass
+
+            elif msg_type == 2: # Server -> Client
+                response_op = params.get(253, op_code)
+                # print(f"\n[HANDSHAKE] >>> SERVER SENT TOKEN (Op: {response_op})")
+                # print(f"[HANDSHAKE] >>> Data: {params}")
+                pass
 
             if msg_type == 4:
                 event_code = params.get(252)

@@ -111,16 +111,16 @@ class MarketManager(InputSender):
                 self.click(self.mouse_positions[f"button_opened_enchantment_{j}"])
 
     def search_item(self, name: str, from_db: bool = False, black_market: bool = False) -> None:
+        tier = name.split("_")[0][1]
+        enchant = "0"
+        if name.split("@")[-1][0] != "T":
+            enchant = name.split("@")[-1][0]
+
         if from_db == True:
             name_from_unique = self.get_name_from_unique(name)
             if name_from_unique is not None:
                 name = name_from_unique
-        else:
-            tier = name.split("_")[0][1]
-            enchant = "0"
-            if name.split("@")[-1][0] != "T":
-                enchant = name.split("@")[-1][0]        
-
+                     
         self.click(self.mouse_positions["search_reset"])
         pos = self.mouse_positions["search"]
         self.click([pos[0]+random.randint(1, int(self.width/16)), pos[1]])
