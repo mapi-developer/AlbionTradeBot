@@ -16,6 +16,11 @@ class TravelManager(InputSender):
         self.mouse_positions = self.settings.MOUSE_POSITIONS[capture.get_window_resolution()]["travel"]
     
     def from_island_to_chest(self):
+        self.click(self.mouse_positions["character_middle"])
+        self.press("enter")
+        self.sleep(.3)
+        self.typewrite("#forcecityoverload true")
+        self.press("enter")
         pos = self.mouse_positions["from_travaler_to_chest"]
         print(pos)
         self.click([pos[0], pos[1]])
@@ -87,6 +92,14 @@ class TravelManager(InputSender):
             self.from_market_to_travaler()
         elif self.bot.current_location == "island":
             self.from_island_to_traveler()
+        elif self.bot.current_location == "guild_chest_caerleon":
+            for i, item in enumerate(self.mouse_positions["from_island_chest_to_travaler"]):
+                if i+1 == len(self.mouse_positions["from_island_chest_to_travaler"]):
+                    self.click([item[0], item[1]])
+                else:
+                    self.right_click([item[0], item[1]])
+                self.sleep(item[2])
+                self.bot._wait_if_paused()
         
         self.choose_destination(destination=destination)
         self.bot.current_location = "island"

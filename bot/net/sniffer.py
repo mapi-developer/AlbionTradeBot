@@ -287,8 +287,16 @@ class AlbionSniffer:
             return inventory_data
         
     def clear_inventory(self):
-        self.inventory.clear()
+        with self.lock:
+            self.inventory.clear()
 
+    def clear_market_buffer(self, type: str = None):
+        with self.lock:
+            if type == "offer" or None:
+                self.offer_market_buffer.clear()
+            if type == "request" or None:
+                self.request_market_buffer.clear()
+                
     def get_market_buffer(self, type: str = None):
         with self.lock:
             offer_data = list(self.offer_market_buffer)

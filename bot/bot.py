@@ -301,12 +301,7 @@ class Bot:
 
         self.status = "Ready"
 
-    def check_price_order(self):
-        self.status = "Running"
-        self.capture.set_foreground_window()
-        self.current_task_name = f"Cheking Price: 0/X"
-        self.check_login()
-        change_keyboard_layout()
+    def check_bm_from_inventory(self):
         try:
             for x in range(6):
                 self.overlay.stop()
@@ -315,7 +310,7 @@ class Bot:
                     self.chest_manager.take_mount()
                     self.chest_manager.sleep(.5)
                     self.chest_manager.take_items_from_tab()
-                elif x == 4:
+                elif x == 5:
                     self.chest_manager.stash_item_into_tab()
                     self.chest_manager.sleep(.5)
                     self.chest_manager.stash_mount()
@@ -330,6 +325,7 @@ class Bot:
                 self.sniffer.clear_inventory()
                 self.travel_manager.from_island_chest_to_black_market()
                 self.overlay.start()
+                self.market_manager.sleep(2)
                 self.market_manager.change_tab("sell")
                 market_title = self.market_manager.get_market_title()
                 self.current_location = market_title
@@ -445,11 +441,144 @@ class Bot:
 
                 self.db.force_price_update()
                 self.travel_to("Matvey4a Guild's Island - Caerleon")
+            self.current_location = "guild_chest_caerleon"
+        except Exception as e:
+            self.logger.add_log("market", f"Order BM price cheking Error: {e}")
+
+    def check_price_order(self):
+        self.status = "Running"
+        self.capture.set_foreground_window()
+        self.current_task_name = f"Cheking Price: 0/X"
+        self.check_login()
+        change_keyboard_layout()
+        try:
+            market_title = self.market_manager.get_market_title()
+            if market_title == None:
+                self.check_bm_from_inventory()
+                return
+            else:
+                self.current_location = market_title
+            self.market_manager.change_tab("buy")
+            self.logger.add_log(
+                    "bot", f"Bot Starting order price checking for {self.current_location}"
+                )
+            items_to_check = list(self.settings.ITEMS_BLACK_MARKET.values())
+            self.market_manager.prepare(True)
+            for i, item in enumerate(items_to_check):
+                self._wait_if_paused()
+                #item_name = self.market_manager.get_name_from_index(str(item))
+                item_name = item
+                self.current_item_name = f"Scanning: {item_name}"
+
+                if not self.paused:
+                    self.current_task_name = (
+                        f"Cheking Price: {i+1}/{len(items_to_check)}"
+                    )
+                    self.update_overlay()
+
+                self.market_manager.search_item(item_name, black_market=True)
+                self.market_manager.open_item()
+                self.market_manager.sleep(0.3)
+                self.market_manager.check_all_item_orders(
+                    minimal_item_tier=self.settings.SPECIAL_ITEMS.get(str(item), 4)
+                )
+                self.market_manager.close_item()
+
+                current_market_orders_offer, current_market_orders_request = self.sniffer.get_market_buffer()
+                #for key, value in list(current_market_orders_offer.items())[:5]: print(f"{key}: {value}")
+                #for key, value in list(current_market_orders_request.items())[:5]: print(f"{key}: {value}")
+
+                if not current_market_orders_offer and not current_market_orders_request:
+                    print(f"No market data captured for: {item}")
+                    self.logger.add_log(
+                        "market", f"No market data captured for: {item} (price_check)"
+                    )
+                    self.add_recent_item(item, "N/A", "check")
+
+                found_prices = {}
+                for order in current_market_orders_offer:
+                    quality = order.get("QualityLevel", 1)
+                    if quality > 3:
+                        continue
+
+                    full_name = order.get("ItemTypeId", "Unknown")
+                    base_name, tier, enchant = self.parse_item_info(
+                        full_unique_name=full_name
+                    )
+                    raw_price = order.get("UnitPriceSilver", 0)
+                    key = (base_name, tier, enchant)
+                    if key not in found_prices:
+                        found_prices[key] = raw_price
+                    else:
+                        if raw_price < found_prices[key]:
+                            found_prices[key] = raw_price
+
+                if found_prices:
+                    self.add_recent_item(item, f"updated!", "check")
+                    payload = []
+                    for (base, tier, enc), price in found_prices.items():
+                        if enc > 0:
+                            unique_name = f"{tier}_{base}@{enc}"
+                        else:
+                            unique_name = f"{tier}_{base}"
+
+                        item_data = {
+                            "unique_name": unique_name,
+                            f"price_{market_title}": int(price),
+                        }
+                        payload.append(item_data)
+                    self.logger.add_log(
+                        "market", f"{item_name} order sale price checked"
+                    )
+                    if payload:
+                        self.db.update_item_prices(payload, item_type="order")
+
+                found_prices = {}
+                for order in current_market_orders_request:
+                    quality = order.get("QualityLevel", 1)
+                    if quality > 3:
+                        continue
+
+                    full_name = order.get("ItemTypeId", "Unknown")
+                    base_name, tier, enchant = self.parse_item_info(
+                        full_unique_name=full_name
+                    )
+                    raw_price = order.get("UnitPriceSilver", 0)
+                    key = (base_name, tier, enchant)
+                    if key not in found_prices:
+                        found_prices[key] = raw_price
+                    else:
+                        if raw_price > found_prices[key]:
+                            found_prices[key] = raw_price
+
+                if found_prices:
+                    self.add_recent_item(item, f"updated!", "check")
+                    payload = []
+                    for (base, tier, enc), price in found_prices.items():
+                        if enc > 0:
+                            unique_name = f"{tier}_{base}@{enc}"
+                        else:
+                            unique_name = f"{tier}_{base}"
+
+                        item_data = {
+                            "unique_name": unique_name,
+                            f"price_{market_title}": int(price),
+                        }
+                        payload.append(item_data)
+                    self.logger.add_log(
+                        "market", f"{item_name} fast sale price checked"
+                    )
+                    if payload:
+                        self.db.update_item_prices(payload, item_type="fast")
+
+            self.db.force_price_update()
         except Exception as e:
             self.logger.add_log("market", f"Order price cheking Error: {e}")
 
     def remove_orders(self):
-        self.sniffer.request_market_buffer.clear()
+        self.sniffer.clear_market_buffer("request")
+        requests = len(self.sniffer.get_market_buffer("request"))
+        print(requests)
         self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Removing Orders"
@@ -460,11 +589,16 @@ class Bot:
         self.capture.set_foreground_window()
         self.market_manager.change_tab("my_orders_tab")
         change_keyboard_layout()
-        self.market_manager.remove_order(5)
-        while self.sniffer.get_market_buffer(type="request") != []:
+        self.market_manager.remove_order(15)
+        self.market_manager.scroll()
+        requests = len(self.sniffer.get_market_buffer("request"))
+        print(requests)
+        while requests != 0:
             self._wait_if_paused()
-            self.market_manager.remove_order(5)
+            self.market_manager.remove_order(15)
             self.market_manager.scroll()
+            requests = len(self.sniffer.get_market_buffer("request"))
+            print(requests)
 
         self.status = "Ready"
 

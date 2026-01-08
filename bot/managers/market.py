@@ -79,6 +79,12 @@ class MarketManager(InputSender):
         else:
             return None
     
+    def change_tier(self, tier: int):
+        self.click(self.mouse_positions["tier"])
+        self.sleep(.1)
+        self.click(self.mouse_positions[f"tier_{tier}"])
+        self.sleep(.1)
+
     def order_exists(self) -> bool:
         return "edit" in self.capture.get_text_from_screenshot(self.capture_positions["order_exists"])
     
@@ -160,8 +166,9 @@ class MarketManager(InputSender):
 
         self.sleep(0.5)
 
-    def prepare(self):
+    def prepare(self, isPriceCheck: bool = False):
         self.change_tab("buy")
         self.click(self.mouse_positions["quality"])
         self.click(self.mouse_positions["quality_good"])
+        if isPriceCheck: self.change_tier(4)
         self.change_tab("create_buy_order")

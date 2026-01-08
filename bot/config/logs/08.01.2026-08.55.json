@@ -1,0 +1,22 @@
+[
+    "app;Application started",
+    "bot;Bot initialized!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "bot;Bot Starting order price checking for fort_sterling",
+    "market;Great Arcane Staff order sale price checked",
+    "market;Great Arcane Staff fast sale price checked",
+    "market;Occult Staff order sale price checked",
+    "market;Occult Staff fast sale price checked",
+    "market;Evensong order sale price checked",
+    "market;Evensong fast sale price checked",
+    "market;Great Axe order sale price checked",
+    "market;Great Axe fast sale price checked",
+    "market;The Hand of Khor order sale price checked",
+    "market;The Hand of Khor fast sale price checked",
+    "market;Realmbreaker order sale price checked",
+    "market;Realmbreaker fast sale price checked",
+    "bot;Pause toggled status: Paused",
+    "market;Bow order sale price checked",
+    "market;Bow fast sale price checked"
+]

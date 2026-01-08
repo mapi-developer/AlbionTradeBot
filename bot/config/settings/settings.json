@@ -2,7 +2,7 @@
     "general": {
         "buy_mode": "order",
         "game_language": "EN-US",
-        "min_silver": "55000000"
+        "min_silver": "10000000"
     },
     "fast_buy": {
         "min_profit_rate": "50",
@@ -19,16 +19,16 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "25",
+        "min_profit_rate": "50",
         "default_buy_amount": "20",
         "presets": {
-            "caerleon": "test.json",
-            "martlock": "Demo Preset.json",
-            "lymhurst": "Demo Preset.json",
-            "fort_sterling": "Demo Preset.json",
-            "bridgewatch": "Demo Preset.json",
-            "thetford": "Demo Preset.json",
-            "brecilien": "Demo Preset.json"
+            "caerleon": "Fort Sterling Main.json",
+            "martlock": "Fort Sterling Main.json",
+            "lymhurst": "Fort Sterling Main.json",
+            "fort_sterling": "Fort Sterling Main.json",
+            "bridgewatch": "Fort Sterling Main.json",
+            "thetford": "Fort Sterling Main.json",
+            "brecilien": "Fort Sterling Main.json"
         },
         "buy_logic": [
             {
@@ -40,23 +40,23 @@
                 "price_larger_then": "6000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "5",
                 "price_larger_then": "10000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "4",
                 "price_larger_then": "20000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "3",
                 "price_larger_then": "50000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "2",
                 "price_larger_then": "100000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "1",
                 "price_larger_then": "150000"
             }
         ]

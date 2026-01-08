@@ -1590,7 +1590,7 @@ class Dashboard(ft.Container):
                         if function.function_type == "travel_to"
                     ]
                 )
-                if self.bot.current_location != "island" and travel_amount != 0:
+                if self.bot.current_location != "island" and travel_amount != 0 or self.bot.current_location == "guild_chest_caerleon":
                     bot_func = getattr(self.bot, "travel_to", None)
                     bot_func(
                         self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value
