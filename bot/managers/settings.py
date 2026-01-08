@@ -24,7 +24,7 @@ class SettingsManager:
         {"email": "matvey4a.alt.1@gmail.com", "password": "matvey4a_alt"},
     ]
 
-    SPECIAL_ITEMS = {
+    SPECIAL_ITEMS_BM = {
         "2452": 2,
         "2831": 2,
         "8473": 1,
@@ -56,6 +56,41 @@ class SettingsManager:
         "7245": 3,
         "7044": 3,
         "6641": 3,
+    }
+
+    SPECIAL_ITEMS = {
+        "Shield": 1,
+        "Mercenary Hood": 1,
+        "Mercenary Jacket": 1,
+        "Mercenary Shoes": 1,
+        "Broadsword": 1,
+        "Tome of Spells": 2,
+        "Cape": 2,
+        "Bag": 2,
+        "Soldier Helmet": 2,
+        "Soldier Armor": 2,
+        "Soldier Boots": 2,
+        "Scholar Cowl": 2,
+        "Scholar Robe": 2,
+        "Scholar Sandals": 2,
+        "Bow": 2,
+        "Fire Staff": 2,
+        "Torch": 3,
+        "Crossbow": 3,
+        "Cursed Staff": 3,
+        "Fire Staff": 3,
+        "Frost Staff": 3,
+        "Arcane Staff": 3,
+        "Holy Staff": 3,
+        "Nature Staff": 3,
+        "Dagger": 3,
+        "Spear": 3,
+        "Battleaxe": 3,
+        "Quarterstaff": 3,
+        "Hammer": 3,
+        "Mace": 3,
+        "Brawler Gloves": 3,
+        "Prowling Staff": 3,
     }
 
     MARKETS = [

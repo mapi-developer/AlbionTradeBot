@@ -29,6 +29,8 @@
             "tab_completed_transactions": [1900, 1097],
             "tab_create_buy_order": [1907, 742],
             "tab_my_orders_tab": [1907, 865],
+            "opened_item_sell_bm": [685, 674],
+            "opened_item_sell_order_bm": [684, 708],
             "button_cancel_order": [1808, 600],
             "button_buy": [1740, 644],
             "button_buy_order": [689, 799],

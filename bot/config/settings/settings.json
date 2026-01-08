@@ -6,15 +6,15 @@
     },
     "fast_buy": {
         "min_profit_rate": "50",
-        "default_buy_amount": "25",
+        "default_buy_amount": "10",
         "presets": {
-            "caerleon": "Fort Sterling Main.json",
-            "martlock": "Fort Sterling Main.json",
-            "lymhurst": "Jackets.json",
-            "fort_sterling": "Fort Sterling Main.json",
-            "bridgewatch": "Fort Sterling Main.json",
-            "thetford": "Fort Sterling Main.json",
-            "brecilien": "Fort Sterling Main.json"
+            "caerleon": "Fast Buy Test.json",
+            "martlock": "Fast Buy Test.json",
+            "lymhurst": "Fast Buy Test.json",
+            "fort_sterling": "Fast Buy Test.json",
+            "bridgewatch": "Fast Buy Test.json",
+            "thetford": "Fast Buy Test.json",
+            "brecilien": "Fast Buy Test.json"
         },
         "buy_logic": []
     },
@@ -61,6 +61,6 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3ODE5MzUyfQ.Hd043obz9eJLXIwikyRy21zGs8lLf-nBuCYzNSVgz2Y",
-    "user_id": "1"
+    "auth_token": null,
+    "user_id": null
 }

@@ -51,6 +51,12 @@ COMMAND_TYPES = {
         "color": GuiStyle.Colors.ACCENT_ORANGE,
         "func": "wait_time",
     },
+    "sell_items": {
+        "label": "Sell Items",
+        "icon": ft.Icons.SELL_OUTLINED,
+        "color": "#872fb7",
+        "func": "sell_items"
+    }
 }
 
 
@@ -436,12 +442,14 @@ class FunctionsAvaliablePanel(ft.Container):
         self.buy_items_button = AddSequenceFunctionButton("buy_items")
         self.remove_orders_button = AddSequenceFunctionButton("remove_orders")
         self.wait_time_button = AddSequenceFunctionButton("wait_time")
+        self.sell_items_button = AddSequenceFunctionButton("sell_items")
 
         self.buttons = {
             "travel_to": self.travel_to_button,
             "price_check": self.price_check_button,
             "price_check_order": self.price_check_order_button,
             "buy_items": self.buy_items_button,
+            "sell_items": self.sell_items_button,
             "remove_orders": self.remove_orders_button,
             "wait_time": self.wait_time_button,
         }
@@ -452,6 +460,7 @@ class FunctionsAvaliablePanel(ft.Container):
                 self.travel_to_button,
                 self.price_check_button,
                 self.buy_items_button,
+                self.sell_items_button,
                 self.remove_orders_button,
                 self.wait_time_button,
             ]
@@ -1084,7 +1093,7 @@ class BotSequencePanel(RightPanel):
             avaliable_functions = self.bot_control_panel.functions_avaliable_panel
             if avaliable_functions.login.state.user_id == "1" and not avaliable_functions.price_check_order_button in avaliable_functions.content.controls:
                 avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
-            elif avaliable_functions.price_check_order_button in avaliable_functions.content.controls:
+            elif avaliable_functions.price_check_order_button in avaliable_functions.content.controls and avaliable_functions.login.state.user_id != "1":
                 avaliable_functions.content.controls.remove(avaliable_functions.price_check_order_button)
             if self.page:
                 self.update()

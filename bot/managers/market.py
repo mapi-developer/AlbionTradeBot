@@ -172,3 +172,23 @@ class MarketManager(InputSender):
         self.click(self.mouse_positions["quality_good"])
         if isPriceCheck: self.change_tier(4)
         self.change_tab("create_buy_order")
+
+    def prepare_for_sell(self, market_title: str = "black_market"):
+        if market_title == "black_market":
+            self.change_tab("sell")
+            self.click(self.mouse_positions["category_reset"])
+            self.click(self.mouse_positions["search_reset"])
+
+    def fast_sale_item(self, market_title: str = "black_market"):
+        if market_title == "black_market":
+            self.click(self.mouse_positions["opened_item_sell_bm"])
+        self.click(self.mouse_positions["button_create_order"])
+        self.sleep(.1)
+
+    def make_sell_order(self, market_title: str = "black_market"):
+        if market_title == "black_market":
+            self.click(self.mouse_positions["opened_item_sell_order_bm"])
+        self.sleep(.1)
+        self.click(self.mouse_positions["button_one_silver_less"])
+        self.click(self.mouse_positions["button_create_order"])
+        self.sleep(.1)
