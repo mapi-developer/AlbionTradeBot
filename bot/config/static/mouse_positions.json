@@ -154,6 +154,8 @@
             "tab_completed_transactions": [1847, 989],
             "tab_create_buy_order": [1847, 667],
             "tab_my_orders_tab": [1847, 773],
+            "opened_item_sell_bm": [745, 602],
+            "opened_item_sell_order_bm": [745, 640],
             "button_cancel_order": [1755, 537],
             "button_buy": [1663, 579],
             "button_buy_order": [771, 713],
