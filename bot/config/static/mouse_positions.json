@@ -48,6 +48,7 @@
             "button_logout": [2309, 247],
             "button_email": [1172, 691],
             "button_password": [1172, 749],
+            "button_edit_order": [1633, 611],
             "button_remove_order": [1804, 591],
             "button_opened_quality": [990, 586],
             "button_opened_quality_good": [990, 670],
@@ -210,7 +211,8 @@
             "button_login": [1433, 950],
             "button_enter_world": [1569, 1230],
             "button_try_again_ok": [1270, 720]
-        }
+        },
+        "chest": {}
     },
     "1920x1200": {
         "market": {

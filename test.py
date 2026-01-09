@@ -15,7 +15,9 @@ if __name__ == "__main__":
     sniffer_thread.start()
     
     wait_for_user_input()
-    print(sniffer.get_market_buffer('offer'))
+    req = sniffer.get_market_buffer('request')
+    print(req)
+    print(len(req))
     
     print("Stopping sniffer...")
     sniffer.stop()

@@ -1,0 +1,8 @@
+[
+    "app;Application started",
+    "bot;Bot initialized!",
+    "app;Bot destroyed!",
+    "bot;Bot initialized!",
+    "travel;Bot Starting traveling to brecilien",
+    "bot;Pause toggled status: Paused"
+]

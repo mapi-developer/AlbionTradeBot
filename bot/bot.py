@@ -503,9 +503,8 @@ class Bot:
             self.logger.add_log("market", f"Order price cheking Error: {e}")
 
     def remove_orders(self):
-        self.sniffer.clear_market_buffer("request")
+        self.sniffer.clear_market_buffer()
         requests = len(self.sniffer.get_market_buffer("request"))
-        print(requests)
         self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Removing Orders"
@@ -516,17 +515,14 @@ class Bot:
         self.capture.set_foreground_window()
         self.market_manager.change_tab("my_orders_tab")
         change_keyboard_layout()
-        self.market_manager.remove_order(15)
+        self.market_manager.remove_order(5)
         self.market_manager.scroll()
         requests = len(self.sniffer.get_market_buffer("request"))
-        print(requests)
         while requests != 0:
             self._wait_if_paused()
-            self.market_manager.remove_order(15)
+            self.market_manager.remove_order(5)
             self.market_manager.scroll()
             requests = len(self.sniffer.get_market_buffer("request"))
-            print(requests)
-
         self.status = "Ready"
 
     def buy_items(self):
@@ -855,6 +851,7 @@ class Bot:
         self.logger.add_log("travel", f"Bot Starting traveling to {destination}")
         self.capture.set_foreground_window()
         change_keyboard_layout()
+        self.overlay.stop()
         self.travel_manager.travel_to(destination=destination)
 
     def check_login(self):

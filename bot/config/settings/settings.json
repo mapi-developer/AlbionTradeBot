@@ -61,6 +61,6 @@
             }
         ]
     },
-    "auth_token": null,
-    "user_id": null
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3OTEwMDQ4fQ.0-kpb2R5LHM3GF0M9DcSa_3dFS8UUDhOkGubfotNFzs",
+    "user_id": "1"
 }

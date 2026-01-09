@@ -509,7 +509,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="martlock", text="Martlock"),
                     ft.DropdownOption(key="thetford", text="Thetford"),
                     # ft.DropdownOption(key="caerleon", text="Caerleon"),
-                    # ft.DropdownOption(key="brecilien", text="Brecilien"),
+                    ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
                 on_change=lambda _: self.trigger_save(),
                 bgcolor=GuiStyle.Colors.DARK_BLUE,

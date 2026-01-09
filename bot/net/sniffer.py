@@ -112,13 +112,12 @@ class AlbionSniffer:
                 # Look for a 32-byte or 64-byte array here! 
                 # It will be the "ClientNonce" or "ClientKey"
                 pass
-
             elif msg_type == 2: # Server -> Client
                 response_op = params.get(253, op_code)
                 # print(f"\n[HANDSHAKE] >>> SERVER SENT TOKEN (Op: {response_op})")
                 # print(f"[HANDSHAKE] >>> Data: {params}")
                 pass
-
+            print(params)
             if msg_type == 4:
                 event_code = params.get(252)
                 if not event_code: event_code = op_code
@@ -131,6 +130,10 @@ class AlbionSniffer:
                     self.handle_new_character(params)
                 elif event_code == const.OP_EVENT_UPDATE_SILVER:
                     self.handle_silver_update(params)
+                elif event_code == const.OP_AUCTION_GET_OFFERS:
+                    print("offer")
+                elif event_code == const.OP_AUCTION_GET_REQUESTS:
+                    print("request")
             elif msg_type == 2:
                 # Fallback: If 252 is missing, use the Header OpCode
                 event_code = params.get(252)
@@ -176,7 +179,7 @@ class AlbionSniffer:
                 self.characters[user_id] = equipment
             else:
                 self.equipment = equipment
-                print(self.equipment)
+                #print(self.equipment)
 
 
     def handle_new_item(self, params: dict):
