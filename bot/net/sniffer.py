@@ -97,6 +97,9 @@ class AlbionSniffer:
 
             # Handle Event Data (Type 4)
             if msg.type == MessageType.EventData:
+                event_code = params.get(252)
+                if not event_code: event_code = op_code
+                
                 if event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
                     self.handle_equipment_changed(params)
                 elif event_code == const.EVENT_NEW_ITEM:
@@ -156,6 +159,7 @@ class AlbionSniffer:
 
     def handle_new_item(self, params: dict):
         try:
+            print("new Item")
             local_item_id = params.get(0)
             item_index = params.get(1)
             if local_item_id is not None and item_index is not None:
@@ -180,6 +184,7 @@ class AlbionSniffer:
                 silver_val = int(silver)
                 with self.lock:
                     self.current_silver = int(f"{silver_val/10000:.0f}")
+                    print(self.current_silver)
             except: pass
 
     def handle_read_mail(self, params: dict):

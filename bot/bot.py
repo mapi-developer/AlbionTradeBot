@@ -383,6 +383,7 @@ class Bot:
                 self.overlay.start()
                 self.market_manager.sleep(2)
                 self.market_manager.change_tab("sell")
+                print(self.sniffer.inventory)
                 market_title = self.market_manager.get_market_title()
                 self.current_location = market_title
                 self.logger.add_log(

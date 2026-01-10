@@ -19,10 +19,10 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "20",
+        "min_profit_rate": "5",
         "default_buy_amount": "20",
         "presets": {
-            "caerleon": "Fort Sterling Main.json",
+            "caerleon": "caerleon.json",
             "martlock": "Fort Sterling Main.json",
             "lymhurst": "Fort Sterling Main.json",
             "fort_sterling": "Fort Sterling Main.json",
@@ -61,6 +61,6 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY3OTcwOTU2fQ.wIdqWTGGHtP1H4jijQssrtwktAzJh-BgyiZN3npPC5E",
-    "user_id": "1"
+    "auth_token": null,
+    "user_id": null
 }
