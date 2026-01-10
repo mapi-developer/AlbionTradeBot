@@ -438,6 +438,7 @@ class Bot:
 
     def check_price_order(self):
         self.status = "Running"
+        self.overlay.start()
         self.capture.set_foreground_window()
         self.current_task_name = f"Cheking Price: 0/X"
         self.check_login()
@@ -502,7 +503,188 @@ class Bot:
         except Exception as e:
             self.logger.add_log("market", f"Order price cheking Error: {e}")
 
-    def remove_orders(self):
+    def update_orders(self):
+        def filter_bought_items(orders_list, items_to_buy):
+            existing_order_ids = {order.get('ItemTypeId') for order in orders_list}
+
+            remaining_items = [item for item in items_to_buy if item not in existing_order_ids]
+
+            return remaining_items
+
+        try:
+            self.status = "Running"
+            self.capture.set_foreground_window()
+            self.overlay.start()
+            market_title = self.market_manager.get_market_title()
+            self.current_task_name = "Orders Update"
+            self.logger.add_log("market", f"Bot Starting to update existing orders for {market_title}")
+            items_to_buy_list = self.load_preset_items(market_title)
+            items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
+            items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
+            self.min_silver = self.settings.get("general")["min_silver"]
+            self.sequence_settings = self.settings.get(f"order_buy")
+            
+            if not items_to_buy_list:
+                print("No items to buy. Please select a preset in Settings")
+                self.logger.add_log(
+                    "market", f"No itmes to buy. Please select a preset in Settings"
+                )
+                return
+            self.market_manager.prepare_for_order_update()
+            self.sniffer.clear_market_buffer()
+            self.market_manager.sleep(.3)
+            self.market_manager.reset_my_orders()
+            orders_exists = []
+            temp_orders_exists = self.sniffer.get_market_buffer("request")
+            while len(temp_orders_exists) != 0:
+                orders_exists.extend(temp_orders_exists)
+                self.market_manager.next_my_orders_page()
+                self.market_manager.sleep(.3)
+                temp_orders_exists = self.sniffer.get_market_buffer("request")
+                self.market_manager.sleep(.2)
+            self.market_manager.prepare_for_order_update()
+            my_character = orders_exists[0].get("BuyerName")
+            for i, exist_order in enumerate(orders_exists):
+                item_unique_name = exist_order.get("ItemTypeId")
+                self._wait_if_paused()
+                self.sniffer.clear_market_buffer()
+                if not self.paused:
+                    self.current_task_name = (
+                        f"Updating Orders: {i+1}/{len(orders_exists)}"
+                    )
+                    self.update_overlay()
+
+                self.market_manager.search_item(item_unique_name, from_db=True, black_market=False)
+                self.market_manager.open_item(isEditOrder=True)
+                self.market_manager.sleep(0.5)
+
+                black_market_price = 0
+                black_market_price_fast = 0
+                if item_unique_name in items_prices_fast.keys():
+                    black_market_price_fast = items_prices_fast[item_unique_name] / 10000
+                black_market_price_order = 0
+                if item_unique_name in items_prices_order.keys():
+                    black_market_price_order = items_prices_order[item_unique_name] / 10000
+
+                if black_market_price_fast == 0 and black_market_price_order == 0:
+                    print(f"No black market data for {item_unique_name}")
+                    self.logger.add_log(
+                        "orders", f"No black market data for {item_unique_name}"
+                    )
+                    self.market_manager.close_item()
+                    continue
+                else:
+                    if black_market_price_order > black_market_price_fast:
+                        black_market_price = black_market_price_order
+                    else:
+                        black_market_price = black_market_price_fast
+
+                current_offer, current_requests = self.sniffer.get_market_buffer()
+                self.update_market_prices(market_title, current_offer, current_requests)
+                if len(current_requests) != 0:
+                    lowest_price = float("inf")
+                    order_price = 1
+                    current_amount = 0
+                    current_buyer = ""
+                    if len(current_requests) != 0:
+                        for order in current_requests:
+                            if order.get("AuctionType") == "request" and order.get("ItemTypeId") == item_unique_name:
+                                if order.get("BuyerName") == my_character:
+                                    current_amount = int(order.get("Amount"))
+                                price = order.get("UnitPriceSilver", 0) / 10000
+                                if price > order_price and price > 0:
+                                    order_price = price
+                                    current_buyer = order.get("BuyerName", "")
+                    
+                    lowest_price = order_price
+                    print(item_unique_name, lowest_price, current_buyer)
+                    if current_buyer == my_character:
+                        self.market_manager.close_item()
+                        continue
+
+                    profit = black_market_price * 0.96 - lowest_price
+                    profit_margin = (profit / lowest_price) if lowest_price > 0 else profit
+                    min_profit_rate = (
+                        float(self.sequence_settings["min_profit_rate"]) / 100 or 0.0
+                    )
+                    if profit_margin >= min_profit_rate:
+                        buy_logic_rules = [
+                            i
+                            for i in self.sequence_settings.get("buy_logic", [])
+                            if i["amount_to_buy"] != "" and i["price_larger_then"] != ""
+                        ]
+                        rules_sorted = sorted(
+                            buy_logic_rules,
+                            key=lambda x: int(x.get("price_larger_then", 0)),
+                            reverse=False,
+                        )
+
+                        quantity_to_buy = int(
+                            self.sequence_settings.get("default_buy_amount", 0)
+                        )
+
+                        for rule in rules_sorted:
+                            price_threshold = int(rule.get("price_larger_then"))
+                            if int(lowest_price) > price_threshold:
+                                quantity_to_buy = int(rule.get("amount_to_buy"))
+
+                        if quantity_to_buy > 0:
+                            print(
+                                f"Profitable Order for {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Qty: {quantity_to_buy}"
+                            )
+                            self.logger.add_log(
+                                "orders",
+                                f"Placing Order {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Qty: {quantity_to_buy} | Silver: {self.sniffer.current_silver}",
+                            )
+                            # Create Buy Order (fast_buy=False means +1 silver logic usually, or explicit price)
+                            print(quantity_to_buy, current_amount)
+                            self.market_manager.buy_item(
+                                amount=(quantity_to_buy-current_amount+1),
+                                fast_buy=True,
+                                fast_buy_price=int(lowest_price+1)
+                            )
+                            self.add_recent_item(
+                                self.market_manager.get_name_from_unique(item_unique_name),
+                                f"{int(lowest_price+1)} x{quantity_to_buy}",
+                                "order",
+                            )
+                        else:
+                            print(f"Item {item_unique_name} profitable but quantity filtered by logic.")
+                            self.market_manager.close_item()
+                    else:
+                        self.market_manager.close_item()
+                        self.market_manager.remove_order(1)
+
+                    if (
+                        self.sniffer.current_silver != 0
+                        and int(self.min_silver) >= self.sniffer.current_silver
+                    ):
+                        print("[Warning] Silver amount is less than minimum to continue")
+                        self.logger.add_log(
+                            "orders",
+                            "[Warning] Silver amount is less than minimum to continue",
+                        )
+                        break
+            
+            if (
+                self.sniffer.current_silver != 0
+                and int(self.min_silver) >= self.sniffer.current_silver
+            ):
+                print("[Warning] Silver amount is less than minimum to continue")
+                self.logger.add_log(
+                    "orders",
+                    "[Warning] Silver amount is less than minimum to continue",
+                )
+                return
+
+            final_buy_list = filter_bought_items(orders_exists, items_to_buy_list)
+            
+            self.buy_items(final_buy_list)
+        except Exception as e:
+            self.logger.add_log("market", f"Error while updating orders: {e}")
+            print(e)
+
+    def remove_orders(self): 
         self.sniffer.clear_market_buffer()
         requests = len(self.sniffer.get_market_buffer("request"))
         self.recent_items = []
@@ -525,7 +707,7 @@ class Bot:
             requests = len(self.sniffer.get_market_buffer("request"))
         self.status = "Ready"
 
-    def buy_items(self):
+    def buy_items(self, items_to_buy_list: list = None):
         self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Buying Items"
@@ -534,7 +716,8 @@ class Bot:
         market_title = self.market_manager.get_market_title()
         self.current_location = market_title
         is_fast_buy = buy_mode == "fast"
-        items_to_buy_list = self.load_preset_items(market_title)
+        if items_to_buy_list == None:
+            items_to_buy_list = self.load_preset_items(market_title)
         items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
         items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
         self.min_silver = self.settings.get("general")["min_silver"]
@@ -556,20 +739,18 @@ class Bot:
         try:
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
             change_keyboard_layout()
-            print(items_to_buy_list)
             for i, item_unique_name in enumerate(items_to_buy_list):
                 self._wait_if_paused()
-                self.sniffer.offer_market_buffer.clear()
-                self.sniffer.request_market_buffer.clear()
-                self.market_manager.search_item(item_unique_name, from_db=True, black_market=False)
-                self.market_manager.open_item()
-                self.market_manager.sleep(0.5)
-
                 if not self.paused:
                     self.current_task_name = (
                         f"Buy Items: {i+1}/{len(items_to_buy_list)}"
                     )
                     self.update_overlay()
+
+                self.sniffer.clear_market_buffer()
+                self.market_manager.search_item(item_unique_name, from_db=True, black_market=False)
+                self.market_manager.open_item()
+                self.market_manager.sleep(0.5)
 
                 current_offers, current_requests = self.sniffer.get_market_buffer()
                 
@@ -825,7 +1006,7 @@ class Bot:
                 
                 if fast_sale_price == 0:
                     self.market_manager.make_sell_order()
-                elif (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.97:
+                elif (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.85:
                     self.market_manager.fast_sale_item()
                 else:
                     self.market_manager.make_sell_order()

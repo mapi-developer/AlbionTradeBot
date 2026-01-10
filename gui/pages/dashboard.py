@@ -39,6 +39,12 @@ COMMAND_TYPES = {
         "color": GuiStyle.Colors.ACCENT_GREEN,
         "func": "buy_items",
     },
+    "update_orders": {
+        "label": "Update Orders",
+        "icon": ft.Icons.RECYCLING_OUTLINED,
+        "color": "#CBC50C",
+        "func": "update_orders",
+    },
     "remove_orders": {
         "label": "Remove orders",
         "icon": ft.Icons.CANCEL_ROUNDED,
@@ -443,6 +449,7 @@ class FunctionsAvaliablePanel(ft.Container):
         self.remove_orders_button = AddSequenceFunctionButton("remove_orders")
         self.wait_time_button = AddSequenceFunctionButton("wait_time")
         self.sell_items_button = AddSequenceFunctionButton("sell_items")
+        self.update_orders_button = AddSequenceFunctionButton("update_orders")
 
         self.buttons = {
             "travel_to": self.travel_to_button,
@@ -452,6 +459,7 @@ class FunctionsAvaliablePanel(ft.Container):
             "sell_items": self.sell_items_button,
             "remove_orders": self.remove_orders_button,
             "wait_time": self.wait_time_button,
+            "update_orders": self.update_orders_button,
         }
 
         self.content = ft.Column(
@@ -460,6 +468,7 @@ class FunctionsAvaliablePanel(ft.Container):
                 self.travel_to_button,
                 self.price_check_button,
                 self.buy_items_button,
+                self.update_orders_button,
                 self.sell_items_button,
                 self.remove_orders_button,
                 self.wait_time_button,

@@ -139,8 +139,11 @@ class MarketManager(InputSender):
         self.click(self.mouse_positions["tab_"+name])
         self.sleep(0.5)
 
-    def open_item(self) -> None:
-        self.click(self.mouse_positions["button_buy"])
+    def open_item(self, isEditOrder: bool = False) -> None:
+        if isEditOrder:
+            self.click(self.mouse_positions["button_edit_my_order"])
+        else:
+            self.click(self.mouse_positions["button_buy"])
         self.check_item_stats()
         self.sleep(0.5)
 
@@ -191,4 +194,21 @@ class MarketManager(InputSender):
         self.sleep(.1)
         self.click(self.mouse_positions["button_one_silver_less"])
         self.click(self.mouse_positions["button_create_order"])
+        self.sleep(.1)
+
+    def prepare_for_order_update(self):
+        self.change_tab("create_buy_order")
+        self.sleep(.2)
+        self.change_tab("my_orders_tab")
+        self.sleep(.2)
+        self.click(self.mouse_positions["category_reset"])
+        self.click(self.mouse_positions["search_reset"])
+        self.sleep(.3)
+
+    def reset_my_orders(self):
+        self.click(self.mouse_positions["button_reset_my_orders"])
+        self.sleep(.3)
+
+    def next_my_orders_page(self):
+        self.click(self.mouse_positions["button_next_my_ordes_page"])
         self.sleep(.1)

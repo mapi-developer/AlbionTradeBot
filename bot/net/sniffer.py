@@ -9,8 +9,9 @@ from scapy.all import get_if_list, get_if_addr, conf, sniff, UDP
 
 from . import constants as const
 from .layer import PhotonLayerDecoder
-from .decoder import PhotonDataDecoder
-
+# from .decoder import PhotonDataDecoder  <-- Removed, replaced by message.py
+from .fragment import FragmentBuffer, ReliableFragment
+from .message import ReliableMessage, MessageType
 
 def get_default_interface():
     try:
@@ -18,22 +19,6 @@ def get_default_interface():
         s.connect(("8.8.8.8", 80))
         return [i for i in get_if_list() if get_if_addr(i) == s.getsockname()[0]][0]
     except: return conf.iface
-
-
-class FragmentBuffer:
-    def __init__(self):
-        self.buffers = {} 
-    def handle(self, payload):
-        if len(payload) < 20: return None
-        seq_id, frag_count, frag_num, total_len, offset = struct.unpack(">iiiii", payload[:20])
-        data = payload[20:]
-        if seq_id not in self.buffers: self.buffers[seq_id] = {"count": frag_count, "parts": {}}
-        self.buffers[seq_id]["parts"][frag_num] = data
-        if len(self.buffers[seq_id]["parts"]) == frag_count:
-            parts = self.buffers.pop(seq_id)["parts"]
-            return b"".join([parts[i] for i in range(frag_count)])
-        return None
-    
 
 class AlbionSniffer:
     def __init__(self):
@@ -65,7 +50,7 @@ class AlbionSniffer:
                 iface=iface,
                 prn=self.packet_callback,
                 store=0,
-                stop_filter=lambda x: not self.running # Optional: cleaner exit
+                stop_filter=lambda x: not self.running
             )
         except Exception as e:
             print(f"[Sniffer] Error: {e}")
@@ -82,8 +67,15 @@ class AlbionSniffer:
                 if cmd.type == const.COMMAND_SEND_RELIABLE:
                     self.process(cmd.payload)
                 elif cmd.type == const.COMMAND_SEND_FRAGMENT:
-                    msg = self.frag_buffer.handle(cmd.payload)
-                    if msg: self.process(msg)
+                    try:
+                        stream = io.BytesIO(cmd.payload)
+                        frag = ReliableFragment.unpack(stream)
+                        if frag:
+                            reassembled_msg = self.frag_buffer.offer(frag)
+                            if reassembled_msg:
+                                self.process(reassembled_msg)
+                    except Exception as e:
+                        print(f"[Sniffer] Fragment Error: {e}")
         except Exception as e:
             print(f"[Sniffer] >>> Packet Callback Exception: {e}")
 
@@ -93,36 +85,19 @@ class AlbionSniffer:
             except: return
 
         try:
-            if len(payload) < 3: return
-            msg_type, op_code = payload[1], payload[2]
-
-            if msg_type == 3:
-                offset = 6
-            elif msg_type in (2, 4):
-                offset = 3
-            else:
+            # Use ReliableMessage to unpack the header and parameters safely
+            stream = io.BytesIO(payload)
+            msg = ReliableMessage.unpack(stream)
+            if not msg:
                 return
 
-            stream = io.BytesIO(payload[offset:])
-            params = PhotonDataDecoder(stream).decode()
+            params = msg.parameters
+            op_code = msg.operation_code
+            event_code = msg.event_code
 
-            if msg_type == 3: # Client -> Server
-                # print(f"\n[HANDSHAKE] >>> CLIENT SENT KEYS (Op: {op_code})")
-                # print(f"[HANDSHAKE] >>> Data: {params}") 
-                # Look for a 32-byte or 64-byte array here! 
-                # It will be the "ClientNonce" or "ClientKey"
-                pass
-            elif msg_type == 2: # Server -> Client
-                response_op = params.get(253, op_code)
-                # print(f"\n[HANDSHAKE] >>> SERVER SENT TOKEN (Op: {response_op})")
-                # print(f"[HANDSHAKE] >>> Data: {params}")
-                pass
-            print(params)
-            if msg_type == 4:
-                event_code = params.get(252)
-                if not event_code: event_code = op_code
-
-                elif event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
+            # Handle Event Data (Type 4)
+            if msg.type == MessageType.EventData:
+                if event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
                     self.handle_equipment_changed(params)
                 elif event_code == const.EVENT_NEW_ITEM:
                     self.handle_new_item(params)
@@ -130,37 +105,41 @@ class AlbionSniffer:
                     self.handle_new_character(params)
                 elif event_code == const.OP_EVENT_UPDATE_SILVER:
                     self.handle_silver_update(params)
-                elif event_code == const.OP_AUCTION_GET_OFFERS:
-                    print("offer")
-                elif event_code == const.OP_AUCTION_GET_REQUESTS:
-                    print("request")
-            elif msg_type == 2:
-                # Fallback: If 252 is missing, use the Header OpCode
-                event_code = params.get(252)
-                if not event_code: 
-                    event_code = op_code 
-
-                # OpCode 2 = Join Request Response
-                if event_code == 2:
+                
+                # Check 252 for sub-event if main event_code is generic
+                sub_code = params.get(252)
+                if sub_code == 2: # Join Response often hides here in events
                     self.handle_join_response(params)
-            elif op_code == const.OP_GET_MAIL_INFOS and 1 in params:
-                self.handle_read_mail(params)
 
+            # Handle Operation Response (Type 2, 3, 7)
+            # Note: Albion often sends Join Response as OpCode 2
+            elif msg.type in (MessageType.OperationRequest, MessageType.OperationResponse, MessageType.OtherOperationResponse):
+                
+                # Fallback for Join Response logic
+                if op_code == 2: # Join Request Response
+                     self.handle_join_response(params)
+                
+                # Mail Infos
+                elif op_code == const.OP_GET_MAIL_INFOS and 1 in params:
+                    self.handle_read_mail(params)
+
+            # Always scan parameters for Market Data (it can be in OpResponse or Events)
             self.scan_for_market_data(params)
+
         except Exception as e:
-            print(f"[Sniffer] >>> Processing Exception: {e}")
+            pass
+            #print(f"[Sniffer] >>> Processing Exception: {e}")
+
+    # --- Handlers remain largely the same ---
 
     def handle_join_response(self, params: dict):
         try:
-            print("join response")
-            # --- FIX: CALL RESET SESSION HERE ---
-            self.reset_session() 
-            # ------------------------------------
-
-            if 0 in params:
+            # Check if this really looks like a join response
+            if 0 in params and 2 in params: # ID and Name
+                print("join response")
+                self.reset_session() 
                 self.local_player_id = params[0]
                 print(f"[Sniffer] >>> Join Complete! Local Player ID: {self.local_player_id}")
-            if 2 in params:
                 self.character_name = params[2]
                 print(f"[Sniffer] >>> Character Name: {self.character_name}")
         except Exception as e:
@@ -169,22 +148,14 @@ class AlbionSniffer:
     def handle_equipment_changed(self,  params: dict):
         user_id = params.get(0)
         equipment = params.get(2)
-
         if equipment and isinstance(equipment, list):
-            equipment_names = [x if x > 0 else None for x in equipment]
-            # print(f"[Sniffer] >>> User {user_id} equipment changed:")
-            # print(f"[Sniffer] >>> Equipment: {equipment_names}")
-            
             if user_id in self.characters.keys():
                 self.characters[user_id] = equipment
             else:
                 self.equipment = equipment
-                #print(self.equipment)
-
 
     def handle_new_item(self, params: dict):
         try:
-            # print(params)
             local_item_id = params.get(0)
             item_index = params.get(1)
             if local_item_id is not None and item_index is not None:
@@ -197,12 +168,9 @@ class AlbionSniffer:
     def handle_new_character(self, params: dict):
         character_name = params.get(1)
         character_id = params.get(0)
-
         if character_name and isinstance(character_name, str):
-            # print(f"[Sniffer] >>> New Player/Mob: {character_name}")
             equipment = params.get(40)
             if equipment and isinstance(equipment, list):
-                # print(f"[Sniffer] >>> Equipment: {equipment}")
                 self.characters[character_id] = {"name": character_name, "equipment": equipment}
 
     def handle_silver_update(self, params: dict):
@@ -219,8 +187,13 @@ class AlbionSniffer:
         content_raw = params.get(1)
         if mail_id and content_raw:
             try:
-                if isinstance(content_raw, list): content_raw = bytes(content_raw)
-                content_str = content_raw.decode('utf-8', errors='ignore').replace('\x00', '')
+                # If content_raw is already a string (decoded by Message), use it
+                if isinstance(content_raw, str):
+                    content_str = content_raw
+                else:
+                    if isinstance(content_raw, list): content_raw = bytes(content_raw)
+                    content_str = content_raw.decode('utf-8', errors='ignore').replace('\x00', '')
+                
                 if '|' in content_str:
                     self.parse_smart_mail(mail_id, content_str)
             except: pass
@@ -229,7 +202,6 @@ class AlbionSniffer:
         parts = content.split('|')
         if len(parts) < 4: return
         data = {'mail_id': mail_id, 'timestamp': datetime.now(timezone.utc)}
-        
         try:
             if len(parts[1]) > 2 and parts[0].replace('.', '').isdigit():
                 data.update({
@@ -261,6 +233,7 @@ class AlbionSniffer:
         elif isinstance(params, list):
             for item in params: self.scan_for_market_data(item)
         elif isinstance(params, str):
+            # Market data often comes as a JSON string inside the message
             if params.startswith('{') or params.startswith('['):
                 try: self.scan_for_market_data(json.loads(params))
                 except: pass
@@ -274,39 +247,28 @@ class AlbionSniffer:
                     self.request_market_buffer.append(params)
         except: pass
 
-    # PUBLIC FUNCTIONS
-
     def get_characters(self):
-        with self.lock:
-            return dict(self.characters)
+        with self.lock: return dict(self.characters)
 
     def get_equipment(self):
-        with self.lock:
-            return list(self.equipment)
+        with self.lock: return list(self.equipment)
 
     def get_inventory(self) -> dict:
-        with self.lock:
-            inventory_data = dict(self.inventory)
-            return inventory_data
+        with self.lock: return dict(self.inventory)
         
     def clear_inventory(self):
-        with self.lock:
-            self.inventory.clear()
+        self.inventory.clear()
 
-    def clear_market_buffer(self, type: str = None):
-        with self.lock:
-            if type == "offer" or None:
-                self.offer_market_buffer.clear()
-            if type == "request" or None:
-                self.request_market_buffer.clear()
-                
+    def clear_market_buffer(self):
+        self.offer_market_buffer.clear()
+        self.request_market_buffer.clear()
+
     def get_market_buffer(self, type: str = None):
         with self.lock:
             offer_data = list(self.offer_market_buffer)
             request_data = list(self.request_market_buffer)
             self.offer_market_buffer.clear()
             self.request_market_buffer.clear()
-            
         if type == "offer": return offer_data
         elif type == "request": return request_data
         return offer_data, request_data
@@ -318,21 +280,14 @@ class AlbionSniffer:
             return data
         
     def reset_session(self):
-        """
-        Clears all session-specific data AND resets network decoders.
-        """
         with self.lock:
-            # 1. Clear Data Buffers
             self.inventory.clear()
             self.characters.clear()
             self.equipment = {}
             self.offer_market_buffer.clear()
             self.request_market_buffer.clear()
             self.mail_buffer.clear()
-
             self.frag_buffer.buffers.clear()
-
             self.frag_buffer = FragmentBuffer()
             self.layer_decoder = PhotonLayerDecoder()
-            
-        print("[Sniffer] >>> Session & Network State Reset (Ready for New Account)")
+        #print("[Sniffer] >>> Session & Network State Reset (Ready for New Account)")

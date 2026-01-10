@@ -65,7 +65,11 @@
             "button_opened_enchantment_1": [762, 665],
             "button_opened_enchantment_2": [762, 708],
             "button_opened_enchantment_3": [762, 748],
-            "button_opened_enchantment_4": [762, 786]
+            "button_opened_enchantment_4": [762, 786],
+            "button_reset_my_orders": [1806, 480],
+            "button_next_my_ordes_page": [1320, 865],
+            "button_edit_my_order": [1635, 611],
+            "button_my_orders_item_sort": [820, 532]
         },
         "travel": {
             "guild_island_to_travaler": [1092, 450],
@@ -175,7 +179,11 @@
             "button_email": [1183, 622],
             "button_enter_world": [1540, 1230],
             "button_password": [1183, 674],
-            "button_remove_order": [1755, 537]
+            "button_remove_order": [1755, 537],
+            "button_reset_my_orders": [1750, 436],
+            "button_next_my_ordes_page": [1317, 780],
+            "button_edit_my_order": [1598, 549],
+            "button_my_orders_item_sort": [859, 480]
         },
         "travel": {
             "guild_island_to_travaler": [1111, 405],
