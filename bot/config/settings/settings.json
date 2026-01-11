@@ -61,6 +61,7 @@
             }
         ]
     },
-    "auth_token": null,
-    "user_id": null
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4MDgzMjQxfQ.y4aqov0rWqTdcez2Hls09pNeCk6n2R-ZWzK_xV-iUSo",
+    "user_id": "1",
+    "home_island": "Matvey4a guild fort sterling"
 }

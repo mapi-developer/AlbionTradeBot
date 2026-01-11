@@ -28,6 +28,7 @@ def change_keyboard_layout(language_id_hex=0x04090409):
         win32api.PostMessage(
             hwnd, win32con.WM_INPUTLANGCHANGEREQUEST, 0, language_id_hex
         )
+        time.sleep(.3)
         print(f"Request sent to switch layout to: {hex(language_id_hex)}")
     else:
         print("No active window found.")
@@ -43,6 +44,7 @@ class Bot:
         chest_manager: ChestManager = None,
         logger: Logger = None,
         sniffer: AlbionSniffer = None,
+        island_name = None,
         overlay=None,
     ):
 
@@ -58,7 +60,7 @@ class Bot:
                 )
                 GLOBAL_SNIFFER_THREAD.start()
 
-            self.sniffer = GLOBAL_SNIFFER
+        self.sniffer = GLOBAL_SNIFFER
 
         self.settings = SettingsManager()
         self.status = "Initializing"
@@ -70,7 +72,7 @@ class Bot:
             market_manager = MarketManager(capture=capture, settings=self.settings)
         if travel_manager == None:
             travel_manager = TravelManager(
-                self, capture=capture, settings=self.settings
+                self, capture=capture, settings=self.settings, island_name=island_name
             )
         if login_manager == None:
             login_manager = LoginManager(

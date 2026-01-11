@@ -257,7 +257,7 @@ class SettingsManager:
         return self.settings.get(key, self.DEFAULT_SETTINGS.get(key))
 
     def set(self, key, value):
-        print("save settings")
+        #print("save settings")
         self.settings[key] = value
         self.save_settings(self.settings)
 

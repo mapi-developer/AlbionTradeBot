@@ -517,7 +517,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="bridgewatch", text="Bridgewatch"),
                     ft.DropdownOption(key="martlock", text="Martlock"),
                     ft.DropdownOption(key="thetford", text="Thetford"),
-                    # ft.DropdownOption(key="caerleon", text="Caerleon"),
+                    ft.DropdownOption(key="caerleon", text="Caerleon"),
                     ft.DropdownOption(key="brecilien", text="Brecilien"),
                 ],
                 on_change=lambda _: self.trigger_save(),
@@ -785,13 +785,17 @@ class ExecutionSequencePanel(ft.Container):
             offset=ft.Offset(0, 0.1),
             color=GuiStyle.Colors.TEXT_PRIMARY,
         )
+        def on_home_island_changed(event):
+            self.dashboard.config.set("home_island", event.data)
         self.home_island = ft.TextField(
             label="End Island Name",
+            value=self.dashboard.config.get("home_island"),
             text_size=12,
             col=4,
             prefix_icon=ft.Icons.MAP_OUTLINED,
             bgcolor=GuiStyle.Colors.DARK_BLUE,
             color=GuiStyle.Colors.TEXT_PRIMARY,
+            on_change=on_home_island_changed
         )
 
         self.wait_before_loop = ft.TextField(
@@ -906,7 +910,7 @@ class ExecutionSequencePanel(ft.Container):
         if self.run_button.data == "run":
             if self.dashboard.bot != None:
                 self.dashboard.bot.destroy()
-            self.dashboard.bot = Bot(logger=self.dashboard.logger)
+            self.dashboard.bot = Bot(logger=self.dashboard.logger, island_name=self.home_island)
             self.dashboard.app.bot = self.dashboard.bot
             self.run_button.content = ft.Row(
                 [
@@ -1514,7 +1518,7 @@ class Dashboard(ft.Container):
         if not self.bot_sequence:
             return
         if self.app.bot == None:
-            self.bot = Bot(logger=self.logger)
+            self.bot = Bot(logger=self.logger, island_name=self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island)
             self.app.bot = self.bot
         if self.app.overlay == None:
             self.app.overlay = BotOverlay()

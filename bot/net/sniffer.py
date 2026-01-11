@@ -6,12 +6,14 @@ import threading
 import json
 from datetime import datetime, timezone
 from scapy.all import get_if_list, get_if_addr, conf, sniff, UDP
+import math
 
 from . import constants as const
 from .layer import PhotonLayerDecoder
 # from .decoder import PhotonDataDecoder  <-- Removed, replaced by message.py
 from .fragment import FragmentBuffer, ReliableFragment
 from .message import ReliableMessage, MessageType
+from .graph import WaypointGraph
 
 def get_default_interface():
     try:
@@ -27,6 +29,8 @@ class AlbionSniffer:
         self.running = False
         self.lock = threading.Lock()
 
+        self.graph = WaypointGraph()
+        self.node_counter = 0
         self.local_player_id = ""
         self.character_name = ""
 
@@ -34,6 +38,10 @@ class AlbionSniffer:
         self.characters = {}
         self.inventory = {}
         self.equipment = {}
+
+        self.current_position = None
+        self.current_speed = 0.0
+        self.last_recorded_pos = None
 
         self.offer_market_buffer = []
         self.request_market_buffer = []
@@ -57,6 +65,9 @@ class AlbionSniffer:
 
     def stop(self):
         self.running = False
+
+    def get_current_position(self):
+        return list(self.current_position)
 
     def packet_callback(self, packet):
         if not self.running: return
@@ -95,9 +106,23 @@ class AlbionSniffer:
             op_code = msg.operation_code
             event_code = msg.event_code
 
-            # Handle Event Data (Type 4)
-            if msg.type == MessageType.EventData:
+            if 253 in params:
+                op_code = params[253]
+                if op_code == 21:
+                    current_pos = params.get(1) # List [x, y]
+                    angle = params.get(2)
+                    speed = params.get(4)       # Float
+                    
+                    if current_pos != None:
+                        self.current_position = current_pos
+                        #print(f"POS: {self.current_position}", flush=True, end="           \r")
+                        #self.record_path()
+            elif msg.type == MessageType.EventData:
                 event_code = params.get(252)
+                filter = []
+                if event_code not in filter:
+                    pass
+                    #print(params)
                 if not event_code: event_code = op_code
                 
                 if event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
@@ -108,6 +133,9 @@ class AlbionSniffer:
                     self.handle_new_character(params)
                 elif event_code == const.OP_EVENT_UPDATE_SILVER:
                     self.handle_silver_update(params)
+                elif event_code == const.EVENT_RESOURCE:
+                    #print(params)
+                    pass
                 
                 # Check 252 for sub-event if main event_code is generic
                 sub_code = params.get(252)
@@ -134,6 +162,25 @@ class AlbionSniffer:
             #print(f"[Sniffer] >>> Processing Exception: {e}")
 
     # --- Handlers remain largely the same ---
+
+    def record_path(self):
+        # This simulates data coming from your Sniffer process() method
+        current_pos = self.current_position # You need to implement this getter
+        
+        if self.last_recorded_pos is None:
+            self.graph.add_node(self.node_counter, current_pos)
+            self.last_recorded_pos = current_pos
+            self.node_counter += 1
+            print("node added")
+        else:
+            dist = math.dist(current_pos, self.last_recorded_pos)
+            if dist > 3.0: # Only add a node every 3 meters
+                self.graph.add_node(self.node_counter, current_pos)
+                # Connect to previous node
+                self.graph.add_connection(self.node_counter - 1, self.node_counter)
+                self.last_recorded_pos = current_pos
+                self.node_counter += 1
+                print(f"Recorded Node {self.node_counter}: {current_pos}")
 
     def handle_join_response(self, params: dict):
         try:

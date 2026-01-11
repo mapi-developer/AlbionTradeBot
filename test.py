@@ -1,24 +1,23 @@
-from bot import AlbionSniffer
+from bot import Bot
 import threading
 import time
-
+run = True
 def wait_for_user_input():
+    global run
     try:
         while True:
             time.sleep(.5)
     except KeyboardInterrupt:
+        run = False
         return
 
 if __name__ == "__main__":
-    sniffer = AlbionSniffer()
-    sniffer_thread = threading.Thread(target=sniffer.start, daemon=True)
-    sniffer_thread.start()
+    bot = Bot()
+    time.sleep(3)
+    while run:
+        time.sleep(.5)
+        bot.travel_manager.move_step([221, -207])
     
     wait_for_user_input()
-    offers, requests = sniffer.get_market_buffer()
-    #print(requests)
-    print(len(offers), len(requests))
-    
-    print("Stopping sniffer...")
-    sniffer.stop()
+    bot.destroy()
     print("Done.")
