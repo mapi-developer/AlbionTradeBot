@@ -22,3 +22,7 @@ Game Settings for best bot work:
 Borderless full screen
 Hud Scale: 100%
 Window Scale: 80%
+
+[183.573, 50.3521]
+[1149, 295]
+[182.2964, 58.8325]

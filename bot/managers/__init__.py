@@ -4,5 +4,6 @@ from .travel import TravelManager
 from .login import LoginManager
 from .logs import Logger
 from .chest import ChestManager
+from.keyboard_travel_manager import KeyboardTravelManager
 
-__all__ = ["MarketManager", "TravelManager", "SettingsManager", "LoginManager", "Logger", "ChestManager"]
+__all__ = ["MarketManager", "TravelManager", "SettingsManager", "LoginManager", "Logger", "ChestManager", "KeyboardTravelManager"]

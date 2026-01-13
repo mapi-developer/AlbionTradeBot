@@ -29,8 +29,11 @@ class TravelManager(InputSender):
         """
         # 1. Get Screen Center
         # Use configured center or default to 1920x1080 center
-        center_pos = self.mouse_positions.get("character_middle", [1280, 700])
-        center_x, center_y = center_pos[0], center_pos[1]
+        #center_pos = self.settings.SCREEN_CENTER[self.capture.get_window_resolution()]
+        res = self.capture.get_window_resolution() # e.g. (1920, 1080)
+        if res:
+            width, height = res.split("x")
+        center_x, center_y = [int(int(width) * 0.5), int(int(height) * 0.44)]
 
         # 2. Calculate World Deltas
         world_dx = target_pos[0] - current_pos[0]
@@ -39,8 +42,9 @@ class TravelManager(InputSender):
         # 3. Apply Isometric Projection
         # Screen X = Sum of World Axes (Rotated 45 deg)
         # Screen Y = Difference of World Axes (Rotated 45 deg)
+        # 0.8 pr 0.722
         screen_dx = (world_dx + world_dy)
-        screen_dy = (world_dx - world_dy) * 0.9 # sin(45) squash factor
+        screen_dy = (world_dx - world_dy) * 0.75 # sin(45) squash factor
 
         # 4. Normalize to Click Radius
         # We essentially create a unit vector for the screen direction, 

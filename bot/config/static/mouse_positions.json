@@ -342,7 +342,8 @@
             "button_login": [1075, 792],
             "button_enter_world": [1177, 1025],
             "button_try_again_ok": [953, 601]
-        }
+        },
+        "chest" : {}
     },
     "1920x1080": {
         "market": {
@@ -434,6 +435,7 @@
             "button_login": [1075, 712],
             "button_enter_world": [1177, 922],
             "button_try_again_ok": [953, 540]
-        }
+        },
+        "chest": {}
     }
 }

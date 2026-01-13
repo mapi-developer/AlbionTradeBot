@@ -19,7 +19,14 @@ class SettingsManager:
     ITEM_DATA = load_json_config('items.json')
     CAPTURE_POSITIONS = load_json_config('capture_positions.json')
     ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
-    
+
+    SCREEN_CENTER = {
+        "2560x1600": [1280, 700],
+        "2560x1440": [1280, 620],
+        "1920x1200": [960, 540],
+        "1920x1080": [960, 480],
+    }
+
     ORDER_PRICE_CHECK_ACCOUNTS = [
         {"email": "matvey4a.alt.1@gmail.com", "password": "matvey4a_alt"},
     ]

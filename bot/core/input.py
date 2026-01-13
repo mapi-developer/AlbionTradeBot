@@ -48,3 +48,13 @@ class InputSender():
 
     def scroll(self, clicks: int = 15) -> None:
         pyautogui.scroll(clicks)
+
+    def key_down(self, key: str) -> None:
+        """Holds a key down."""
+        # print(f"[Input] Key Down: {key}")
+        pyautogui.keyDown(key)
+
+    def key_up(self, key: str) -> None:
+        """Releases a key."""
+        # print(f"[Input] Key Up: {key}")
+        pyautogui.keyUp(key)
