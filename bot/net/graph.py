@@ -6,7 +6,13 @@ class WaypointGraph:
         # Format: {node_id: (x, y)}
         self.nodes = {} 
         # Format: {node_id: [neighbor_id1, neighbor_id2, ...]}
-        self.edges = {} 
+        self.edges = {}
+
+    def from_dict(self, graph_dict: dict):
+        self.nodes = graph_dict.get("nodes")
+        self.edges = graph_dict.get("edges")
+
+        return self
 
     def add_node(self, node_id, position):
         self.nodes[node_id] = tuple(position)
@@ -34,7 +40,6 @@ class WaypointGraph:
 
     def find_path(self, start_id, end_id):
         """A* Pathfinding to get list of coordinates."""
-        # Priority Queue: (cost, current_node_id)
         queue = [(0, start_id)]
         came_from = {start_id: None}
         cost_so_far = {start_id: 0}

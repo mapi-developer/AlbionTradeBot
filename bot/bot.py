@@ -1009,7 +1009,7 @@ class Bot:
                 
                 if fast_sale_price == 0:
                     self.market_manager.make_sell_order()
-                elif (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.85:
+                elif (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.95:
                     self.market_manager.fast_sale_item()
                 else:
                     self.market_manager.make_sell_order()

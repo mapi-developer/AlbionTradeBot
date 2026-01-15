@@ -1,0 +1,67 @@
+{
+    "general": {
+        "buy_mode": "order",
+        "game_language": "EN-US",
+        "min_silver": "10000000"
+    },
+    "fast_buy": {
+        "min_profit_rate": "50",
+        "default_buy_amount": "10",
+        "presets": {
+            "caerleon": "Fast Buy Test.json",
+            "martlock": "Fast Buy Test.json",
+            "lymhurst": "Fast Buy Test.json",
+            "fort_sterling": "Fast Buy Test.json",
+            "bridgewatch": "Fast Buy Test.json",
+            "thetford": "Fast Buy Test.json",
+            "brecilien": "Fast Buy Test.json"
+        },
+        "buy_logic": []
+    },
+    "order_buy": {
+        "min_profit_rate": "5",
+        "default_buy_amount": "20",
+        "presets": {
+            "caerleon": "caerleon.json",
+            "martlock": "Fort Sterling Main.json",
+            "lymhurst": "Fort Sterling Main.json",
+            "fort_sterling": "Fort Sterling Main.json",
+            "bridgewatch": "Fort Sterling Main.json",
+            "thetford": "Fort Sterling Main.json",
+            "brecilien": "Fort Sterling Main.json"
+        },
+        "buy_logic": [
+            {
+                "amount_to_buy": "15",
+                "price_larger_then": "1000"
+            },
+            {
+                "amount_to_buy": "10",
+                "price_larger_then": "6000"
+            },
+            {
+                "amount_to_buy": "5",
+                "price_larger_then": "10000"
+            },
+            {
+                "amount_to_buy": "4",
+                "price_larger_then": "20000"
+            },
+            {
+                "amount_to_buy": "3",
+                "price_larger_then": "50000"
+            },
+            {
+                "amount_to_buy": "2",
+                "price_larger_then": "100000"
+            },
+            {
+                "amount_to_buy": "1",
+                "price_larger_then": "150000"
+            }
+        ]
+    },
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4MDgzMjQxfQ.y4aqov0rWqTdcez2Hls09pNeCk6n2R-ZWzK_xV-iUSo",
+    "user_id": "1",
+    "home_island": "Matvey4a guild fort sterling"
+}

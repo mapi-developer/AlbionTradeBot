@@ -115,7 +115,7 @@ class AlbionSniffer:
             
             op_code = 0
             event_code = 0
-
+            #print(params)
             # Determine Codes
             if isinstance(msg, OperationRequest):
                 op_code = msg.operation_code
@@ -125,10 +125,9 @@ class AlbionSniffer:
                 event_code = msg.event_code
 
             # --- Albion Logic ---
-           #print(params)
-            # 1. Multi-Move / Position Updates
             #print(params)
-            print(f"Position: {self.current_position}", flush=True, end = "              \r")
+            # 1. Multi-Move / Position Updates
+            #print(f"Position: {self.current_position}", flush=True, end = "              \r")
             if params.get(252) == const.EVENT_NEW_TRAVEL_POINT:
                 if "FASTTRAVEL_POINT" in params.get(3):
                     self.travel_planner_point = params.get(1)
@@ -149,7 +148,7 @@ class AlbionSniffer:
 
             # 2. Events
             elif msg.type == MessageType.EventDataType:
-                sub_code = params.get(252)
+                event_code = params.get(252)
                 
                 if event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
                     self.handle_equipment_changed(params)
@@ -159,8 +158,10 @@ class AlbionSniffer:
                     self.handle_new_character(params)
                 elif event_code == const.OP_EVENT_UPDATE_SILVER:
                     self.handle_silver_update(params)
+                elif event_code == 1:
+                    print(params)
                 
-                if sub_code == 2: # Join Response
+                if event_code == 2: # Join Response
                     self.handle_join_response(params)
 
             # 3. Operations
@@ -199,6 +200,7 @@ class AlbionSniffer:
                 self.characters[user_id] = equipment
             else:
                 self.equipment = equipment
+                print(self.equipment)
 
     def handle_new_item(self, params: dict):
         try:
@@ -214,6 +216,8 @@ class AlbionSniffer:
     def handle_new_character(self, params: dict):
         character_name = params.get(1)
         character_id = params.get(0)
+        print(f"NEW CHARACTER: {character_name}")
+        print(params)
         if character_name and isinstance(character_name, str):
             equipment = params.get(40)
             if equipment and isinstance(equipment, list):

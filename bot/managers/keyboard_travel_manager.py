@@ -1,12 +1,33 @@
 import math
 import time
+import sys, os
 from ..core import InputSender
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from bot.net import WaypointGraph
+
+test_graph_dict = {
+    "nodes": {
+        1: [225, -209],
+        2: [225, -199],
+        3: [225, -188]
+    },
+    "edges": {
+        1: [2],
+        2: [1, 3],
+        3: [2]
+    }
+}
+
 class KeyboardTravelManager:
+    current_location_graph: WaypointGraph
+    
     def __init__(self, bot):
         self.bot = bot
         self.input = InputSender()
         self.current_keys = []
+        self.current_location_graph = WaypointGraph().from_dict(test_graph_dict)
 
     def get_player_position(self):
         """Safely gets the current position from the sniffer."""
@@ -110,3 +131,10 @@ class KeyboardTravelManager:
         except KeyboardInterrupt:
             self.release_all_keys()
             raise
+
+    def travel_to_node(self, target_node_id: int):
+        closest_node_id = self.current_location_graph.get_closest_node(self.get_player_position())
+        print(closest_node_id)
+        path = self.current_location_graph.find_path(closest_node_id[0], target_node_id)
+        for waypoint in path:
+            self.move_to_position(waypoint)
