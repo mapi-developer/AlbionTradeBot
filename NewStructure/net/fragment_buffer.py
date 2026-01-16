@@ -13,7 +13,6 @@ class FragmentBufferEntry(BaseModel):
         return self.fragments_needed == len(self.fragments)
 
     def make(self) -> "BasePhotonCommand":
-        # Sort and join
         data = b"".join(
             i[1] for i in sorted(self.fragments.items(), key=lambda x: x[0])
         )

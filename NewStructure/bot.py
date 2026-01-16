@@ -12,9 +12,18 @@ class Bot:
         self.capture = WindowCapture("Albion Online Client")
         self.log_handler = LogHandler()
         self.login_handler = LoginHandler()
-        self.market_handler = MarketHandler()
-        self.travel_handler = TravelHandler(self, self.capture, self.settings)
-        self.chest_handler = ChestHandler()
+        self.market_handler = MarketHandler(self, self.capture, self.settings)
+        self.chest_handler = ChestHandler(self.capture, self.settings)
+
+        self.local_player = LocalPlayer()
+        self.sniffer.subscribe_silver(self.local_player.on_silver_changed)
+        self.sniffer.subscribe_position(self.local_player.on_position_changed)
+        self.sniffer.subscribe_nickname(self.local_player.on_nickname_changed)
+        self.sniffer.subscribe_location(self.local_player.on_location_changed)
+
+        self.travel_handler = TravelHandler(self, self.capture, self.settings, self.local_player)
+        self.sniffer.subscribe_location(self.travel_handler.on_location_changed)
+        self.sniffer.subscribe_join(self.travel_handler.on_join_finished)
 
         self._can_run = asyncio.Event()
         self._can_run.set()

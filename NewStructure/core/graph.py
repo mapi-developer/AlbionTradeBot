@@ -40,9 +40,13 @@ class WaypointGraph:
 
     def find_path(self, start_id, end_id):
         """A* Pathfinding to get list of coordinates."""
+        start_id = str(start_id)
+        end_id = str(end_id)
         queue = [(0, start_id)]
         came_from = {start_id: None}
         cost_so_far = {start_id: 0}
+
+        print(self.nodes, self.edges)
 
         while queue:
             _, current = heapq.heappop(queue)
@@ -51,6 +55,7 @@ class WaypointGraph:
                 break
 
             for next_node in self.edges.get(current, []):
+                next_node = str(next_node)
                 new_cost = cost_so_far[current] + math.dist(self.nodes[current], self.nodes[next_node])
                 
                 if next_node not in cost_so_far or new_cost < cost_so_far[next_node]:

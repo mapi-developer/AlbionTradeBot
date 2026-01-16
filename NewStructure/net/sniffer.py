@@ -1,4 +1,6 @@
+from typing import Callable
 from scapy.all import get_if_list, get_if_addr, conf, sniff, UDP, Packet
+import gzip
 import io
 import socket
 import threading
@@ -22,16 +24,47 @@ class Sniffer:
         self.lock = threading.Lock()
         self.frag_buffer = FragmentBuffer()
 
-        self.on_silver_changed = None
-        self.on_local_position_changed = None
-        self.on_location_changed = None
-        self.on_local_player_changed = None
-        self.on_equipment_changed = None
+        self.on_silver_changed = []
+        self.on_local_position_changed = []
+        self.on_location_changed = []
+        self.on_local_player_nickname_changed = []
+        self.on_equipment_changed = []
+        self.on_join_finished = []
 
         self.request_market_buffer = []
         self.offer_market_buffer = []
 
         self.running = False
+
+    def subscribe_silver(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_silver_changed:
+                self.on_silver_changed.append(callback)
+
+    def subscribe_position(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_local_position_changed:
+                self.on_local_position_changed.append(callback)
+
+    def subscribe_location(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_location_changed:
+                self.on_location_changed.append(callback)
+
+    def subscribe_nickname(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_local_player_nickname_changed:
+                self.on_local_player_nickname_changed.append(callback)
+
+    def subscribe_equipment(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_equipment_changed:
+                self.on_equipment_changed.append(callback)
+
+    def subscribe_join(self, callback: Callable):
+        with self.lock:
+            if callback not in self.on_join_finished:
+                self.on_join_finished.append(callback)
 
     def start(self):
         iface = get_default_interface()
@@ -73,4 +106,99 @@ class Sniffer:
             pass
 
     def process(self, payload):
-        pass
+        try: 
+            payload = gzip.decompress(payload)
+        except (OSError, EOFError):
+            pass
+
+        try:
+            stream = io.BytesIO(payload)
+            msg = ReliableMessage.unpack(stream)
+            if not msg: return
+
+            params = msg.decode()
+
+            if 253 in params:
+                request_code = params.get(253)
+                if request_code == const.OP_MOVE_REQUEST:
+                    self.handle_local_move(params)
+                elif request_code == const.OP_JOIN_FINISHED:
+                    # 8 current location, 9 previous location
+                    self.handle_local_player_info_changed(params)
+                elif request_code == const.OP_LOCATION_CHANGED:
+                    self.handle_location_changed(params)
+                else:
+                    return
+            elif 252 in params:
+                event_code = params.get(252)
+                if event_code == const.OP_AUCTION_GET_REQUESTS:
+                    self.handle_market_orders(params, "request")
+                elif event_code == const.OP_AUCTION_GET_OFFERS:
+                    self.handle_market_orders(params, "offer")             
+                elif event_code == const.OP_EVENT_UPDATE_SILVER:
+                    self.handle_silver_update(params)
+                else: return 
+            else:
+                return 
+        except Exception as e:
+            pass
+
+    def handle_location_changed(self, params: dict):
+        location_id = params.get(0)
+        location_type = params.get(1, '')
+        location_name = params.get(2, '')
+        if location_type == '' and location_name == []: return
+        for callback in self.on_location_changed:
+            callback(location_id, location_type, location_name)
+
+    def handle_local_player_info_changed(self, params: dict):
+        local_nickname = params.get(2)
+        local_silver_balance = params.get(32)
+        local_position = params.get(9)
+
+        self.handle_silver_update({1: local_silver_balance})
+        self.handle_local_move({1: local_position})
+        for callback in self.on_local_player_nickname_changed:
+            callback(local_nickname)
+        for callback in self.on_join_finished:
+            callback(True)
+
+    def handle_local_move(self, params: dict):
+        current_position = params.get(1)
+        #print(f"   {current_position}", end = "               \r", flush=True)
+        for callback in self.on_local_position_changed:
+            callback(current_position)
+
+    def handle_silver_update(self, params: dict):
+        silver = params.get(1)
+        if silver is None: return
+        try:
+            silver_value = int(silver)//10000
+            with self.lock:
+                for callback in self.on_silver_changed:
+                    callback(silver_value)
+        except: pass
+
+    def handle_market_orders(self, params: dict, order_type: str):
+        orders = params.get(0)
+        if orders is None: return
+        try:
+            with self.lock:
+                if order_type == "offer":
+                    self.offer_market_buffer.append(orders)
+                else:
+                    self.request_market_buffer.append(orders)
+        except: pass
+
+    def clear_market_buffers(self):
+        self.offer_market_buffer.clear()
+        self.request_market_buffer.clear()
+
+    def get_market_buffers(self, buffer_type: str = None):
+        with self.lock:
+            offer_data = list(self.offer_market_buffer)
+            request_data = list(self.request_market_buffer)
+            self.clear_market_buffers()
+        if buffer_type == "offer": return offer_data
+        elif buffer_type == "request": return request_data
+        return offer_data, request_data

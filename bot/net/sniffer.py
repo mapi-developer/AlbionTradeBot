@@ -124,6 +124,7 @@ class AlbionSniffer:
             elif isinstance(msg, EventDataType):
                 event_code = msg.event_code
 
+            print(event_code)
             # --- Albion Logic ---
             #print(params)
             # 1. Multi-Move / Position Updates

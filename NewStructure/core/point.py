@@ -17,3 +17,6 @@ class Point:
 
     def __repr__(self):
         return f"[{self.x}, {self.y}]"
+    
+    def to_list(self) -> list:
+        return [self.x, self.y]
