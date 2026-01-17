@@ -52,7 +52,6 @@ class Bot:
     async def _run_task(self, func, *args, **kwargs):
         self._stop_requested = False
         self.resume()
-        
         try:
             await self._wait_for_resume()
             await func(*args, **kwargs)
@@ -259,7 +258,7 @@ class Bot:
                 self.log_handler.add_log("bot", f"Bot Starting order price checking for {market_title}")
                 inventory_items = list(self.local_player.get_inventory().values())
                 for i, item in enumerate(inventory_items):
-                    await self._can_run.wait()
+                    await self.wait_for_resume()
                     item_name = self.market_handler.get_name_from_index(str(item))
                     self.current_item_name = f"Scanning: {item_name}"
                     self.current_task_name = (f"Cheking Price: {i+1}/{len(inventory_items)}")
@@ -317,7 +316,7 @@ class Bot:
             return False
 
     async def travel_to(self, destination: str):
-        await self._can_run.wait()
+        await self.wait_for_resume()
         self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Traveling"
@@ -351,7 +350,7 @@ class Bot:
             self._update_overlay()
 
             for i, item in enumerate(items_to_check):
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 self.current_item_name = f"Scanning: {item}"
                 self.current_task_name = (f"Cheking Price: {i+1}/{len(items_to_check)}")
                 self._update_overlay()
@@ -406,7 +405,7 @@ class Bot:
             self.market_handler.prepare(True)
 
             for i, item in enumerate(items_to_check):
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 item_name = item
                 self.current_item_name = f"Scanning: {item_name}"
                 self.current_task_name = (f"Cheking Price: {i+1}/{len(items_to_check)}")
@@ -468,7 +467,7 @@ class Bot:
             self.market_handler.prepare()
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
             for i, item_unique_name in enumerate(items_to_buy_list):
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 self.current_task_name = f"Buy Items: {i+1}/{len(items_to_buy_list)}"
                 self._update_overlay()
 
@@ -615,7 +614,7 @@ class Bot:
             self.market_handler.prepare_for_order_update()
             my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
             for i, exist_order in enumerate(orders_exists):
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 item_unique_name = exist_order.get("ItemTypeId")
                 self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
                 self._update_overlay()
@@ -724,7 +723,7 @@ class Bot:
             self.market_handler.scroll()
             requests = len(self.sniffer.get_market_buffers("request"))
             while requests != 0:
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 self.market_handler.remove_order(1)
                 self.market_handler.scroll()
                 requests = len(self.sniffer.get_market_buffers("request"))
@@ -748,7 +747,7 @@ class Bot:
             current_offers, current_requests = self.sniffer.get_market_buffers()
             while (len(current_offers) != 0 or len(current_requests) != 0):
                 self._update_market_prices(market_title, offers=current_offers, requests=current_requests)
-                await self._can_run.wait()
+                await self.wait_for_resume()
                 fast_sale_price = 0
                 if len(current_requests) != 0:
                     for order in current_requests:

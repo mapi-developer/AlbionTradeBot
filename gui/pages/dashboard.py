@@ -1550,7 +1550,7 @@ class Dashboard(ft.Container):
         try:
             asyncio.run(self.sequence_worker())
         except Exception as e:
-            print(f"Worker Error: {e}")
+            print(f"Worker Thread Error: {e}")
             self.stop_sequence()
 
     async def sequence_worker(self):
