@@ -242,3 +242,7 @@ class SettingsHandler:
                 print(f"Error deleting log {filename}: {e}")
                 return False
         return False
+
+    def reload_settings(self):
+        """Reloads settings from the JSON file into memory."""
+        self.settings = self.load_settings()

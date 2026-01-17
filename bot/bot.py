@@ -461,7 +461,6 @@ class Bot:
             self.overlay.start()
             self._update_overlay()
             self.market_handler.sleep(2)
-            
             market_title = self.market_handler.get_market_title()
             is_fast_buy = buy_mode == "fast"
             if buy_mode == None:
@@ -470,7 +469,6 @@ class Bot:
                 items_to_buy_list = self._load_preset_items(market_title)
             items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
-            self.min_silver = self.settings.get("general")["min_silver"]
             self.current_task_name = "Buying Items"
             self._update_overlay()
 
@@ -481,9 +479,14 @@ class Bot:
 
             self.log_handler.add_log("market", f"Starting Buying {len(items_to_buy_list)} items in {market_title}")
             self.market_handler.prepare()
-            self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
+            
             for i, item_unique_name in enumerate(items_to_buy_list):
                 await self._wait_for_resume()
+                self.settings.reload_settings()
+                # Reload settings here to catch changes during pause/resume
+                self.min_silver = self.settings.get("general")["min_silver"]
+                self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
+
                 self.current_task_name = f"Buy Items: {i+1}/{len(items_to_buy_list)}"
                 self._update_overlay()
 
@@ -611,8 +614,7 @@ class Bot:
             items_to_buy_list = self._load_preset_items(market_title)
             items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
-            self.min_silver = self.settings.get("general")["min_silver"]
-            self.sequence_settings = self.settings.get(f"order_buy")
+
             self.current_task_name = "Orders Update"
             self._update_overlay()
 
@@ -637,6 +639,11 @@ class Bot:
             my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
             for i, exist_order in enumerate(orders_exists):
                 await self._wait_for_resume()
+                self.settings.reload_settings()
+                # Reload settings here to catch changes during pause/resume
+                self.min_silver = self.settings.get("general")["min_silver"]
+                self.sequence_settings = self.settings.get(f"order_buy")
+
                 item_unique_name = exist_order.get("ItemTypeId")
                 self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
                 self._update_overlay()
@@ -813,4 +820,3 @@ class Bot:
             self.log_handler.add_log("orders", "Sell orders Done!")
         except Exception as e:
             self.log_handler.add_log("market", f"Error while sell items: {e}")
-

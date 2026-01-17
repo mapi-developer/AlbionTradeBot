@@ -1,1 +1,13 @@
-[]
+[
+    {
+        "type": "travel_to",
+        "data": {
+            "destination": "market",
+            "market_city": "5003",
+            "island_name": ""
+        }
+    },
+    {
+        "type": "price_check_orders"
+    }
+]
