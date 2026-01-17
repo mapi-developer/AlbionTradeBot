@@ -19,7 +19,7 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "5",
+        "min_profit_rate": "80",
         "default_buy_amount": "20",
         "presets": {
             "caerleon": "caerleon.json",

@@ -644,7 +644,7 @@ class FunctionToExecute(ft.Container):
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     col={"sm": 10},
                 ),
-                self.remove_btn_container if can_be_removed else ft.Container(col=1),
+                self.remove_btn_container,
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -673,24 +673,9 @@ class ExecutionFunctionsList(ft.Container):
         self.content.controls.clear()
         for i, item in enumerate(sequence_data):
             func_type = item.get("type", "price_check")
-
-            can_be_removed = True
-            if (
-                i == 0
-                and len(
-                    [
-                        function["type"]
-                        for function in sequence_data
-                        if function["type"] == "travel_to"
-                    ]
-                )
-                > 1
-            ):
-                can_be_removed = False
-
             new_func = FunctionToExecute(
                 func_type,
-                can_be_removed=can_be_removed,
+                can_be_removed=True,
                 initial_data=item.get("data"),
                 on_change_callback=self.dashboard.save_sequence,
             )
@@ -705,24 +690,6 @@ class ExecutionFunctionsList(ft.Container):
             can_be_removed=True,
             on_change_callback=self.dashboard.save_sequence,
         )
-        travel_to_amount = len(
-            [
-                function.function_type
-                for function in self.content.controls
-                if function.function_type == "travel_to"
-            ]
-        )
-        if (
-            travel_to_amount == 0
-            and new_function.function_type == "travel_to"
-            and len(self.content.controls) != 0
-        ):
-            init_travel = FunctionToExecute(
-                event.control.data,
-                can_be_removed=False,
-                on_change_callback=self.dashboard.save_sequence,
-            )
-            self.content.controls.insert(0, init_travel)
         self.content.controls.append(new_function)
         self.update_indexes()
         self.dashboard.save_sequence()
@@ -742,19 +709,7 @@ class ExecutionFunctionsList(ft.Container):
             function.index.content.value = str(i)
             function.remove_button.data = str(i)
             function.remove_button.on_click = self.remove_function
-
-            if function.function_type == "travel_to":
-                travel_amount = len(
-                    [
-                        function.function_type
-                        for function in self.content.controls
-                        if function.function_type == "travel_to"
-                    ]
-                )
-                if i == 0 and travel_amount > 1:
-                    function.content.controls[1] = ft.Container(col=1)
-                elif i == 0:
-                    function.content.controls[1] = function.remove_btn_container
+            function.content.controls[1] = function.remove_btn_container
 
         if self.page:
             self.update()
@@ -867,6 +822,24 @@ class ExecutionSequencePanel(ft.Container):
             data="run",
         )
 
+        self.run_warning = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, color=GuiStyle.Colors.ACCENT_RED, size=20),
+                    ft.Text(
+                        "Change location to initialize Travel",
+                        color=GuiStyle.Colors.ACCENT_RED,
+                        weight=ft.FontWeight.BOLD,
+                        size=14
+                    )
+                ],
+                alignment=ft.MainAxisAlignment.END,
+            ),
+            padding=ft.padding.only(right=10),
+            col={"sm": 7, "md": 8.5, "xl": 9.55},
+            visible=False
+        )
+
         self.bgcolor = GuiStyle.Colors.CARD_BG
         self.padding = ft.padding.only(20, 15, 20, 20)
         self.border_radius = 15
@@ -876,7 +849,7 @@ class ExecutionSequencePanel(ft.Container):
                 ft.ResponsiveRow(
                     controls=[
                         title,
-                        self.home_island,
+                        # self.home_island,
                     ],
                     vertical_alignment=ft.VerticalAlignment.CENTER,
                 ),
@@ -887,7 +860,8 @@ class ExecutionSequencePanel(ft.Container):
                     content=self.lower_row, padding=ft.padding.only(0, 0, 0, 10)
                 ),
                 ft.ResponsiveRow(
-                    controls=[self.run_button], alignment=ft.MainAxisAlignment.END
+                    controls=[self.run_warning, self.run_button], alignment=ft.MainAxisAlignment.END,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
             ],
             width=float("inf"),
@@ -1438,6 +1412,7 @@ class Dashboard(ft.Container):
         self.left_panel = LeftPanel()
 
         self.bot.sniffer.subscribe_location(self.dashboard_panel.overview_panel._get_data_background)
+        self.bot.sniffer.subscribe_location(self.check_start_requirements)
 
         self.seq_panel = (
             self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
@@ -1447,6 +1422,7 @@ class Dashboard(ft.Container):
         )
 
         self.seq_panel.execution_functions_list.load_sequence(self.bot_sequence)
+        self.check_start_requirements()
 
         self.left_panel.dashboard_button.on_click = self.change_tab
         self.left_panel.sequence_button.on_click = self.change_tab
@@ -1483,6 +1459,29 @@ class Dashboard(ft.Container):
         if self.page:
             self.update()
 
+    def check_start_requirements(self, *args):
+        has_travel = False
+        if self.bot_sequence:
+            for item in self.bot_sequence:
+                if item.get("type") == "travel_to":
+                    has_travel = True
+                    break
+        
+        location_id = ""
+        if self.bot and self.bot.local_player and self.bot.local_player.location:
+             location_id = self.bot.local_player.location.location_id
+        
+        should_block = has_travel and (location_id == "")
+        
+        if self.bot_sequence_panel:
+            panel = self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
+            
+            if not self.is_running_sequence:
+                panel.run_button.disabled = should_block
+                panel.run_warning.visible = should_block
+                if panel.page:
+                    panel.update()
+
     def save_sequence(self):
         self.bot_sequence = [
             c.get_serialized_data()
@@ -1490,6 +1489,7 @@ class Dashboard(ft.Container):
         ]
         if self.config:
             self.config.save_bot_loop(self.bot_sequence)
+        self.check_start_requirements()
 
     def _on_global_hotkey(self):
         if self.bot:
@@ -1590,21 +1590,6 @@ class Dashboard(ft.Container):
                         for _ in range(int(time_wait)):
                             time.sleep(1)
                             await self.bot._can_run.wait()
-
-                functions_list = (
-                    self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.execution_functions_list.content.controls
-                )
-                travel_amount = len(
-                    [
-                        function.function_type
-                        for function in functions_list
-                        if function.function_type == "travel_to"
-                    ]
-                )
-                if self.bot.local_player.location.location_id.rsplit('-', 1)[0] != "ISLAND-GUILD" and travel_amount != 0 or self.bot.local_player.location.location_id == "ISLAND-GUILD":
-                    bot_func = getattr(self.bot, "travel_to", None)
-                    bot_func(self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value)
-
                 if self.loop_sequence == False:
                     break
         except Exception as e:
