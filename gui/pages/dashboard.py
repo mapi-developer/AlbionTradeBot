@@ -183,7 +183,7 @@ class InfoCard(ft.Container):
 
 
 class OverviewPanel(ft.Container):
-    def __init__(self, dashboard):
+    def __init__(self, dashboard: "Dashboard"):
         super().__init__()
         self.dashboard = dashboard
 
@@ -209,7 +209,7 @@ class OverviewPanel(ft.Container):
         thread = threading.Thread(target=self._get_data_background, daemon=True)
         thread.start()
 
-    def _get_data_background(self):
+    def _get_data_background(self, *args, **kwargs):
         try:
             status_res = requests.get(f"{self.dashboard.API_URL}/")
             status = "Error"
@@ -254,7 +254,7 @@ class OverviewPanel(ft.Container):
                 self.database_status.set_data(
                     "Connected" if status == "alive" else "Not Connected"
                 )
-                self.bot_status.set_data("Alive")
+                self.bot_status.set_data(self.dashboard.bot.get_status())
                 self.subscribed_until.set_data(sub_formatted_date)
         except Exception as e:
             print(f"Error updating data: {e}")
@@ -384,7 +384,7 @@ class BotExecutionWarning(ft.Container):
             controls=[
                 ft.Icon(ft.Icons.INFO_OUTLINE, color=GuiStyle.Colors.WARNING_TRAVEL_TEXT, size=20, offset=ft.Offset(0, 0.1)),
                 ft.Text(
-                    "Bot will automatically travel from and to specified island at start and end.", 
+                    'You need to change location before to use "Travel to" function', 
                     size=16, color=GuiStyle.Colors.WARNING_TRAVEL_TEXT, expand=True
                 ),
             ],
@@ -1409,14 +1409,12 @@ class ActivityLogsPanel(RightPanel):
 
 
 class Dashboard(ft.Container):
-    bot: Bot | None
-
     def __init__(
         self,
         app: "GuiApp",
         config: SettingsHandler,
-        page=None,
-        bot: Bot = None,
+        page,
+        bot: "Bot",
         header=None,
         login=None,
     ):
@@ -1438,6 +1436,8 @@ class Dashboard(ft.Container):
         self.bot_sequence_panel = BotSequencePanel(dashboard=self, login=self.login)
         self.bot_activity_panel = ActivityLogsPanel(dashboard=self)  # Pass self
         self.left_panel = LeftPanel()
+
+        self.bot.sniffer.subscribe_location(self.dashboard_panel.overview_panel._get_data_background)
 
         self.seq_panel = (
             self.bot_sequence_panel.bot_control_panel.execution_sequence_panel
@@ -1554,12 +1554,13 @@ class Dashboard(ft.Container):
 
     async def sequence_worker(self):
         try:
+            self.bot._stop_requested = False
+            self.bot.resume()
             while self.is_running_sequence:
                 for item in self.bot_sequence:
-                    if not self.is_running_sequence:
-                        break
-                    if not self.bot:
-                        break
+                    if not self.is_running_sequence: break
+                    if not self.bot: break
+                    
 
                     task_type = item.get("type")
                     if not task_type or task_type not in COMMAND_TYPES:

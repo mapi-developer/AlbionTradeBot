@@ -43,11 +43,17 @@ class Bot:
         self.travel_handler.set_stop_callback(stop_check)
         self.chest_handler.set_stop_callback(stop_check)
 
-        self.status = "Change Location"
+        self.status = "Alive"
         self.current_task_name = ""
         self.recent_items = []
 
         self.log_handler.add_log("bot", f"Bot initialized!")
+
+    def get_status(self):
+        status = self.status
+        if self.local_player.location.location_id == "":
+            status = "Change Location"
+        return status
 
     async def _run_task(self, func, *args, **kwargs):
         self._stop_requested = False
@@ -338,6 +344,7 @@ class Bot:
             self.log_handler.add_log("bot", f"Bot Starting price checking for {market_title}")
             is_black_market = market_title == "black_market"
             self.overlay.start()
+            self.market_handler.sleep(2)
 
             if is_black_market:
                 items_to_check = list(self.settings.ITEMS_BLACK_MARKET.values())
@@ -393,6 +400,7 @@ class Bot:
             market_title = self.market_handler.get_market_title()
             self.overlay.start()
             self._update_overlay()
+            self.market_handler.sleep(2)
             if market_title not in self.settings.MARKET_TITLES.values():
                 await self._check_bm_from_inventory()
                 return
@@ -452,6 +460,8 @@ class Bot:
             self.current_task_name = "Loading Prices"
             self.overlay.start()
             self._update_overlay()
+            self.market_handler.sleep(2)
+            
             market_title = self.market_handler.get_market_title()
             is_fast_buy = buy_mode == "fast"
             if buy_mode == None:
@@ -594,6 +604,8 @@ class Bot:
             self.current_task_name = "Price Loading"
             self.overlay.start()
             self._update_overlay()
+            self.market_handler.sleep(2)
+
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("market", f"Bot Starting to update existing orders for {market_title}")
             items_to_buy_list = self._load_preset_items(market_title)
@@ -728,6 +740,8 @@ class Bot:
             self.current_task_name = "Removing Orders"
             self.overlay.start()
             self._update_overlay()
+            self.market_handler.sleep(2)
+
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("bot", f"Bot Starting to remove orders for {market_title}")
             self.market_handler.change_tab("my_orders_tab")
@@ -748,6 +762,8 @@ class Bot:
             self.current_task_name = "Selling Items"
             self.overlay.start()
             self._update_overlay()
+            self.market_handler.sleep(2)
+            
             market_title = self.market_handler.get_market_title()
             self.capture.set_foreground_window()
             self.log_handler.add_log("orders", "Starting to make sell orders")
