@@ -1,6 +1,6 @@
 import flet as ft
 import re, os, json
-from bot import SettingsManager
+from bot import SettingsHandler
 from .settings import Settings
 import sys
 import os
@@ -166,7 +166,7 @@ class ItemListPanel(ft.Container):
 
 
 class Presets(ft.Column):
-    def __init__(self, config: SettingsManager, page: ft.Page, settings: Settings):
+    def __init__(self, config: SettingsHandler, page: ft.Page, settings: Settings):
         super().__init__()
         self.settings = settings
         self.expand = True

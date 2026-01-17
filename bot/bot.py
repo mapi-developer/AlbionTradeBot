@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import threading
 import asyncio
 import traceback
 from .core import WindowCapture
@@ -53,12 +54,19 @@ class Bot:
         self.resume()
         
         try:
+            await self._wait_for_resume()
             await func(*args, **kwargs)
         except BotStopped:
             print(f"[Bot] Task '{func.__name__}' was stopped by user.")
         except Exception as e:
             print(f"[Bot] Error in task '{func.__name__}': {e}")
             traceback.print_exc()
+
+    async def _wait_for_resume(self):
+        while not self._can_run.is_set():
+            if self._stop_requested:
+                return
+            await asyncio.sleep(0.5)
 
     def _load_preset_items(self, city: str):
         buy_mode = self.settings.get("general")["buy_mode"]
@@ -435,6 +443,7 @@ class Bot:
             self.log_handler.add_log("market", f"Order price cheking Error: {e}")
 
     async def buy_items(self, items_to_buy_list: list = None, buy_mode: str = None):
+        print("buy items")
         try:
             self.capture.set_foreground_window()
             self.recent_items = []

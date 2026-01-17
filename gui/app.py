@@ -46,14 +46,12 @@ class GuiApp:
         self.presets = self.config.get_presets_list()
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login, settings=self.config)
         
-        # Initialize views
         self.settings = Settings(page=self.page, config=self.config)
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
-        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, logger=self.logger, login=self.login)
+        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, login=self.login)
 
         self.shop = Shop(settings=self.config, login_state=self.login.state)
         
-        # Pass the Header's subscription widget to the Tab so it can update status after purchase
         self.subscription_tab = Subscription(
             self.page, 
             self.login
@@ -72,10 +70,8 @@ class GuiApp:
             self.login.state.token = saved_token
             self.login.state.user_id = saved_user_id
             
-            # Show the main app directly
             self.show_main_app()
         else:
-            # No token found, show login screen
             if self.page:
                 self.page.add(self.login)
 
@@ -91,13 +87,8 @@ class GuiApp:
         #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
-            if self.bot: self.bot.stop()
             if not self.bot:
-                try:
-                    self.bot = Bot(self.sniffer, self.config, self.overlay, self.local_player)
-                except Exception as e:
-                    self.logger.add_log("error", f"Bot initialization failed: {e}")
-                    return
+                return
 
             if self.bot:
                 task_to_run = getattr(self.bot, task_name, None)

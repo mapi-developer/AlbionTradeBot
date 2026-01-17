@@ -25,6 +25,7 @@ class SettingsHandler:
         self.MOUSE_POSITIONS = load_json_config("mouse_positions.json")
         self.CAPTURE_POSITIONS = load_json_config("capture_positions.json")
         self.ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
+        self.BOT_ITEMS_FILE = os.path.join(BASE_DIR, "config/static", "bot_items.json")
         self.ITEM_DATA = load_json_config('items.json')
         self.MARKET_TITLES = {
             "4002": "fort_sterling",
@@ -138,6 +139,15 @@ class SettingsHandler:
             "Mace": 3,
             "Brawler Gloves": 3,
             "Prowling Staff": 3,
+        }
+        self.CITIES = {
+            "caerleon": "Caerleon",
+            "martlock": "Martlock",
+            "lymhurst": "Lymhurst",
+            "fort_sterling": "Fort Sterling",
+            "bridgewatch": "Bridgewatch",
+            "thetford": "Thetford",
+            "brecilien": "Brecilien",
         }
 
         self.API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"

@@ -1,5 +1,6 @@
 import flet as ft
 import threading
+import asyncio
 import time
 import keyboard
 import os
@@ -24,17 +25,17 @@ COMMAND_TYPES = {
         "color": ft.Colors.BLUE_500,
         "func": "travel_to",
     },
-    "price_check": {
+    "price_check_fast": {
         "label": "Price Check (Fast Sale)",
         "icon": ft.Icons.SEARCH_ROUNDED,
         "color": ft.Colors.PURPLE_500,
-        "func": "check_price",
+        "func": "check_price_fast",
     },
-    "price_check_order": {
+    "price_check_orders": {
         "label": "Price Check (Orders)",
         "icon": ft.Icons.SEARCH_ROUNDED,
         "color": ft.Colors.PURPLE_800,
-        "func": "check_price_order",
+        "func": "check_price_orders",
     },
     "buy_items": {
         "label": "Buy items",
@@ -446,8 +447,8 @@ class FunctionsAvaliablePanel(ft.Container):
         self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
         self.travel_to_button = AddSequenceFunctionButton("travel_to")
-        self.price_check_button = AddSequenceFunctionButton("price_check")
-        self.price_check_order_button = AddSequenceFunctionButton("price_check_order")
+        self.price_check_button = AddSequenceFunctionButton("price_check_fast")
+        self.price_check_order_button = AddSequenceFunctionButton("price_check_orders")
         self.buy_items_button = AddSequenceFunctionButton("buy_items")
         self.remove_orders_button = AddSequenceFunctionButton("remove_orders")
         self.wait_time_button = AddSequenceFunctionButton("wait_time")
@@ -456,8 +457,8 @@ class FunctionsAvaliablePanel(ft.Container):
 
         self.buttons = {
             "travel_to": self.travel_to_button,
-            "price_check": self.price_check_button,
-            "price_check_order": self.price_check_order_button,
+            "price_check_fast": self.price_check_button,
+            "price_check_orders": self.price_check_order_button,
             "buy_items": self.buy_items_button,
             "sell_items": self.sell_items_button,
             "remove_orders": self.remove_orders_button,
@@ -514,14 +515,14 @@ class TravelToAdditionalInfo(ft.Container):
                 value=market_val,
                 label="Market City",
                 options=[
-                    ft.DropdownOption(key="black_market", text="Black Market"),
-                    ft.DropdownOption(key="fort_sterling", text="Fort Sterling"),
-                    ft.DropdownOption(key="lymhurst", text="Lymhurst"),
-                    ft.DropdownOption(key="bridgewatch", text="Bridgewatch"),
-                    ft.DropdownOption(key="martlock", text="Martlock"),
-                    ft.DropdownOption(key="thetford", text="Thetford"),
-                    ft.DropdownOption(key="caerleon", text="Caerleon"),
-                    ft.DropdownOption(key="brecilien", text="Brecilien"),
+                    ft.DropdownOption(key="3003", text="Black Market"),
+                    ft.DropdownOption(key="4002", text="Fort Sterling"),
+                    ft.DropdownOption(key="1002", text="Lymhurst"),
+                    ft.DropdownOption(key="2004", text="Bridgewatch"),
+                    ft.DropdownOption(key="3004", text="Martlock"),
+                    ft.DropdownOption(key="0007", text="Thetford"),
+                    ft.DropdownOption(key="3005", text="Caerleon"),
+                    ft.DropdownOption(key="5003", text="Brecilien"),
                 ],
                 on_change=lambda _: self.trigger_save(),
                 bgcolor=GuiStyle.Colors.DARK_BLUE,
@@ -911,10 +912,6 @@ class ExecutionSequencePanel(ft.Container):
             self.run_button.update()
 
         if self.run_button.data == "run":
-            if self.dashboard.bot != None:
-                self.dashboard.bot.destroy()
-            self.dashboard.bot = Bot(logger=self.dashboard.logger, island_name=self.home_island)
-            self.dashboard.app.bot = self.dashboard.bot
             self.run_button.content = ft.Row(
                 [
                     ft.Icon(ft.Icons.PAUSE_ROUNDED),
@@ -931,7 +928,7 @@ class ExecutionSequencePanel(ft.Container):
             self.run_button.data = "stop"
             self.run_button.disabled = False
         elif self.run_button.data == "stop":
-            self.dashboard.bot.destroy()
+            self.dashboard.bot.stop()
             self.run_button.content = ft.Row(
                 [
                     ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED),
@@ -1417,7 +1414,7 @@ class Dashboard(ft.Container):
 
     def __init__(
         self,
-        app: GuiApp,
+        app: "GuiApp",
         config: SettingsHandler,
         page=None,
         bot: Bot = None,
@@ -1515,15 +1512,13 @@ class Dashboard(ft.Container):
     def start_sequence(self):
         if not self.bot_sequence:
             return
-        if self.app.overlay == None:
-            self.app.overlay = BotOverlay()
         self.app.overlay.start()
         time.sleep(3)
         self.is_running_sequence = True
         self.set_ui_lock(True)
         self.seq_panel.update_status("Initializing...", ft.Colors.BLUE_400)
 
-        threading.Thread(target=self.sequence_worker, daemon=True).start()
+        threading.Thread(target=self._run_worker_sync, daemon=True).start()
 
     def stop_sequence(self):
         self.is_running_sequence = False
@@ -1550,6 +1545,13 @@ class Dashboard(ft.Container):
         self.seq_panel.run_button.data = "run"
         if self.page:
             self.update()
+
+    def _run_worker_sync(self):
+        try:
+            asyncio.run(self.sequence_worker())
+        except Exception as e:
+            print(f"Worker Error: {e}")
+            self.stop_sequence()
 
     async def sequence_worker(self):
         try:

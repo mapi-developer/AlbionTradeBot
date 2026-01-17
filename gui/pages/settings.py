@@ -73,7 +73,7 @@ class GeneralSettings(ft.Container):
             data="game_language",
             label="Language in Game",
             tooltip="Choose your in game Language",
-            options = [ft.DropdownOption(key=language, text=language) for language in self.settings.AVALIABLE_LANGUAGES],
+            options = [ft.DropdownOption(key=language, text=language) for language in ["EN-US"]],
             save_callback=save_callback,
         )
 
