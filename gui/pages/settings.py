@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from components.style import GuiStyle
-from bot import SettingsManager
+from bot import SettingsHandler
 
 
 class SettingsDropdown(ft.Dropdown):
@@ -47,7 +47,7 @@ class SettingsDropdown(ft.Dropdown):
 
 
 class GeneralSettings(ft.Container):
-    def __init__(self, settings: SettingsManager, save_callback: Callable):
+    def __init__(self, settings: SettingsHandler, save_callback: Callable):
         super().__init__()
         self.save_callback = save_callback
         general_settings = settings.get("general")
@@ -167,7 +167,7 @@ class BuyLogicItem(ft.Container):
 
 
 class BuyLogic(ft.Container):
-    def __init__(self, config: SettingsManager, current_tab: str, save_callback: Callable):
+    def __init__(self, config: SettingsHandler, current_tab: str, save_callback: Callable):
         super().__init__()
         self.config = config
         self.save_callback = save_callback
@@ -275,7 +275,7 @@ class BuyLogic(ft.Container):
 
 
 class RightTab(ft.Container):
-    def __init__(self, config: SettingsManager, current_tab: str, save_callback: Callable):
+    def __init__(self, config: SettingsHandler, current_tab: str, save_callback: Callable):
         super().__init__()
         self.current_tab = current_tab
         self.config = config
@@ -460,7 +460,7 @@ class UpperRow(ft.Container):
 
 
 class ContentMain(ft.Container):
-    def __init__(self, config: SettingsManager, save_callback: Callable):
+    def __init__(self, config: SettingsHandler, save_callback: Callable):
         super().__init__()
         self.config = config
         self.general = GeneralSettings(config, save_callback=save_callback)
@@ -478,7 +478,7 @@ class ContentMain(ft.Container):
 
 
 class Settings(ft.Container):
-    def __init__(self, page: ft.Page, config: SettingsManager):
+    def __init__(self, page: ft.Page, config: SettingsHandler):
         super().__init__()
         self.margin = 0
         self.padding = 0
@@ -529,7 +529,7 @@ class Settings(ft.Container):
 def main(page: ft.Page):
     page.padding = 0
     page.scroll = ft.ScrollMode.AUTO
-    config_manager = SettingsManager()
+    config_manager = SettingsHandler()
     app_settings = Settings(page=page, config=config_manager)
     page.add(app_settings)
     page.update()

@@ -41,3 +41,5 @@ city codes:
 5003 - brecilien market
 3003 - caerleon / black market
 3005 - caerleon market
+
+market popup about premium

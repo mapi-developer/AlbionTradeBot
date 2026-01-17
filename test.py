@@ -1,6 +1,9 @@
 import sys, os
 import threading
+import asyncio
 sys.path.append(os.path.abspath(__file__))
+from NewStructure.classes.player import LocalPlayer
+from gui.components import BotOverlay
 from NewStructure.bot import Bot
 from NewStructure.net import Sniffer
 from NewStructure.handlers import SettingsHandler
@@ -16,11 +19,12 @@ def wait_for_user_input():
         run = False
         return
 
-
-sniffer = Sniffer()
+local_player = LocalPlayer()
+sniffer = Sniffer(local_player)
 sniffer_thread = threading.Thread(target=sniffer.start, daemon=True)
 sniffer_thread.start()
 settings = SettingsHandler()
-bot = Bot(sniffer, settings)
+overlay = BotOverlay()
+bot = Bot(sniffer, settings, overlay, local_player)
 wait_for_user_input()
-print(bot.market_handler.get_market_title())
+asyncio.run(bot._run_task(bot.check_price_orders))

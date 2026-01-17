@@ -27,7 +27,6 @@ class APIClient:
             "order": time.time()
         }
         
-        # Start the background worker
         self.worker_thread = threading.Thread(target=self._worker_loop, daemon=True)
         self.worker_thread.start()
 
@@ -37,7 +36,6 @@ class APIClient:
         :param item_type: 'fast' or 'order' (matches backend API)
         :param city_key: e.g. 'price_caerleon'
         """
-        # Add to queue with a special key for routing
         self.queue.put({
             "unique_name": unique_name,
             city_key: price,
@@ -46,22 +44,17 @@ class APIClient:
 
     def _worker_loop(self):
         """Background thread to batch updates and POST them to the API."""
-        # Separate  self.batches for Fast and Order items
-
         while self.running:
             try:
-                # 1. Dequeue and Sort
                 try:
                     item = self.queue.get(timeout=0.5)
                     
-                    # Extract type (default to 'fast' if missing)
                     i_type = item.pop("_type", "fast")
                     if i_type not in  self.batches:
                         i_type = "fast"
                     
                     u_name = item["unique_name"]
                     
-                    # Merge logic for the specific batch
                     if u_name not in  self.batches[i_type]:
                          self.batches[i_type][u_name] = item
                     else:
@@ -70,7 +63,6 @@ class APIClient:
                 except queue.Empty:
                     pass
 
-                # 2. Check Flush Conditions for each type
                 current_time = time.time()
                 
                 for t in ["fast", "order"]:
@@ -100,7 +92,6 @@ class APIClient:
         try:
             endpoint = f"{self.api_url}/items/prices"
             
-            # Updated to pass 'type' as a query parameter
             response = requests.put(
                 endpoint, 
                 json=items, 

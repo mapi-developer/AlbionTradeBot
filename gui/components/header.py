@@ -7,7 +7,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pages.login import Login
-from bot import SettingsManager
+from bot import SettingsHandler
 from gui.components.style import GuiStyle
 
 
@@ -40,11 +40,9 @@ class Header(ft.Container):
         page: ft.Page,
         on_nav_click: Callable,
         login: Login,
-        settings: SettingsManager = None,
+        settings: SettingsHandler
     ):
         super().__init__()
-        if settings == None:
-            settings = SettingsManager()
         self.settings = settings
         self.login = login
         self.page = page

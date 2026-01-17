@@ -3,7 +3,7 @@ import requests
 import webbrowser
 
 from components.style import GuiStyle
-from bot import SettingsManager
+from bot import SettingsHandler
 
 
 class ShopingCard(ft.Column):
@@ -197,7 +197,7 @@ class GiftInfo(ft.Container):
 
 
 class Shop(ft.Container):
-    def __init__(self, settings: SettingsManager, login_state=None, page=None):
+    def __init__(self, settings: SettingsHandler, login_state=None, page=None):
         super().__init__()
         self.settings = settings
         self.padding = ft.padding.all(30)

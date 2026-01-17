@@ -1,14 +1,17 @@
-from logging import Logger
 import flet as ft
 import threading
 import time
 import keyboard
 import os
 from components import BotOverlay
-from bot import Bot
+from bot import Bot, SettingsHandler
 import requests
 from datetime import datetime
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gui.app import GuiApp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1414,12 +1417,11 @@ class Dashboard(ft.Container):
 
     def __init__(
         self,
-        app=None,
-        config=None,
+        app: GuiApp,
+        config: SettingsHandler,
         page=None,
         bot: Bot = None,
         header=None,
-        logger: Logger = None,
         login=None,
     ):
         super().__init__()
@@ -1430,12 +1432,8 @@ class Dashboard(ft.Container):
         self.bot = bot
         self.login = login
         self.header = header
-        if logger == None:
-            logger = Logger()
-        self.logger = logger
         self.API_URL = self.config.API_URL
 
-        self.app.overlay = None
         self.is_running_sequence = False
         self.loop_sequence = False
         self.bot_sequence = self.config.load_bot_loop() if self.config else []
@@ -1517,9 +1515,6 @@ class Dashboard(ft.Container):
     def start_sequence(self):
         if not self.bot_sequence:
             return
-        if self.app.bot == None:
-            self.bot = Bot(logger=self.logger, island_name=self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island)
-            self.app.bot = self.bot
         if self.app.overlay == None:
             self.app.overlay = BotOverlay()
         self.app.overlay.start()
@@ -1551,15 +1546,12 @@ class Dashboard(ft.Container):
         if self.app.overlay:
             self.app.overlay.stop()
         if self.bot != None:
-            self.bot.destroy()
-        self.bot = None
+            self.bot.stop()
         self.seq_panel.run_button.data = "run"
-        if self.app:
-            self.app.bot = self.bot
         if self.page:
             self.update()
 
-    def sequence_worker(self):
+    async def sequence_worker(self):
         try:
             while self.is_running_sequence:
                 for item in self.bot_sequence:
@@ -1568,7 +1560,7 @@ class Dashboard(ft.Container):
                     if not self.bot:
                         break
 
-                    while self.is_running_sequence and self.bot and self.bot.paused:
+                    while self.is_running_sequence and self.bot:
                         time.sleep(0.5)
 
                     task_type = item.get("type")
@@ -1585,22 +1577,20 @@ class Dashboard(ft.Container):
                         f"Executing: {item['type']}", ft.Colors.GREEN_400
                     )
                     self.bot.overlay = self.app.overlay
-                    # Execute on bot
                     bot_func = getattr(self.bot, func_name, None)
                     if callable(bot_func):
-                        self.bot.check_login()
                         if item["type"] == "travel_to":
                             if item["data"]["destination"] == "market":
-                                bot_func(item["data"]["market_city"])
+                                await bot_func(item["data"]["market_city"])
                             else:
-                                bot_func(item["data"]["island_name"])
+                                await bot_func(item["data"]["island_name"])
                         else:
-                            bot_func()
+                            await bot_func()
                     elif item["type"] == "wait_time":
                         time_wait = float(item["data"]["minutes"]) * 60
                         for _ in range(int(time_wait)):
                             time.sleep(1)
-                            self.bot._wait_if_paused()
+                            await self.bot._can_run.wait()
 
                 functions_list = (
                     self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.execution_functions_list.content.controls
@@ -1612,11 +1602,9 @@ class Dashboard(ft.Container):
                         if function.function_type == "travel_to"
                     ]
                 )
-                if self.bot.current_location != "island" and travel_amount != 0 or self.bot.current_location == "guild_chest_caerleon":
+                if self.bot.local_player.location.location_id.rsplit('-', 1)[0] != "ISLAND-GUILD" and travel_amount != 0 or self.bot.local_player.location.location_id == "ISLAND-GUILD":
                     bot_func = getattr(self.bot, "travel_to", None)
-                    bot_func(
-                        self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value
-                    )
+                    bot_func(self.bot_sequence_panel.bot_control_panel.execution_sequence_panel.home_island.value)
 
                 if self.loop_sequence == False:
                     break
@@ -1632,13 +1620,12 @@ class Dashboard(ft.Container):
             controls=[self.left_panel, self.right_panels[target_tab]], spacing=0
         )
 
-        # Check subscription when opening the sequence tab
         if target_tab == "sequence":
             self.bot_sequence_panel.show_tab()
         elif target_tab == "logs":
             self.bot_activity_panel.refresh_logs()  # Refresh list when opening logs
-        # elif target_tab == "dashboard":
-        # self.dashboard_panel.overview_panel.update_data()
+        elif target_tab == "dashboard":
+            self.dashboard_panel.overview_panel.update_data()
 
         self.update()
 

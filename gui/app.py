@@ -11,7 +11,7 @@ from gui import Settings
 from gui import Shop
 from gui.components.style import GuiStyle
 
-from bot import Bot, SettingsManager, Logger, AlbionSniffer
+from bot import Bot, SettingsHandler, LocalPlayer, Sniffer
 
 class GuiApp:
     overlay:BotOverlay
@@ -29,16 +29,19 @@ class GuiApp:
             "Roboto Mono": "https://github.com/google/fonts/raw/main/apache/robotomono/RobotoMono-Regular.ttf"
         }
 
-        self.config = SettingsManager()
+        self.local_player = LocalPlayer()
+        self.sniffer = Sniffer(self.local_player)
+        sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
+        sniffer_thread.start()
 
-        self.logger = Logger()
+        self.config = SettingsHandler()
+        self.login = Login(self.page, on_login_success=self.show_main_app, settings=self.config)
+        self.overlay = BotOverlay()
+        self.bot = Bot(self.sniffer, self.config, self.overlay, self.local_player)
+
+        self.logger = self.bot.log_handler
         self.logger.start_session()
         self.logger.add_log("app", "Application started")
-
-        self.login = Login(self.page, on_login_success=self.show_main_app, settings=self.config)
-
-        self.bot = Bot(logger=self.logger)
-        self.overlay = BotOverlay()
 
         self.presets = self.config.get_presets_list()
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login, settings=self.config)
@@ -88,10 +91,10 @@ class GuiApp:
         #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
-            if self.bot: self.bot.destroy()
+            if self.bot: self.bot.stop()
             if not self.bot:
                 try:
-                    self.bot = Bot(logger=self.logger)
+                    self.bot = Bot(self.sniffer, self.config, self.overlay, self.local_player)
                 except Exception as e:
                     self.logger.add_log("error", f"Bot initialization failed: {e}")
                     return

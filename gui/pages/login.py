@@ -12,7 +12,7 @@ import base64
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from gui.components.style import GuiStyle
-from bot import SettingsManager
+from bot import SettingsHandler
 
 
 class State:
@@ -64,11 +64,9 @@ class OAuthHandler(http.server.SimpleHTTPRequestHandler):
 
 class Login(ft.Container):
     def __init__(
-        self, page: ft.Page, on_login_success, settings: SettingsManager = None
+        self, page: ft.Page, on_login_success, settings: SettingsHandler
     ):
         super().__init__()
-        if settings == None:
-            settings = SettingsManager()
         self.settings = settings
         self.page = page
         self.expand = True

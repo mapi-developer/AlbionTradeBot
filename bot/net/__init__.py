@@ -1,4 +1,3 @@
-from .sniffer import AlbionSniffer
-from .graph import WaypointGraph
+from .sniffer import Sniffer
 
-__all__ = ["AlbionSniffer", "WaypointGraph"]
+__all__ = ["Sniffer"]

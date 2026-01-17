@@ -1,7 +1,7 @@
 import os
 import requests
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from .client import APIClient 
@@ -10,13 +10,8 @@ from .client import APIClient
 class DatabaseInterface:
     def __init__(self):
         load_dotenv()
-        
-        # 1. Configuration
         self.api_url = os.getenv('API_URL', "https://trade-backend-service-1054089939982.europe-west4.run.app")
-        
-        # 2. Initialize the background worker client
         self.client = APIClient(api_url=self.api_url)
-        
         print(f"✅ Interface initialized with API: {self.api_url}")
 
     def check_connection_status(self) -> bool:
@@ -41,17 +36,14 @@ class DatabaseInterface:
         :param item_type: 'fast' or 'order' (default: 'fast')
         """
         for entry in price_data_list:
-            # We copy to avoid modifying the original dict inside the loop
             data = entry.copy()
             unique_name = data.pop('unique_name', None)
             
             if not unique_name:
                 continue
 
-            # Iterate over keys to find prices (e.g., 'price_caerleon', 'price_martlock')
             for key, price in data.items():
                 if key.startswith('price_') and isinstance(price, (int, float)):
-                    # Queue the update using the client, passing the item_type
                     self.client.update_item_price(unique_name, key, int(price), item_type=item_type)
 
     def force_price_update(self):
@@ -93,7 +85,6 @@ class DatabaseInterface:
         Fetches the latest timestamp from the DB. 
         """
         try:
-            # Placeholder: In production, you might want a specific lightweight endpoint
-            return datetime.utcnow() 
+            return datetime.now(timezone.utc) 
         except Exception:
             return None
