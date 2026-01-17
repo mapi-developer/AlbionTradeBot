@@ -4,7 +4,6 @@ import asyncio
 import time
 import keyboard
 import os
-from components import BotOverlay
 from bot import Bot, SettingsHandler
 import requests
 from datetime import datetime

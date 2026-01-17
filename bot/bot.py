@@ -34,7 +34,7 @@ class Bot:
         self.sniffer.subscribe_location(self.travel_handler.on_location_changed)
         self.sniffer.subscribe_join(self.travel_handler.on_join_finished)
 
-        self._can_run = asyncio.Event()
+        self._can_run = threading.Event()
         self._can_run.set()
         self._stop_requested = False 
 
