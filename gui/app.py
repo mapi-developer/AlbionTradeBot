@@ -1,5 +1,6 @@
 import flet as ft
 import threading
+import asyncio
 
 from gui import Header
 from gui import Presets
@@ -93,7 +94,17 @@ class GuiApp:
             if self.bot:
                 task_to_run = getattr(self.bot, task_name, None)
                 if callable(task_to_run):
-                    threading.Thread(target=task_to_run, daemon=True).start()
+                    threading.Thread(
+                        target=self._run_async_task, 
+                        args=(task_to_run,), 
+                        daemon=True
+                    ).start()
+
+    def _run_async_task(self, task_func):
+        try:
+            asyncio.run(task_func())
+        except Exception as e:
+            self.logger.add_log("error", f"Manual Task Error: {e}")
 
     def go_to_subscription(self):
         for control in self.header.nav_rows.controls:

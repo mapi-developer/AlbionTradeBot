@@ -1561,9 +1561,6 @@ class Dashboard(ft.Container):
                     if not self.bot:
                         break
 
-                    while self.is_running_sequence and self.bot:
-                        time.sleep(0.5)
-
                     task_type = item.get("type")
                     if not task_type or task_type not in COMMAND_TYPES:
                         continue

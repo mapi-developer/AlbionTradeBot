@@ -119,7 +119,7 @@ class TravelHandler(InputSender):
         start_time = time.time()
         try:
             while True:
-                await self.bot._can_run.wait()
+                await self.bot._wait_for_resume()
                 current_position = self.local_player.position
                 if not current_position:
                     time.sleep(0.1)

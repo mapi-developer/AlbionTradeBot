@@ -258,7 +258,7 @@ class Bot:
                 self.log_handler.add_log("bot", f"Bot Starting order price checking for {market_title}")
                 inventory_items = list(self.local_player.get_inventory().values())
                 for i, item in enumerate(inventory_items):
-                    await self.wait_for_resume()
+                    await self._wait_for_resume()
                     item_name = self.market_handler.get_name_from_index(str(item))
                     self.current_item_name = f"Scanning: {item_name}"
                     self.current_task_name = (f"Cheking Price: {i+1}/{len(inventory_items)}")
@@ -316,7 +316,7 @@ class Bot:
             return False
 
     async def travel_to(self, destination: str):
-        await self.wait_for_resume()
+        await self._wait_for_resume()
         self.recent_items = []
         self.status = "Running"
         self.current_task_name = "Traveling"
@@ -337,6 +337,7 @@ class Bot:
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("bot", f"Bot Starting price checking for {market_title}")
             is_black_market = market_title == "black_market"
+            self.overlay.start()
 
             if is_black_market:
                 items_to_check = list(self.settings.ITEMS_BLACK_MARKET.values())
@@ -350,7 +351,7 @@ class Bot:
             self._update_overlay()
 
             for i, item in enumerate(items_to_check):
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 self.current_item_name = f"Scanning: {item}"
                 self.current_task_name = (f"Cheking Price: {i+1}/{len(items_to_check)}")
                 self._update_overlay()
@@ -390,6 +391,8 @@ class Bot:
             self.status = "Running"
             self.current_task_name = f"Checking Price: 0/X"
             market_title = self.market_handler.get_market_title()
+            self.overlay.start()
+            self._update_overlay()
             if market_title not in self.settings.MARKET_TITLES.values():
                 await self._check_bm_from_inventory()
                 return
@@ -405,7 +408,7 @@ class Bot:
             self.market_handler.prepare(True)
 
             for i, item in enumerate(items_to_check):
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 item_name = item
                 self.current_item_name = f"Scanning: {item_name}"
                 self.current_task_name = (f"Cheking Price: {i+1}/{len(items_to_check)}")
@@ -442,12 +445,13 @@ class Bot:
             self.log_handler.add_log("market", f"Order price cheking Error: {e}")
 
     async def buy_items(self, items_to_buy_list: list = None, buy_mode: str = None):
-        print("buy items")
         try:
             self.capture.set_foreground_window()
             self.recent_items = []
             self.status = "Running"
-            self.current_task_name = "Buying Items"
+            self.current_task_name = "Loading Prices"
+            self.overlay.start()
+            self._update_overlay()
             market_title = self.market_handler.get_market_title()
             is_fast_buy = buy_mode == "fast"
             if buy_mode == None:
@@ -457,6 +461,8 @@ class Bot:
             items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
             self.min_silver = self.settings.get("general")["min_silver"]
+            self.current_task_name = "Buying Items"
+            self._update_overlay()
 
             if not items_to_buy_list:
                 print("No items to buy. Please select a preset in Settings")
@@ -467,7 +473,7 @@ class Bot:
             self.market_handler.prepare()
             self.sequence_settings = self.settings.get(f"{buy_mode}_buy")
             for i, item_unique_name in enumerate(items_to_buy_list):
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 self.current_task_name = f"Buy Items: {i+1}/{len(items_to_buy_list)}"
                 self._update_overlay()
 
@@ -585,7 +591,9 @@ class Bot:
         try:
             self.capture.set_foreground_window()
             self.status = "Running"
-            self.current_task_name = "Orders Update"
+            self.current_task_name = "Price Loading"
+            self.overlay.start()
+            self._update_overlay()
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("market", f"Bot Starting to update existing orders for {market_title}")
             items_to_buy_list = self._load_preset_items(market_title)
@@ -593,6 +601,8 @@ class Bot:
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
             self.min_silver = self.settings.get("general")["min_silver"]
             self.sequence_settings = self.settings.get(f"order_buy")
+            self.current_task_name = "Orders Update"
+            self._update_overlay()
 
             if not items_to_buy_list:
                 print("No items to buy. Please select a preset in Settings")
@@ -614,7 +624,7 @@ class Bot:
             self.market_handler.prepare_for_order_update()
             my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
             for i, exist_order in enumerate(orders_exists):
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 item_unique_name = exist_order.get("ItemTypeId")
                 self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
                 self._update_overlay()
@@ -716,6 +726,8 @@ class Bot:
             self.recent_items = []
             self.status = "Running"
             self.current_task_name = "Removing Orders"
+            self.overlay.start()
+            self._update_overlay()
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("bot", f"Bot Starting to remove orders for {market_title}")
             self.market_handler.change_tab("my_orders_tab")
@@ -723,7 +735,7 @@ class Bot:
             self.market_handler.scroll()
             requests = len(self.sniffer.get_market_buffers("request"))
             while requests != 0:
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 self.market_handler.remove_order(1)
                 self.market_handler.scroll()
                 requests = len(self.sniffer.get_market_buffers("request"))
@@ -734,6 +746,8 @@ class Bot:
         try:
             self.status = "Running"
             self.current_task_name = "Selling Items"
+            self.overlay.start()
+            self._update_overlay()
             market_title = self.market_handler.get_market_title()
             self.capture.set_foreground_window()
             self.log_handler.add_log("orders", "Starting to make sell orders")
@@ -747,7 +761,7 @@ class Bot:
             current_offers, current_requests = self.sniffer.get_market_buffers()
             while (len(current_offers) != 0 or len(current_requests) != 0):
                 self._update_market_prices(market_title, offers=current_offers, requests=current_requests)
-                await self.wait_for_resume()
+                await self._wait_for_resume()
                 fast_sale_price = 0
                 if len(current_requests) != 0:
                     for order in current_requests:
