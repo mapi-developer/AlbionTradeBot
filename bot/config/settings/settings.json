@@ -2,66 +2,58 @@
     "general": {
         "buy_mode": "order",
         "game_language": "EN-US",
-        "min_silver": "10000000"
+        "min_silver": "1000000"
     },
     "fast_buy": {
         "min_profit_rate": "50",
         "default_buy_amount": "10",
         "presets": {
-            "caerleon": "Fast Buy Test.json",
-            "martlock": "Fast Buy Test.json",
-            "lymhurst": "Fast Buy Test.json",
-            "fort_sterling": "Fast Buy Test.json",
-            "bridgewatch": "Fast Buy Test.json",
-            "thetford": "Fast Buy Test.json",
-            "brecilien": "Fast Buy Test.json"
+            "caerleon": "Demo Preset.json",
+            "martlock": "Demo Preset.json",
+            "lymhurst": "Demo Preset.json",
+            "fort_sterling": "Demo Preset.json",
+            "bridgewatch": "Demo Preset.json",
+            "thetford": "Demo Preset.json",
+            "brecilien": "Demo Preset.json"
         },
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "80",
-        "default_buy_amount": "20",
+        "min_profit_rate": "60",
+        "default_buy_amount": "10",
         "presets": {
-            "caerleon": "caerleon.json",
-            "martlock": "Fort Sterling Main.json",
-            "lymhurst": "Lym test.json",
-            "fort_sterling": "Fort Sterling Main.json",
-            "bridgewatch": "Fort Sterling Main.json",
-            "thetford": "Fort Sterling Main.json",
-            "brecilien": "Fort Sterling Main.json"
+            "caerleon": "Demo Preset.json",
+            "martlock": "Demo Preset.json",
+            "lymhurst": "Demo Preset.json",
+            "fort_sterling": "Demo Preset.json",
+            "bridgewatch": "Demo Preset.json",
+            "thetford": "Demo Preset.json",
+            "brecilien": "Demo Preset.json"
         },
         "buy_logic": [
             {
-                "amount_to_buy": "15",
+                "amount_to_buy": "8",
                 "price_larger_then": "1000"
             },
             {
-                "amount_to_buy": "10",
+                "amount_to_buy": "6",
                 "price_larger_then": "6000"
             },
             {
-                "amount_to_buy": "5",
+                "amount_to_buy": "4",
                 "price_larger_then": "10000"
             },
             {
-                "amount_to_buy": "4",
+                "amount_to_buy": "2",
                 "price_larger_then": "20000"
             },
             {
-                "amount_to_buy": "3",
-                "price_larger_then": "50000"
-            },
-            {
-                "amount_to_buy": "2",
-                "price_larger_then": "100000"
-            },
-            {
                 "amount_to_buy": "1",
-                "price_larger_then": "150000"
+                "price_larger_then": "50000"
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4MDgzMjQxfQ.y4aqov0rWqTdcez2Hls09pNeCk6n2R-ZWzK_xV-iUSo",
-    "user_id": "1",
+    "auth_token": null,
+    "user_id": null,
     "home_island": ""
 }

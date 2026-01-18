@@ -39,6 +39,7 @@ class Sniffer:
         self.request_market_buffer = []
         self.offer_market_buffer = []
         self.characters = {}
+        self.last_avg_price = 0
 
         self.running = False
 
@@ -128,7 +129,7 @@ class Sniffer:
             if not msg: return
 
             params = msg.decode()
-
+            
             if 253 in params:
                 request_code = params.get(253)
                 if request_code in [const.OP_AUCTION_GET_REQUESTS, const.OP_AUCTION_GET_MY_ORDERS]:
@@ -142,6 +143,8 @@ class Sniffer:
                     self.handle_local_player_info_changed(params)
                 elif request_code == const.OP_LOCATION_CHANGED:
                     self.handle_location_changed(params)
+                elif request_code == const.OP_AUCTION_AVG_GET:
+                    self.handle_avg_market_data(params)
                 else:
                     return
             elif 252 in params:
@@ -159,6 +162,13 @@ class Sniffer:
                 return 
         except Exception as e:
             pass
+
+    def handle_avg_market_data(self, params: dict):
+        price_sum = sum(params.get(1))
+        amount_sum = sum(params.get(0))
+        if price_sum == None or amount_sum == None:
+            self.last_avg_price = 0
+        self.last_avg_price = int(price_sum/amount_sum/10000)
 
     def handle_new_character(self, params: dict):
         character_name = params.get(1)
@@ -213,7 +223,6 @@ class Sniffer:
         for callback in self.on_join_finished:
             callback(True)
         
-
     def handle_local_move(self, params: dict):
         current_position = params.get(1)
         # print(f"   {current_position}", end = "               \r", flush=True)
@@ -240,6 +249,12 @@ class Sniffer:
                 else:
                     self.request_market_buffer.extend(market_orders)
         except: pass
+
+    def get_last_avg_price(self):
+        with self.lock:
+            last_avg_price = self.last_avg_price
+            self.last_avg_price = 0
+            return last_avg_price
 
     def clear_market_buffers(self):
         self.offer_market_buffer.clear()

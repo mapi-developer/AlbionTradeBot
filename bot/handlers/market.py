@@ -176,11 +176,17 @@ class MarketHandler(InputSender):
         self.click(self.mouse_positions["button_create_order"])
         self.sleep(.1)
 
-    def make_sell_order(self, market_title: str = "black_market"):
+    def make_sell_order(self, market_title: str = "black_market", order_price: int = 0):
         if market_title == "black_market":
             self.click(self.mouse_positions["opened_item_sell_order_bm"])
         self.sleep(.1)
-        self.click(self.mouse_positions["button_one_silver_less"])
+
+        if order_price == 0:
+            self.click(self.mouse_positions["button_one_silver_less"])
+        else:
+            self.click(self.mouse_positions["button_change_price"])
+            self.typewrite(order_price)
+
         self.click(self.mouse_positions["button_create_order"])
         self.sleep(.1)
 

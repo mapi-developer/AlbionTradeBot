@@ -1,13 +1,5 @@
 [
     {
-        "type": "travel_to",
-        "data": {
-            "destination": "island",
-            "market_city": "black_market",
-            "island_name": "Matvey4a guild - Caerleon"
-        }
-    },
-    {
-        "type": "price_check_orders"
+        "type": "sell_items"
     }
 ]

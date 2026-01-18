@@ -810,10 +810,18 @@ class Bot:
                                 order_sale_price = price
                 else:
                     order_sale_price = 1
-                if fast_sale_price == 0:
-                    self.market_handler.make_sell_order()
-                elif (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.95:
+
+                if (fast_sale_price != 0 and order_sale_price != 1) and (fast_sale_price/order_sale_price) > 0.95:
                     self.market_handler.fast_sale_item()
+                elif order_sale_price == 1:
+                    sell_price = self.sniffer.get_last_avg_price()
+                    if sell_price == 0:
+                        if fast_sale_price != 0:
+                            self.market_handler.make_sell_order(order_price=int(fast_sale_price*1.05))
+                        else:
+                            self.market_handler.make_sell_order(order_price=9999)
+                    else:
+                        self.market_handler.make_sell_order(order_price=sell_price)
                 else:
                     self.market_handler.make_sell_order()
                 
