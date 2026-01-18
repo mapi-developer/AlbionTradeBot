@@ -31,7 +31,7 @@ class SettingsHandler:
             "4002": "fort_sterling",
             "1002": "lymhurst",
             "2004": "bridgewatch",
-            "3004": "martlock",
+            "3008": "martlock",
             "0007": "thetford",
             "5003": "brecilien",
             "3003": "black_market",

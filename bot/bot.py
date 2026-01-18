@@ -263,6 +263,8 @@ class Bot:
                 market_title = self.market_handler.get_market_title()
                 self.log_handler.add_log("bot", f"Bot Starting order price checking for {market_title}")
                 inventory_items = list(self.local_player.get_inventory().values())
+                self.overlay.start()
+                self.market_handler.sleep(2)
                 for i, item in enumerate(inventory_items):
                     await self._wait_for_resume()
                     item_name = self.market_handler.get_name_from_index(str(item))
@@ -462,11 +464,11 @@ class Bot:
             self._update_overlay()
             self.market_handler.sleep(2)
             market_title = self.market_handler.get_market_title()
-            is_fast_buy = buy_mode == "fast"
             if buy_mode == None:
                 buy_mode = self.settings.get("general")["buy_mode"]
             if items_to_buy_list == None:
                 items_to_buy_list = self._load_preset_items(market_title)
+            is_fast_buy = buy_mode == "fast"
             items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
             self.current_task_name = "Buying Items"
@@ -506,6 +508,10 @@ class Bot:
 
                 black_market_price = self._get_black_market_price(item_unique_name, items_prices_fast, items_prices_order)
                 min_profit_rate = float(self.sequence_settings["min_profit_rate"]) / 100 or 0.0
+
+                if black_market_price == None:
+                    self.market_handler.close_item()
+                    continue
 
                 if is_fast_buy:
                     if not current_offers:

@@ -24,7 +24,7 @@
         "presets": {
             "caerleon": "caerleon.json",
             "martlock": "Fort Sterling Main.json",
-            "lymhurst": "Fort Sterling Main.json",
+            "lymhurst": "Lym test.json",
             "fort_sterling": "Fort Sterling Main.json",
             "bridgewatch": "Fort Sterling Main.json",
             "thetford": "Fort Sterling Main.json",

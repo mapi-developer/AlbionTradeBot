@@ -101,7 +101,6 @@ class TravelHandler(InputSender):
             self.current_keys = best_keys
 
     def choose_destination(self, destination: str):
-        print(destination)
         self.sleep(1)
         if destination in CONNECTED_LOCATIONS.values() and destination != "5000":
             self.click(self.mouse_positions[destination+"_section"])
@@ -116,7 +115,7 @@ class TravelHandler(InputSender):
         self.click(self.mouse_positions["buy_journey"])
         self.can_move = False
 
-    async def move_to_position(self, target_position: list[float], tolerance=2, timeout=15):
+    async def move_to_position(self, target_position: list[float], tolerance=3, timeout=15):
         start_time = time.time()
         try:
             while True:
@@ -185,7 +184,6 @@ class TravelHandler(InputSender):
         self.sleep(2)
 
     async def move_to_market(self, destination_market: str):
-        print(destination_market)
         self.press("esc")
         if self.location == "": return
         while self.current_location_graph == None:
@@ -205,7 +203,7 @@ class TravelHandler(InputSender):
             self.sleep(0.1)
         if self.location == destination_market:
             if destination_market == "3005":
-                node_id = 3
+                node_id = 4
             else:
                 node_id = len(self.current_location_graph.nodes)
             await self.move_to_node(node_id)

@@ -132,7 +132,7 @@ class MarketHandler(InputSender):
         if amount > 0:
             self.click(self.mouse_positions["button_amount_more"], clicks=amount-1)
         elif amount < 0:
-            self.click(self.mouse_positions["button_amount_less"], clicks=amount-1)
+            self.click(self.mouse_positions["button_amount_less"], clicks=abs(amount)-1)
 
         if fast_buy == True:
             self.click(self.mouse_positions["button_change_price"])
