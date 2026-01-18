@@ -6,7 +6,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('config', 'config')],
+    datas=[('bot\\config', 'bot\\config')],
     hiddenimports=[
         # --- YOUR APP MODULES ---
         'gui.pages.login',      # Fixes the crash you saw

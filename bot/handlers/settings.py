@@ -18,6 +18,8 @@ def load_json_config(filename):
 
 class SettingsHandler:
     def __init__(self):
+        self.LOCAL_AUTH_PORT = 5000
+        self.LOCAL_REDIRECT_URI = f"http://127.0.0.1:{self.LOCAL_AUTH_PORT}/oauth/callback"
         self.LOGS_DIR = os.path.join(BASE_DIR, "config/logs")
         self.BOT_LOOP_FILE = os.path.join(BASE_DIR, "config/settings", "bot_loop.json")
         self.SETTINGS_FILE = os.path.join(BASE_DIR, "config/settings", "settings.json")
