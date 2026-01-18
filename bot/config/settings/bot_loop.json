@@ -3,11 +3,8 @@
         "type": "travel_to",
         "data": {
             "destination": "market",
-            "market_city": "5003",
+            "market_city": "4002",
             "island_name": ""
         }
-    },
-    {
-        "type": "price_check_orders"
     }
 ]

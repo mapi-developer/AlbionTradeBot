@@ -216,7 +216,7 @@ class Sniffer:
 
     def handle_local_move(self, params: dict):
         current_position = params.get(1)
-        #print(f"   {current_position}", end = "               \r", flush=True)
+        # print(f"   {current_position}", end = "               \r", flush=True)
         for callback in self.on_local_position_changed:
             callback(current_position)
 

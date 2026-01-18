@@ -752,12 +752,13 @@ class Bot:
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("bot", f"Bot Starting to remove orders for {market_title}")
             self.market_handler.change_tab("my_orders_tab")
-            self.market_handler.remove_order(1)
+            self.market_handler.remove_order(12)
             self.market_handler.scroll()
             requests = len(self.sniffer.get_market_buffers("request"))
             while requests != 0:
                 await self._wait_for_resume()
-                self.market_handler.remove_order(1)
+                self.market_handler.reset_my_orders()
+                self.market_handler.remove_order(12)
                 self.market_handler.scroll()
                 requests = len(self.sniffer.get_market_buffers("request"))
         except Exception as e:

@@ -101,6 +101,7 @@ class TravelHandler(InputSender):
             self.current_keys = best_keys
 
     def choose_destination(self, destination: str):
+        print(destination)
         self.sleep(1)
         if destination in CONNECTED_LOCATIONS.values() and destination != "5000":
             self.click(self.mouse_positions[destination+"_section"])
@@ -184,6 +185,7 @@ class TravelHandler(InputSender):
         self.sleep(2)
 
     async def move_to_market(self, destination_market: str):
+        print(destination_market)
         self.press("esc")
         if self.location == "": return
         while self.current_location_graph == None:

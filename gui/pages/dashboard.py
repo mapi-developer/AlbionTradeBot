@@ -518,7 +518,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="4002", text="Fort Sterling"),
                     ft.DropdownOption(key="1002", text="Lymhurst"),
                     ft.DropdownOption(key="2004", text="Bridgewatch"),
-                    ft.DropdownOption(key="3004", text="Martlock"),
+                    ft.DropdownOption(key="3008", text="Martlock"),
                     ft.DropdownOption(key="0007", text="Thetford"),
                     ft.DropdownOption(key="3005", text="Caerleon"),
                     ft.DropdownOption(key="5003", text="Brecilien"),
