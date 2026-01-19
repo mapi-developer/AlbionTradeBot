@@ -81,6 +81,7 @@ class GuiApp:
 
     def show_main_app(self):
         self.header.subscription.check_subscription()
+        self.header.update_user_id()
         self.page.controls.clear()
         self.page.add(self.main_column)
         if self.page:

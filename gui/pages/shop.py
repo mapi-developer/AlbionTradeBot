@@ -1,9 +1,15 @@
 import flet as ft
 import requests
 import webbrowser
+import re
+from typing import TYPE_CHECKING
 
 from components.style import GuiStyle
+from components import show_popup
 from bot import SettingsHandler
+
+if TYPE_CHECKING:
+    from pages import State
 
 
 class ShopingCard(ft.Column):
@@ -197,7 +203,7 @@ class GiftInfo(ft.Container):
 
 
 class Shop(ft.Container):
-    def __init__(self, settings: SettingsHandler, login_state=None, page=None):
+    def __init__(self, settings: SettingsHandler, login_state: "State", page=None):
         super().__init__()
         self.settings = settings
         self.padding = ft.padding.all(30)
@@ -240,7 +246,7 @@ class Shop(ft.Container):
         
         if is_gift:
              print("gift")
-             target_user_id = self.gift_info.recipient_id.value
+             target_user_id = re.sub(r"\s+", "", self.gift_info.recipient_id.value)
         elif self.login_state:
              print("not gift")
              target_user_id = self.login_state.user_id
@@ -280,8 +286,7 @@ class Shop(ft.Container):
 
     def show_snack(self, message):
         if self.page:
-            self.page.snack_bar = ft.SnackBar(ft.Text(message))
-            self.page.snack_bar.open = True
+            show_popup(self.page, message)
             self.page.update()
 
 

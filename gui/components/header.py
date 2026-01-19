@@ -1,6 +1,7 @@
 import flet as ft
 from typing import Callable
 from .subscription import Subscription
+from .popup import show_popup
 import sys
 import os
 
@@ -62,6 +63,26 @@ class Header(ft.Container):
 
         self.subscription = Subscription(self.page, login)
 
+        # --- User ID Component ---
+        self.user_id_text = ft.Text(
+            value="",
+            color=GuiStyle.Colors.GREY_TEXT,
+            size=12,
+            weight=ft.FontWeight.NORMAL,
+            font_family="Roboto Mono" # Monospace looks better for IDs
+        )
+        
+        self.user_id_container = ft.Container(
+            content=self.user_id_text,
+            padding=ft.padding.only(left=10, right=10, top=5, bottom=5),
+            border_radius=8,
+            on_click=self.copy_user_id,
+            tooltip="Click to copy User ID",
+            ink=True, # Ripple effect on click
+            visible=False # Hidden until we have an ID
+        )
+        # -------------------------
+
         self.logout_button = ft.FilledTonalButton(
             text="Logout",
             style=ft.ButtonStyle(
@@ -74,13 +95,45 @@ class Header(ft.Container):
         )
 
         self.right_part = ft.Container(
-            content=ft.Row(controls=[self.subscription, self.logout_button])
+            content=ft.Row(
+                controls=[
+                    self.subscription, 
+                    self.user_id_container, # Added here, to the left of logout
+                    self.logout_button
+                ],
+                spacing=10
+            )
         )
 
         self.content = ft.Row(
             controls=[self.nav_rows, self.right_part],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
+
+    def copy_user_id(self, e):
+        uid = self.login.state.user_id
+        if uid:
+            self.page.set_clipboard(uid)
+            show_popup(self.page, f"Copied ID: {uid}")
+
+    def update_user_id(self):
+        """Fetches the user ID from login state and updates the display."""
+        uid = self.login.state.user_id or self.settings.get("user_id")
+        
+        if uid:
+            try:
+                formatted_id = f"{int(uid):06d}"
+            except (ValueError, TypeError):
+                formatted_id = str(uid)
+            
+            self.user_id_text.value = f"ID: {formatted_id}"
+            self.user_id_container.visible = True
+        else:
+            self.user_id_container.visible = False
+
+        if self.user_id_text.page:
+            self.user_id_text.update()
+            self.user_id_container.update()
 
     def logout(self, e):
         self.login.state.token = None

@@ -1,4 +1,4 @@
-from .bot import Bot, SettingsManager
-from .gui import GuiApp
+from .bot import Bot, SettingsHandler
+from .gui import GuiApp, show_popup, State
 
-__all__ = ["GuiApp", "Bot", "SettingsManager"]
+__all__ = ["GuiApp", "Bot", "SettingsHandler", "show_popup", "State"]

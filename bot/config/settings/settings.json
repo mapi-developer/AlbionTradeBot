@@ -53,7 +53,7 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4ODIxNzQ4fQ.gBGCNMT2X7C48gi59ifUtwbIBWiBUHeMLmpqMShqtmk",
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4ODI2OTk2fQ.E_GkdJp_53xSprCKM00xrwIK94yKvVegpkM2mmJzc4E",
     "user_id": "1",
     "home_island": ""
 }
