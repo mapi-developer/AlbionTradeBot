@@ -1,5 +1,5 @@
 [
     {
-        "type": "remove_orders"
+        "type": "update_orders"
     }
 ]

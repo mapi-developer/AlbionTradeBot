@@ -4,6 +4,8 @@ import json
 import threading
 import asyncio
 import traceback
+import requests
+from datetime import datetime, timezone
 import win32con, win32gui, win32api
 from .core import WindowCapture
 from .core.input import BotStopped
@@ -58,6 +60,7 @@ class Bot:
         self.status = "Alive"
         self.current_task_name = ""
         self.recent_items = []
+        self.min_silver = 0
 
         self.log_handler.add_log("bot", f"Bot initialized!")
 
@@ -67,8 +70,43 @@ class Bot:
             status = "Change Location"
         return status
 
+    def _check_subscription(self):
+        """
+        Checks if the user's subscription is active.
+        Returns True if active, False otherwise.
+        """
+        try:
+            user_id = self.settings.get("user_id")
+            token = self.settings.get("auth_token")
+
+            if not user_id or not token:
+                self.log_handler.add_log("error", "Authentication missing. Please login.")
+                return False
+
+            headers = {"Authorization": f"Bearer {token}"}
+            response = requests.get(f"{self.settings.API_URL}/users/{user_id}", headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                sub_date = data.get("subscribed_until")
+                if sub_date and (datetime.strptime(sub_date, '%Y-%m-%dT%H:%M:%S.%f%z') > datetime.now(timezone.utc)):
+                    return True
+                else:
+                    self.log_handler.add_log("error", "Subscription expired or inactive. Please update.")
+                    return False
+            else:
+                self.log_handler.add_log("error", f"Subscription check failed: HTTP {response.status_code}")
+                return False
+
+        except Exception as e:
+            self.log_handler.add_log("error", f"Subscription check error: {e}")
+            return False
+
     async def _run_task(self, func, *args, **kwargs):
         self._stop_requested = False
+
+        if not self._check_subscription(): return
+
         self.resume()
         try:
             await self._wait_for_resume()
@@ -146,11 +184,11 @@ class Bot:
             self.recent_items.pop()
         self._update_overlay()
 
-    def _calculate_price_extremum(self, orders: list[dict], find_min=True):
+    def _calculate_price_extremum(self, orders: list[dict], find_min=True, bm_update=False) -> dict:
         found_prices = {}
         for order in orders:
             quality = order.get("QualityLevel", 1)
-            if quality > 3:
+            if quality > 3 and not bm_update:
                 continue
 
             full_name = order.get("ItemTypeId", "Unknown")
@@ -213,6 +251,7 @@ class Bot:
         return updated_offers, updated_requests
 
     def _filter_bought_items(self, orders_list: list[dict], items_to_buy: list[str]):
+        if len(orders_list) == 0: return items_to_buy
         existing_order_ids = {order.get('ItemTypeId') for order in orders_list}
         remaining_items = [item for item in items_to_buy if item not in existing_order_ids]
         return remaining_items
@@ -249,6 +288,7 @@ class Bot:
 
     async def _check_bm_from_inventory(self):
         try:
+            if not self._check_subscription(): return
             for x in range(6):
                 self.overlay.stop()
                 await self.travel_handler.move_to_guild_chest()
@@ -310,6 +350,80 @@ class Bot:
         except Exception as e:
             self.log_handler.add_log("market", f"Order BM price cheking Error: {e}")
 
+    async def _update_bm_orders(self):
+        try:
+            self.market_handler.change_tab("buy")
+            self.market_handler.sleep(.2)
+            self.sniffer.clear_market_buffers()
+            self.market_handler.change_tab("create_buy_order")
+            self.market_handler.sleep(.2)
+            self.market_handler.reset_filters()
+            self.market_handler.change_duration()
+            self.market_handler.sleep(.3)
+            self.market_handler.check_pages(20)
+            orders_exists = self.sniffer.get_market_buffers("request")
+            if len(orders_exists) == 0: return                
+            my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
+            for i, exist_order in enumerate(orders_exists):
+                await self._wait_for_resume()
+                self.settings.reload_settings()
+                item_unique_name = exist_order.get("ItemTypeId")
+                self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
+                self._update_overlay()
+
+                self.market_handler.search_item(item_unique_name, True, False)
+                self.market_handler.sleep(.2)             
+                self.market_handler.change_tab("buy")
+                self.market_handler.sleep(.2)
+                self.sniffer.clear_market_buffers()
+                self.market_handler.change_tab("create_buy_order")
+                self.market_handler.change_duration()
+
+                for i, order in enumerate(self.sniffer.get_market_buffers("request")):
+                    if order.get("ItemTypeId") == item_unique_name:
+                        self.market_handler.open_item(True, i+1)
+                self.market_handler.sleep(.3)
+                current_offer, current_requests = self.sniffer.get_market_buffers()
+                if len(current_offer) == 0 and len(current_requests) == 0:
+                    self.market_handler.close_item()
+                    continue
+                self._update_market_prices("black_market", current_offer, current_requests)
+
+                current_buyer = ""
+                order_price = float("inf")
+                for order in current_offer:
+                    if order.get("ItemTypeId") == item_unique_name:
+                        order_buyer = order.get("BuyerName", "")
+                        price = order.get("UnitPriceSilver", 0)/10000
+                        if price < order_price and price > 0:
+                            order_price = price
+                            current_buyer = order_buyer
+                if current_buyer == my_nickname:
+                    self.market_handler.close_item()
+                    continue
+
+                base_name, tier, enchant = self._parse_item_info(full_unique_name=item_unique_name)
+                order_sale_price = int(self._calculate_price_extremum(current_offer, bm_update=True).get((base_name, tier, enchant), 0)/10000)
+                fast_sale_price = int(self._calculate_price_extremum(current_requests, False, bm_update=True).get((base_name, tier, enchant), 0)/10000)
+
+                if (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.95:
+                        self.market_handler.make_sell_order(order_price=fast_sale_price-1)
+                if order_sale_price == 0:
+                    sell_price = self.sniffer.get_last_avg_price()
+                    if sell_price == 0:
+                        if fast_sale_price != 0:
+                            self.market_handler.make_sell_order(order_price=int(fast_sale_price*1.05))
+                        else:
+                            self.market_handler.make_sell_order(order_price=9999)
+                    else:
+                        self.market_handler.make_sell_order(order_price=sell_price)
+                else:
+                    self.market_handler.make_sell_order(order_price=order_sale_price-1)
+
+                self.market_handler.close_item()
+        except Exception as e:
+            self.log_handler.add_log("market", f"Error while updating orders: {e}")
+
     def stop(self):
         print("[Bot] Stopping...")
         self._stop_requested = True
@@ -324,6 +438,7 @@ class Bot:
         self._can_run.clear()
 
     def resume(self):
+        self.capture.set_foreground_window()
         change_keyboard_layout()
         print("[Bot] resuming...")
         self._can_run.set()
@@ -331,13 +446,16 @@ class Bot:
     def toggle_pause(self):
         if self._can_run.is_set():
             self.pause()
+            self.status = "Paused"
             return True
         else:
             self.resume()
+            self.status = "Running"
             return False
 
     async def travel_to(self, destination: str):
         change_keyboard_layout()
+        if not self._check_subscription(): return
         await self._wait_for_resume()
         self.recent_items = []
         self.status = "Running"
@@ -411,6 +529,7 @@ class Bot:
 
     async def check_price_orders(self):
         try:
+            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
@@ -472,12 +591,14 @@ class Bot:
 
     async def buy_items(self, items_to_buy_list: list = None, buy_mode: str = None):
         try:
+            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.recent_items = []
+            self.overlay.start()
+            self.market_handler.sleep(0.5)
             self.status = "Running"
             self.current_task_name = "Loading Prices"
-            self.overlay.start()
             self._update_overlay()
             self.market_handler.sleep(2)
             market_title = self.market_handler.get_market_title()
@@ -625,6 +746,7 @@ class Bot:
 
     async def update_orders(self):
         try:
+            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
@@ -635,6 +757,9 @@ class Bot:
 
             market_title = self.market_handler.get_market_title()
             self.log_handler.add_log("market", f"Bot Starting to update existing orders for {market_title}")
+            if market_title == "black_market":
+                await self._update_bm_orders()
+                return
             items_to_buy_list = self._load_preset_items(market_title)
             items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
             items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
@@ -660,86 +785,87 @@ class Bot:
                 temp_orders_exists = self.sniffer.get_market_buffers("request")
                 self.market_handler.sleep(.2)
             self.market_handler.prepare_for_order_update()
-            my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
-            for i, exist_order in enumerate(orders_exists):
-                await self._wait_for_resume()
-                self.settings.reload_settings()
-                # Reload settings here to catch changes during pause/resume
-                self.min_silver = self.settings.get("general")["min_silver"]
-                self.sequence_settings = self.settings.get(f"order_buy")
+            if len(orders_exists) != 0:
+                my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
+                for i, exist_order in enumerate(orders_exists):
+                    await self._wait_for_resume()
+                    self.settings.reload_settings()
+                    # Reload settings here to catch changes during pause/resume
+                    self.min_silver = self.settings.get("general")["min_silver"]
+                    self.sequence_settings = self.settings.get(f"order_buy")
 
-                item_unique_name = exist_order.get("ItemTypeId")
-                self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
-                self._update_overlay()
+                    item_unique_name = exist_order.get("ItemTypeId")
+                    self.current_task_name = f"Updating Orders: {i+1}/{len(orders_exists)}"
+                    self._update_overlay()
 
-                self.market_handler.search_item(item_unique_name, True, False)
-                self.market_handler.sleep(.2)                
-                self.sniffer.clear_market_buffers()
-                self.market_handler.reset_my_orders()
-                for i, order in enumerate(self.sniffer.get_market_buffers("request")):
-                    if order.get("ItemTypeId") == item_unique_name:
-                        self.market_handler.open_item(True, i+1)
-                self.market_handler.sleep(.3)
-                current_offer, current_requests = self.sniffer.get_market_buffers()
-                if len(current_offer) == 0 and len(current_requests) == 0:
-                    self.market_handler.close_item()
-                    continue
-
-                black_market_price = self._get_black_market_price(item_unique_name, items_prices_fast, items_prices_order)
-                self._update_market_prices(market_title, current_offer, current_requests)
-                if black_market_price == None and current_buyer != my_nickname:
-                    self.market_handler.close_item()
-                    self.market_handler.remove_order(1)
-                    continue
-
-                if len(current_requests) != 0:
-                    lowest_price = float("inf")
-                    order_price = 1
-                    current_amount = 0
-                    current_buyer = ""
-                    for order in current_requests:
+                    self.market_handler.search_item(item_unique_name, True, False)
+                    self.market_handler.sleep(.2)                
+                    self.sniffer.clear_market_buffers()
+                    self.market_handler.reset_my_orders()
+                    for i, order in enumerate(self.sniffer.get_market_buffers("request")):
                         if order.get("ItemTypeId") == item_unique_name:
-                            order_buyer = order.get("BuyerName", "")
-                            if order_buyer == my_nickname:
-                                current_amount = int(order.get("Amount"))
-                            price = order.get("UnitPriceSilver", 0)/10000
-                            if price > order_price and price > 0:
-                                order_price = price
-                                current_buyer = order_buyer
-                    lowest_price = int(order_price)
-                    if current_buyer == my_nickname:
+                            self.market_handler.open_item(True, i+1)
+                    self.market_handler.sleep(.3)
+                    current_offer, current_requests = self.sniffer.get_market_buffers()
+                    if len(current_offer) == 0 and len(current_requests) == 0:
                         self.market_handler.close_item()
                         continue
 
-                    profit = black_market_price * 0.96 - lowest_price
-                    profit_margin = (profit / lowest_price) if lowest_price > 0 else profit
-                    min_profit_rate = float(self.sequence_settings["min_profit_rate"]) / 100 or 0.0
-                    if profit_margin >= min_profit_rate:
-                        quantity_to_buy = self._get_amount_to_buy(lowest_price)
-                        if quantity_to_buy > 0:
-                            self.log_handler.add_log(
-                                "orders",
-                                f"Placing Order {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Qty: {quantity_to_buy} | Silver: {self.local_player.silver_balance}",
-                            )
-                            self.market_handler.buy_item(
-                                amount=(quantity_to_buy-current_amount+1),
-                                fast_buy=True,
-                                fast_buy_price=int(lowest_price+1)
-                            )
-                            self._add_recent_item(
-                                self.market_handler.get_name_from_unique(item_unique_name),
-                                f"{int(lowest_price+1)} x{quantity_to_buy}",
-                                "order"
-                            )
-                    else:
+                    black_market_price = self._get_black_market_price(item_unique_name, items_prices_fast, items_prices_order)
+                    self._update_market_prices(market_title, current_offer, current_requests)
+                    if black_market_price == None and current_buyer != my_nickname:
                         self.market_handler.close_item()
                         self.market_handler.remove_order(1)
-                else:
-                    self.market_handler.close_item()
+                        continue
 
-                if self.local_player.silver_balance != 0 and int(self.min_silver) >= self.local_player.silver_balance:
-                    self.log_handler.add_log("orders", "[Warning] Silver amount is less than minimum to continue")
-                    break
+                    if len(current_requests) != 0:
+                        lowest_price = float("inf")
+                        order_price = 1
+                        current_amount = 0
+                        current_buyer = ""
+                        for order in current_requests:
+                            if order.get("ItemTypeId") == item_unique_name:
+                                order_buyer = order.get("BuyerName", "")
+                                if order_buyer == my_nickname:
+                                    current_amount = int(order.get("Amount"))
+                                price = order.get("UnitPriceSilver", 0)/10000
+                                if price > order_price and price > 0:
+                                    order_price = price
+                                    current_buyer = order_buyer
+                        lowest_price = int(order_price)
+                        if current_buyer == my_nickname:
+                            self.market_handler.close_item()
+                            continue
+
+                        profit = black_market_price * 0.96 - lowest_price
+                        profit_margin = (profit / lowest_price) if lowest_price > 0 else profit
+                        min_profit_rate = float(self.sequence_settings["min_profit_rate"]) / 100 or 0.0
+                        if profit_margin >= min_profit_rate:
+                            quantity_to_buy = self._get_amount_to_buy(lowest_price)
+                            if quantity_to_buy > 0:
+                                self.log_handler.add_log(
+                                    "orders",
+                                    f"Placing Order {item_unique_name} | Price: {lowest_price} | Margin: {profit_margin*100:.2f}% | Qty: {quantity_to_buy} | Silver: {self.local_player.silver_balance}",
+                                )
+                                self.market_handler.buy_item(
+                                    amount=(quantity_to_buy-current_amount+1),
+                                    fast_buy=True,
+                                    fast_buy_price=int(lowest_price+1)
+                                )
+                                self._add_recent_item(
+                                    self.market_handler.get_name_from_unique(item_unique_name),
+                                    f"{int(lowest_price+1)} x{quantity_to_buy}",
+                                    "order"
+                                )
+                        else:
+                            self.market_handler.close_item()
+                            self.market_handler.remove_order(1)
+                    else:
+                        self.market_handler.close_item()
+
+                    if self.local_player.silver_balance != 0 and int(self.min_silver) >= self.local_player.silver_balance:
+                        self.log_handler.add_log("orders", "[Warning] Silver amount is less than minimum to continue")
+                        break
             if self.local_player.silver_balance != 0 and int(self.min_silver) >= self.local_player.silver_balance:
                 self.log_handler.add_log("orders", "[Warning] Silver amount is less than minimum to continue")
                 return
@@ -764,6 +890,7 @@ class Bot:
 
     async def remove_orders(self):
         try:
+            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.sniffer.clear_market_buffers()
@@ -791,6 +918,7 @@ class Bot:
 
     async def sell_items(self):
         try:
+            if not self._check_subscription(): return
             change_keyboard_layout()
             self.status = "Running"
             self.current_task_name = "Selling Items"

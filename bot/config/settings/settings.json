@@ -19,7 +19,7 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "60",
+        "min_profit_rate": "150",
         "default_buy_amount": "10",
         "presets": {
             "caerleon": "Demo Preset.json",
@@ -53,7 +53,7 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4ODI2OTk2fQ.E_GkdJp_53xSprCKM00xrwIK94yKvVegpkM2mmJzc4E",
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4ODQ0NDc1fQ.J9DfTtyH6X7R-aeBvhGUUjfmc7xIBF9TfvEl_JliBIY",
     "user_id": "1",
     "home_island": ""
 }

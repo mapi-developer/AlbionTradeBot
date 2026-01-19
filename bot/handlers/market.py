@@ -35,7 +35,8 @@ class MarketHandler(InputSender):
     
     def get_market_title(self) -> str | None:
         location_id = self.bot.local_player.location.location_id
-        if location_id == "":
+        market_title = self.settings.MARKET_TITLES.get(location_id)
+        if market_title == None:
             raw_title = self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "")
             if "fort" in raw_title:
                 return "fort_sterling"
@@ -55,7 +56,7 @@ class MarketHandler(InputSender):
                 return "caerleon"
             else:
                 return None
-        return self.settings.MARKET_TITLES.get(location_id)
+        return market_title
     
     def change_tier(self, tier: int) -> str | None:
         self.click(self.mouse_positions["tier"])
@@ -66,8 +67,8 @@ class MarketHandler(InputSender):
     def remove_order(self, amount: int = 10):
         self.click(self.mouse_positions["button_remove_order"], amount, interval=0.1)
 
-    def check_pages(self) -> None:
-        self.click(self.mouse_positions["next_page"], clicks=6, interval=0.2)
+    def check_pages(self, clicks: int = 6) -> None:
+        self.click(self.mouse_positions["next_page"], clicks=clicks, interval=0.2)
         self.sleep(0.5)
 
     def check_item_stats(self) -> None:
@@ -158,17 +159,19 @@ class MarketHandler(InputSender):
         if market_title == "black_market":
             self.change_tab("sell")
             self.sleep(0.2)
-            self.click(self.mouse_positions["category_reset"])
-            self.click(self.mouse_positions["search_reset"])
+            self.reset_filters()
 
     def prepare_for_order_update(self):
         self.change_tab("create_buy_order")
         self.sleep(.2)
         self.change_tab("my_orders_tab")
         self.sleep(.2)
+        self.reset_filters()
+        self.sleep(.3)
+
+    def reset_filters(self):
         self.click(self.mouse_positions["category_reset"])
         self.click(self.mouse_positions["search_reset"])
-        self.sleep(.3)
 
     def fast_sale_item(self, market_title: str = "black_market"):
         if market_title == "black_market":
@@ -197,3 +200,7 @@ class MarketHandler(InputSender):
     def next_my_orders_page(self):
         self.click(self.mouse_positions["button_next_my_ordes_page"])
         self.sleep(.1)
+
+    def change_duration(self):
+        self.click(self.mouse_positions["button_duration"])
+        self.sleep(.2)

@@ -6,13 +6,13 @@ import random
 
 # --- CONFIGURATION ---
 # 1. Your Backend URL
-WEBHOOK_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app/payments/webhook"
+IPN_SECRET = "hu/tEkZncUayeSgrE/82nH7w8YixECa/" 
 
-# 2. Your REAL Secret (Must match what is in Cloud Run secrets)
-IPN_SECRET = "njOn360PKnEiScgzGTgA2cHbR9vsSsCE" 
+# 2. Your Cloud Run URL
+WEBHOOK_URL = "https://trade-backend-service-1014783260724.europe-west1.run.app/payments/webhook"
 
 # 3. The User ID you want to upgrade
-USER_ID = 2
+USER_ID = 1
 DAYS_TO_ADD = 30 # Simulate a 1-month plan
 
 def force_payment_success():

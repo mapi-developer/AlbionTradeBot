@@ -38,6 +38,7 @@ class SettingsHandler:
             "5003": "brecilien",
             "3003": "black_market",
             "3005": "caerleon",
+            "4301": "fort_sterling",
         }
         self.DEFAULT_SETTINGS = {
             "general": {
@@ -152,8 +153,8 @@ class SettingsHandler:
             "brecilien": "Brecilien",
         }
 
-        self.API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
-        self.GOOGLE_CLIENT_ID = "1054089939982-e2umo92u5p7mh4gjm3hvknddprenho3k.apps.googleusercontent.com"
+        self.API_URL = "https://trade-backend-service-1014783260724.europe-west1.run.app"
+        self.GOOGLE_CLIENT_ID = "1014783260724-k8qsvkb8nv0sasri7jsi1l5uj17ej51d.apps.googleusercontent.com"
         self.DISCORD_CLIENT_ID = "1447721013260456058"
 
     def load_settings(self):

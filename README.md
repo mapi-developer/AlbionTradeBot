@@ -1,15 +1,16 @@
 TO DO before release:
-1. Update Black Market sell orders
+1. Update Black Market sell orders ✅
 2. Make Random clicks everywhere on market
 3. Handle logout after long waiting
 4. Handle Server Restart Time
-5. Check subscription status on each bot function start
+5. Check subscription status on each bot function start ✅
 6. Display User ID in right upper corner (possible to copy) ✅
-7. Make price labels come from Google Sheet for changes without update ~
+7. Make price labels come from Google Sheet for changes without update ~ !
 8. Change language on functions start and after resume ✅
 9. Try to fix issue when launch on other language ✅
-10. Add orders statistic
-11. Add filters by artifacts in preset tab
+10. Add orders statistic !
+11. Add filters by artifacts in preset tab (ПОХУЙ)
+12. Percentage of up-to-date orders. Black market always, other cities on hover
 
 Game Settings for best bot work:
 Borderless full screen

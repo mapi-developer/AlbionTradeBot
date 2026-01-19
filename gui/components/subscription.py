@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pages.login import Login
 from gui.components.style import GuiStyle
 
-API_URL = "https://trade-backend-service-1054089939982.europe-west4.run.app"
+API_URL = "https://trade-backend-service-1014783260724.europe-west1.run.app"
 
 class Subscription(ft.Container):
     def __init__(self, page: ft.Page, login: Login, on_payment_click=None):

@@ -10,7 +10,7 @@ from .client import APIClient
 class DatabaseInterface:
     def __init__(self):
         load_dotenv()
-        self.api_url = os.getenv('API_URL', "https://trade-backend-service-1054089939982.europe-west4.run.app")
+        self.api_url = os.getenv('API_URL', "https://trade-backend-service-1014783260724.europe-west1.run.app")
         self.client = APIClient(api_url=self.api_url)
         print(f"✅ Interface initialized with API: {self.api_url}")
 

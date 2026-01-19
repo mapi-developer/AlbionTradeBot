@@ -129,7 +129,7 @@ class Sniffer:
             if not msg: return
 
             params = msg.decode()
-            
+
             if 253 in params:
                 request_code = params.get(253)
                 if request_code in [const.OP_AUCTION_GET_REQUESTS, const.OP_AUCTION_GET_MY_ORDERS]:

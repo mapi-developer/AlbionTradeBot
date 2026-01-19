@@ -12,16 +12,12 @@ def is_english_layout():
     """
     try:
         user32 = ctypes.windll.user32
-        # GetKeyboardLayout(0) retrieves the layout for the current thread
         hkl = user32.GetKeyboardLayout(0)
-        # The Language ID is the lower 16 bits
         lang_id = hkl & 0xFFFF
-        # The Primary Language ID is the lower 8 bits (0x09 is English)
         primary_lang_id = lang_id & 0xFF
         
         return primary_lang_id == 0x09
     except Exception:
-        # If we fail to check, we assume True to avoid blocking the user erroneously
         return True
 
 def get_asset_path(relative_path):

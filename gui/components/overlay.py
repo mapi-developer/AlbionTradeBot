@@ -86,7 +86,11 @@ def run_flet_overlay(status_queue):
                         return
 
                     if isinstance(data, dict):
-                        status_text.value = f"STATUS: {data.get('status', '').upper()}"
+                        status = data.get('status', '')
+                        if status.lower() == 'running':
+                            status_text.value = f"STATUS: {data.get('status', '').upper()} Press F1 to Pause"
+                        else:
+                            status_text.value = f"STATUS: {data.get('status', '').upper()} Press F1 to Resume"
                         task_text.value = data.get('task', '')
                         status_text.color = GuiStyle.Colors.ACCENT_ORANGE if data.get('paused') else GuiStyle.Colors.ACCENT_GREEN
                         
