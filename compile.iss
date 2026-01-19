@@ -6,8 +6,6 @@
 #define MyAppExeName "MarketTrader.exe"
 
 [Setup]
-; NOTE: The value of AppId uniquely identifies this application.
-; Do not use the same AppId value in installers for other applications.
 AppId={{c362c6a4-c152-467b-9f3d-b6f8d659d1cb}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -16,11 +14,13 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 SetupIconFile=bot\config\app_icon.ico
 OutputDir="dist\Output"
-; Renamed output file to indicate it bundles dependencies
 OutputBaseFilename=MarketTraderSetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+
+; IMPORTANT: This tells Windows to reload environment variables after install
+ChangesEnvironment=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -29,13 +29,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; 1. The Main Application Files
-; Copies everything from the built dist/AlbionTradeBot folder
 Source: "dist\MarketTrader\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; 2. The Dependency Installers
-; These assume you have a folder named 'redist' in your project root (two levels up from this .iss file)
-; They are copied to a temporary folder ({tmp}) and deleted after installation
 Source: "redist\npcap_installer.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 Source: "redist\tesseract_installer.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall
 
@@ -44,19 +38,58 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; 1. Install Npcap
-; Flags: 
-;   waituntilterminated: Pauses the main setup until Npcap installer closes.
-;   runascurrentuser: Ensures it runs with appropriate permissions.
-;   skipifdoesntexist: Prevents errors if the file name changes slightly.
 Filename: "{tmp}\npcap_installer.exe"; StatusMsg: "Installing Npcap (Required for Packet Sniffing)..."; Flags: waituntilterminated skipifdoesntexist runascurrentuser
-
-; 2. Install Tesseract OCR
 Filename: "{tmp}\tesseract_installer.exe"; StatusMsg: "Installing Tesseract OCR (Required for Text Recognition)..."; Flags: waituntilterminated skipifdoesntexist runascurrentuser
 
-; 3. Launch the Main Application
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-
 [Dirs]
-; Ensure the config directory is writable for the user (important for your settings/logs)
 Name: "{app}\config"; Permissions: users-modify
+
+[Code]
+const
+  // This is the default installation path for Tesseract.
+  // If your installer puts it somewhere else, change this line.
+  TesseractPath = 'C:\Program Files\Tesseract-OCR';
+
+// Function to append the directory to the PATH variable
+procedure AddToPath(PathToAdd: string);
+var
+  RegPath: string;
+  OldPath: string;
+  NewPath: string;
+begin
+  // We check the SYSTEM path (requires Admin). Use HKEY_CURRENT_USER if you only want it for the current user.
+  RegPath := 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment';
+
+  // 1. Get the current PATH value
+  if RegQueryStringValue(HKEY_LOCAL_MACHINE, RegPath, 'Path', OldPath) then
+  begin
+    // 2. Check if Tesseract is already in the path to avoid duplicates
+    if Pos(';' + PathToAdd, ';' + OldPath) = 0 then
+    begin
+      // 3. Append the new path
+      // Handle case where path doesn't end with a semicolon
+      if (OldPath <> '') and (OldPath[Length(OldPath)] <> ';') then
+        NewPath := OldPath + ';' + PathToAdd
+      else
+        NewPath := OldPath + PathToAdd;
+
+      // 4. Write the new path back to the registry
+      RegWriteExpandStringValue(HKEY_LOCAL_MACHINE, RegPath, 'Path', NewPath);
+    end;
+  end;
+end;
+
+// Event that triggers after the installation steps are done
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    // Attempt to add Tesseract to the path
+    try
+      AddToPath(TesseractPath);
+    except
+      // If it fails (e.g. permissions), we ignore it so setup doesn't crash
+      Log('Failed to add Tesseract to PATH.');
+    end;
+  end;
+end;

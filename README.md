@@ -1,14 +1,13 @@
-2. Отслеживание писем
-3. Фри для бомжей до 3-го тира
-4. показывать функции, но не давать нищим их использовать
-5. бинд для паузы в настройках
-6. Оверлей сделать пизже
-8. показывать цену шмоток в пресетах
-11. Если цена растет то уменьшать кол-во шмоток при обнове цен
-12. Brecilien Travel
-13. Fix fast sale (если нет ордера, смотреть цену последней продажи)
-14. Если сливать фаст сейл и не получается, ресетать
-16. Обнова ордеров
+TO DO before release:
+1. Update Black Market sell orders
+2. Make Random clicks everywhere on market
+3. Handle logout after long waiting
+4. Handle Server Restart Time
+5. Check subscription status on each bot function start
+6. Display User ID in right upper corner (possible to copy)
+7. Make price labels come from Google Sheet for changes without update
+8. Change language on functions start and after resume
+9. Try to fix issue when launch on other language
 
 Game Settings for best bot work:
 Borderless full screen
