@@ -1,5 +1,5 @@
 [
     {
-        "type": "sell_items"
+        "type": "remove_orders"
     }
 ]

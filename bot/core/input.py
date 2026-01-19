@@ -1,4 +1,6 @@
+import pyperclip
 import pyautogui
+import ctypes
 import time
 
 class BotStopped(Exception):
@@ -16,6 +18,25 @@ class InputSender():
         if self._should_stop_callback and self._should_stop_callback():
             raise BotStopped("Bot execution stopped by user.")
 
+    def _send_ctrl_v(self):
+        """
+        Forces a Ctrl+V press using raw Windows Virtual Key codes.
+        0x11 = VK_CONTROL
+        0x56 = VK_V
+        This works even if the active layout is Russian.
+        """
+        user32 = ctypes.windll.user32
+        
+        # Press Ctrl (0x11)
+        user32.keybd_event(0x11, 0, 0, 0)
+        # Press V (0x56)
+        user32.keybd_event(0x56, 0, 0, 0)
+        
+        # Release V
+        user32.keybd_event(0x56, 0, 2, 0) # 2 = KEYEVENTF_KEYUP
+        # Release Ctrl
+        user32.keybd_event(0x11, 0, 2, 0)
+
     def sleep(self, seconds: int) -> None:
         end_time = time.time() + seconds
         while time.time() < end_time:
@@ -30,6 +51,10 @@ class InputSender():
         else:
             text = str(text)
         pyautogui.typewrite(text, 0.03)
+        # pyperclip.copy(text)
+        # self.sleep(0.05)
+        # self._send_ctrl_v()
+        # self.sleep(.1)
 
     def press(self, keycode: str) -> None:
         self._check_stop()

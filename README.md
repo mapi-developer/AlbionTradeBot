@@ -6,8 +6,10 @@ TO DO before release:
 5. Check subscription status on each bot function start
 6. Display User ID in right upper corner (possible to copy)
 7. Make price labels come from Google Sheet for changes without update
-8. Change language on functions start and after resume
-9. Try to fix issue when launch on other language
+8. Change language on functions start and after resume ✅
+9. Try to fix issue when launch on other language ✅
+10. Add orders statistic
+11. Add filters by artifacts in preset tab
 
 Game Settings for best bot work:
 Borderless full screen

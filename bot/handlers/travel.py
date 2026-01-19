@@ -115,7 +115,7 @@ class TravelHandler(InputSender):
         self.click(self.mouse_positions["buy_journey"])
         self.can_move = False
 
-    async def move_to_position(self, target_position: list[float], tolerance=3, timeout=15):
+    async def move_to_position(self, target_position: list[float], tolerance=2.5, timeout=15):
         start_time = time.time()
         try:
             while True:

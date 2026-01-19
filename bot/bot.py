@@ -4,12 +4,24 @@ import json
 import threading
 import asyncio
 import traceback
+import win32con, win32gui, win32api
 from .core import WindowCapture
 from .core.input import BotStopped
 from .api import DatabaseInterface
 from .net import Sniffer
 from .classes import LocalPlayer
 from .handlers import SettingsHandler, TravelHandler, MarketHandler, LoginHandler, LogHandler, ChestHandler
+
+def change_keyboard_layout(language_id_hex=0x04090409):
+    hwnd = win32gui.GetForegroundWindow()
+
+    if hwnd:
+        win32api.PostMessage(
+            hwnd, win32con.WM_INPUTLANGCHANGEREQUEST, 0, language_id_hex
+        )
+    else:
+        print("No active window found.")
+
 
 class Bot:
     def __init__(self, sniffer: Sniffer, settings: SettingsHandler, overlay, local_player: LocalPlayer):
@@ -312,6 +324,7 @@ class Bot:
         self._can_run.clear()
 
     def resume(self):
+        change_keyboard_layout()
         print("[Bot] resuming...")
         self._can_run.set()
 
@@ -324,6 +337,7 @@ class Bot:
             return False
 
     async def travel_to(self, destination: str):
+        change_keyboard_layout()
         await self._wait_for_resume()
         self.recent_items = []
         self.status = "Running"
@@ -339,6 +353,7 @@ class Bot:
 
     async def check_price_fast(self):
         try:
+            change_keyboard_layout()
             self.capture.set_foreground_window()
             self.recent_items = []
             self.status = "Running"
@@ -396,6 +411,7 @@ class Bot:
 
     async def check_price_orders(self):
         try:
+            change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
             self.current_task_name = f"Checking Price: 0/X"
@@ -456,6 +472,7 @@ class Bot:
 
     async def buy_items(self, items_to_buy_list: list = None, buy_mode: str = None):
         try:
+            change_keyboard_layout()
             self.capture.set_foreground_window()
             self.recent_items = []
             self.status = "Running"
@@ -608,6 +625,7 @@ class Bot:
 
     async def update_orders(self):
         try:
+            change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
             self.current_task_name = "Price Loading"
@@ -746,6 +764,7 @@ class Bot:
 
     async def remove_orders(self):
         try:
+            change_keyboard_layout()
             self.capture.set_foreground_window()
             self.sniffer.clear_market_buffers()
             self.recent_items = []
@@ -772,6 +791,7 @@ class Bot:
 
     async def sell_items(self):
         try:
+            change_keyboard_layout()
             self.status = "Running"
             self.current_task_name = "Selling Items"
             self.overlay.start()
