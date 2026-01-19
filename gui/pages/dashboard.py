@@ -261,8 +261,9 @@ class OverviewPanel(ft.Container):
 
 
 class OrdersGraph(ft.Container):
-    def __init__(self, max_y: int = 40):
+    def __init__(self, dashboard: "Dashboard", max_y: int = 40):
         super().__init__()
+        self.dashboard = dashboard
         self.padding = 20
         self.bgcolor = GuiStyle.Colors.CARD_BG
         self.border_radius = 15
@@ -338,6 +339,44 @@ class OrdersGraph(ft.Container):
                 ft.Container(content=self.chart, height=300),
             ]
         )
+    def update_graph_data(self):
+        stats = self.dashboard.bot.get_order_stats()
+        # Assuming self.chart.data_series[0].data_points exists
+        new_points = []
+        max_y = 0
+        for i, count in enumerate(stats):
+            new_points.append(ft.LineChartDataPoint(i, count))
+            if count > max_y:
+                max_y = int(count)
+
+        max_y = max(20, int(max_y*1.2))
+        
+        self.chart.data_series[0].data_points = new_points
+        self.chart.left_axis=ft.ChartAxis(
+            labels=[
+                ft.ChartAxisLabel(value=0, label=ft.Text("0", size=15)),
+                ft.ChartAxisLabel(
+                    value=int(max_y / 2),
+                    label=ft.Text(str(int(max_y / 2)), size=15),
+                ),
+                ft.ChartAxisLabel(value=max_y, label=ft.Text(str(max_y), size=15)),
+            ],
+            labels_size=30,
+        )
+        self.chart.horizontal_grid_lines=ft.ChartGridLines(
+            interval=max_y / 4,
+            color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
+            width=1,
+        )
+        self.chart.vertical_grid_lines=ft.ChartGridLines(
+            interval=1,
+            color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
+            width=1,
+        )
+        self.chart.min_y=0
+        self.chart.max_y=max_y
+        if self.page:
+            self.update()
 
 
 class RightPanel(ft.Column):
@@ -365,7 +404,7 @@ class DashboardPanel(RightPanel):
             padding=ft.padding.only(0, 0, 0, 10),
         )
         self.overview_panel = OverviewPanel(dashboard=dashboard)
-        self.orders_graph = OrdersGraph()
+        self.orders_graph = OrdersGraph(dashboard)
         super().__init__(
             content_controls=[
                 self.title,
@@ -1411,6 +1450,8 @@ class Dashboard(ft.Container):
         self.bot_activity_panel = ActivityLogsPanel(dashboard=self)  # Pass self
         self.left_panel = LeftPanel()
 
+        self.dashboard_panel.orders_graph.update_graph_data()
+
         self.bot.sniffer.subscribe_location(self.dashboard_panel.overview_panel._get_data_background)
         self.bot.sniffer.subscribe_location(self.check_start_requirements)
 
@@ -1609,6 +1650,7 @@ class Dashboard(ft.Container):
         elif target_tab == "logs":
             self.bot_activity_panel.refresh_logs()  # Refresh list when opening logs
         elif target_tab == "dashboard":
+            self.dashboard_panel.orders_graph.update_graph_data()
             self.dashboard_panel.overview_panel.update_data()
 
         self.update()

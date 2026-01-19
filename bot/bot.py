@@ -64,6 +64,62 @@ class Bot:
 
         self.log_handler.add_log("bot", f"Bot initialized!")
 
+    def _get_stats_file_path(self):
+        return os.path.join(os.path.dirname(__file__), "config", "stats.json")
+
+    def _record_order_activity(self):
+        """Records the current timestamp as an order event."""
+        try:
+            file_path = self._get_stats_file_path()
+            data = {"orders": []}
+            
+            if os.path.exists(file_path):
+                with open(file_path, "r") as f:
+                    try:
+                        data = json.load(f)
+                    except json.JSONDecodeError:
+                        pass
+
+            data.setdefault("orders", []).append(datetime.now(timezone.utc).timestamp())
+            
+            cutoff = datetime.now(timezone.utc).timestamp() - (3 * 24 * 3600)
+            data["orders"] = [t for t in data["orders"] if t > cutoff]
+
+            with open(file_path, "w") as f:
+                json.dump(data, f)
+                
+        except Exception as e:
+            print(f"[Stats] Error recording order: {e}")
+
+    def get_order_stats(self) -> list:
+        """
+        Returns a list of tuples (x, y) or just y-values for the graph.
+        The graph in dashboard.py seems to use indices 0-10, where 10 is 'Now'.
+        Each step represents 6 hours (based on 10=Now, 6=24h ago).
+        """
+        try:
+            file_path = self._get_stats_file_path()
+            if not os.path.exists(file_path):
+                return [0] * 11
+            with open(file_path, "r") as f:
+                data = json.load(f)
+            
+            orders = data.get("orders", [])
+            now = datetime.now(timezone.utc).timestamp()
+            bucket_size = 6 * 3600 # 6 hours in seconds
+            counts = [0] * 11 
+
+            for timestamp in orders:
+                age = now - timestamp
+                if age < 0: continue
+                bucket_index = 10 - int(age / bucket_size)
+                if 0 <= bucket_index <= 10:
+                    counts[bucket_index] += 1
+            return counts
+        except Exception as e:
+            print(f"[Stats] Error getting stats: {e}")
+            return [0] * 11
+
     def get_status(self):
         status = self.status
         if self.local_player.location.location_id == "":
@@ -413,12 +469,16 @@ class Bot:
                     if sell_price == 0:
                         if fast_sale_price != 0:
                             self.market_handler.make_sell_order(order_price=int(fast_sale_price*1.05))
+                            self._record_order_activity()
                         else:
                             self.market_handler.make_sell_order(order_price=9999)
+                            self._record_order_activity()
                     else:
                         self.market_handler.make_sell_order(order_price=sell_price)
+                        self._record_order_activity()
                 else:
                     self.market_handler.make_sell_order(order_price=order_sale_price-1)
+                    self._record_order_activity()
 
                 self.market_handler.close_item()
         except Exception as e:
@@ -698,6 +758,7 @@ class Bot:
                             fast_buy=True,
                             fast_buy_price=int(final_max_price)
                         )
+                        self._record_order_activity()
                         self._add_recent_item(
                             self.market_handler.get_name_from_unique(item_unique_name),
                             f"~{int(final_avg_price)} x{final_buy_qty}",
@@ -729,6 +790,7 @@ class Bot:
                                 fast_buy=False,
                                 fast_buy_price=0 
                             )
+                            self._record_order_activity()
                             self._add_recent_item(
                                 self.market_handler.get_name_from_unique(item_unique_name),
                                 f"{int(lowest_price)} x{quantity_to_buy}",
@@ -852,6 +914,7 @@ class Bot:
                                     fast_buy=True,
                                     fast_buy_price=int(lowest_price+1)
                                 )
+                                self._record_order_activity()
                                 self._add_recent_item(
                                     self.market_handler.get_name_from_unique(item_unique_name),
                                     f"{int(lowest_price+1)} x{quantity_to_buy}",
@@ -966,12 +1029,16 @@ class Bot:
                     if sell_price == 0:
                         if fast_sale_price != 0:
                             self.market_handler.make_sell_order(order_price=int(fast_sale_price*1.05))
+                            self._record_order_activity()
                         else:
                             self.market_handler.make_sell_order(order_price=9999)
+                            self._record_order_activity()
                     else:
                         self.market_handler.make_sell_order(order_price=sell_price)
+                        self._record_order_activity()
                 else:
                     self.market_handler.make_sell_order()
+                    self._record_order_activity()
                 
                 self.sniffer.clear_market_buffers()
                 self.market_handler.sleep(.2)

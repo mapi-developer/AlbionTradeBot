@@ -8,7 +8,7 @@ TO DO before release:
 7. Make price labels come from Google Sheet for changes without update ~ !
 8. Change language on functions start and after resume ✅
 9. Try to fix issue when launch on other language ✅
-10. Add orders statistic !
+10. Add orders statistic ✅
 11. Add filters by artifacts in preset tab (ПОХУЙ)
 12. Percentage of up-to-date orders. Black market always, other cities on hover
 

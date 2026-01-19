@@ -150,6 +150,7 @@ class MarketHandler(InputSender):
 
     def prepare(self, isPriceCheck: bool = False):
         self.change_tab("buy")
+        self.reset_filters()
         self.click(self.mouse_positions["quality"])
         self.click(self.mouse_positions["quality_good"])
         if isPriceCheck: self.change_tier(4)
