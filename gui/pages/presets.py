@@ -339,7 +339,7 @@ class Presets(ft.Column):
                             ),
                             ft.Column(
                                 [
-                                    ft.Text("Sub-Cat:", size=11, color="#ffffff"),
+                                    ft.Text("Sub-Category:", size=11, color="#ffffff"),
                                     self.sub_row,
                                 ],
                                 spacing=0,

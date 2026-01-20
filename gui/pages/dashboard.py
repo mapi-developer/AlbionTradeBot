@@ -1517,9 +1517,13 @@ class MarketTable(ft.Column):
         self.spacing = 10
         self.all_items = []
         self.filtered_items = []
-        self.raw_data = {}
         self.page_number = 1
         self.items_per_page = 15
+        
+        # New: Price Cache
+        self.price_cache_fast = {}
+        self.price_cache_order = {}
+        self.is_loading_prices = False
         
         # Filters state
         self.selected_cat = None
@@ -1529,6 +1533,18 @@ class MarketTable(ft.Column):
         
         self._init_ui()
         self._load_items_data()
+
+    def _create_chip(self, text, data, callback):
+        """Helper method to create consistent filter chips."""
+        return ft.Chip(
+            label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
+            on_select=callback, 
+            data=data,
+            label_padding=ft.padding.symmetric(horizontal=4),
+            bgcolor=GuiStyle.Colors.INNER_BG,
+            border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
+            selected_color=GuiStyle.Colors.DARK_BLUE,
+        )
 
     def _init_ui(self):
         # --- 1. Filter Components (Mirrored from Presets) ---
@@ -1548,9 +1564,26 @@ class MarketTable(ft.Column):
             text_size=12,
             dense=True,
             height=35,
+            expand=True, # Added expand to fill space in the row
             on_change=lambda e: self.apply_filters(),
             bgcolor=GuiStyle.Colors.DARK_BLUE,
             color=GuiStyle.Colors.TEXT_PRIMARY,
+        )
+
+        # New Refresh Text Button
+        self.refresh_prices_btn = ft.TextButton(
+            text="Refresh Prices",
+            icon=ft.Icons.REFRESH_ROUNDED,
+            on_click=lambda _: threading.Thread(target=self.refresh_all_prices, daemon=True).start(),
+            style=ft.ButtonStyle(color=GuiStyle.Colors.TEXT_PRIMARY)
+        )
+
+        # Updated Header Row with the button next to search
+        header_row = ft.Row(
+            controls=[self.search_input, self.refresh_prices_btn],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10
         )
 
         self.cat_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
@@ -1633,14 +1666,6 @@ class MarketTable(ft.Column):
             alignment=ft.MainAxisAlignment.CENTER
         )
 
-        # Build Filter Panel Layout (Keeping existing logic)
-        header_row = ft.Row(
-            controls=[self.search_input],
-            alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=15
-        )
-
         filter_panel = ft.Container(
             content=ft.ResponsiveRow(
                 controls=[
@@ -1655,7 +1680,7 @@ class MarketTable(ft.Column):
                     ft.Column(
                         controls=[
                             ft.Column([ft.Text("Category:", size=11, color="#ffffff"), self.cat_row], spacing=0),
-                            ft.Column([ft.Text("Sub-Cat:", size=11, color="#ffffff"), self.sub_row], spacing=0),
+                            ft.Column([ft.Text("Sub-Category:", size=11, color="#ffffff"), self.sub_row], spacing=0),
                         ],
                         spacing=2,
                         col={"md": 7},
@@ -1684,6 +1709,7 @@ class MarketTable(ft.Column):
         ]
 
     def _load_items_data(self):
+        """Loads item definitions and triggers the one-time price fetch."""
         path = self.dashboard.config.BOT_ITEMS_FILE
         if not os.path.exists(path): return
         try:
@@ -1695,16 +1721,114 @@ class MarketTable(ft.Column):
                 categories.append(cat)
                 for sub, items in sub_cats.items():
                     if isinstance(items, dict):
-                        for uid, name in items.items(): self.all_items.append(ItemData(uid, name, cat, sub))
+                        for uid, name in items.items(): 
+                            self.all_items.append(ItemData(uid, name, cat, sub))
                     elif isinstance(items, list):
-                        for uid in items: self.all_items.append(ItemData(uid, uid, cat, sub))
+                        for uid in items: 
+                            self.all_items.append(ItemData(uid, uid, cat, sub))
             
-            def create_chip(text, data, callback):
-                return ft.Chip(label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE), on_select=callback, data=data, label_padding=ft.padding.symmetric(horizontal=4), bgcolor=GuiStyle.Colors.INNER_BG, border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT), selected_color=GuiStyle.Colors.DARK_BLUE)
-
-            self.cat_row.controls = [create_chip(c, c, self.on_cat_toggle) for c in categories]
+            # Setup category chips
+            self.cat_row.controls = [self._create_chip(c, c, self.on_cat_toggle) for c in categories]
+            
+            # Start the one-time price background fetch
+            threading.Thread(target=self.refresh_all_prices, daemon=True).start()
+            
             self.apply_filters()
-        except Exception as e: print(f"Error loading items for table: {e}")
+        except Exception as e: 
+            print(f"Error loading items: {e}")
+
+    def refresh_all_prices(self):
+        """Fetches prices for all items in chunks to populate the cache once."""
+        if self.is_loading_prices: return
+        self.is_loading_prices = True
+        
+        all_names = [i.unique_name for i in self.all_items]
+        chunk_size = 150 # Chunking to avoid URL length limits
+        
+        for i in range(0, len(all_names), chunk_size):
+            chunk = all_names[i:i + chunk_size]
+            try:
+                # Fetching 'fast' type prices
+                res_fast = requests.get(
+                    f"{self.dashboard.API_URL}/items/", 
+                    params={"cities": ["black_market"], "type": "order", "item_names": chunk}
+                )
+                if res_fast.status_code == 200:
+                    for x in res_fast.json():
+                        self.price_cache_fast[x['unique_name']] = x
+
+                # Fetching 'order' type prices
+                res_order = requests.get(
+                    f"{self.dashboard.API_URL}/items/", 
+                    params={"cities": ["black_market"], "type": "fast", "item_names": chunk}
+                )
+                if res_order.status_code == 200:
+                    for x in res_order.json():
+                        self.price_cache_order[x['unique_name']] = x
+                
+                # Update the table UI as chunks load
+                self.render_table()
+                
+            except Exception as e:
+                print(f"Error fetching price chunk: {e}")
+        
+        self.is_loading_prices = False
+
+    def render_table(self):
+        """Renders the table immediately using the cached data."""
+        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
+        if self.page_number > max_page: self.page_number = max_page
+        if self.page_number < 1: self.page_number = 1
+
+        self.page_info.value = f"Page {self.page_number} / {max_page}"
+        self.prev_btn.disabled = (self.page_number <= 1)
+        self.next_btn.disabled = (self.page_number >= max_page)
+        
+        start = (self.page_number - 1) * self.items_per_page
+        end = start + self.items_per_page
+        page_items = self.filtered_items[start:end]
+
+        rows = []
+        for item in page_items:
+            # Pull from cache instead of making new API requests
+            f_info = self.price_cache_fast.get(item.unique_name, {})
+            o_info = self.price_cache_order.get(item.unique_name, {})
+            
+            p_fast_raw = f_info.get("price_black_market")
+            p_order_raw = o_info.get("price_black_market")
+            
+            price_fast = f"{int(p_fast_raw/10000):,}" if p_fast_raw else "No Data"
+            price_order = f"{int(p_order_raw/10000):,}" if p_order_raw else "No Data"
+            
+            # Last Update Logic
+            t_fast = f_info.get("black_market_updated_at")
+            t_order = o_info.get("black_market_updated_at")
+            last_update_str = "-"
+            valid_times = [t for t in [t_fast, t_order] if t]
+            if valid_times:
+                best_time = max(valid_times)
+                try:
+                    dt = datetime.fromisoformat(best_time.replace("Z", "+00:00"))
+                    now = datetime.now(dt.tzinfo)
+                    diff = now - dt
+                    if diff.days > 0: last_update_str = f"{diff.days}d ago"
+                    elif diff.seconds > 3600: last_update_str = f"{diff.seconds // 3600}h ago"
+                    elif diff.seconds > 60: last_update_str = f"{diff.seconds // 60}m ago"
+                    else: last_update_str = "Just now"
+                except: last_update_str = "Unknown"
+
+            rows.append(ft.DataRow(cells=[
+                ft.DataCell(ft.Image(src=f"https://render.albiononline.com/v1/item/{item.unique_name}", width=40, height=40, fit=ft.ImageFit.CONTAIN, border_radius=5)),
+                ft.DataCell(ft.Text(item.localized_name, weight="bold", color="white")),
+                ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
+                ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
+                ft.DataCell(ft.Text(last_update_str, color="white70")),
+            ]))
+
+        self.data_table.rows = rows
+        if self.page:
+            self.pagination_row.update()
+            self.data_table.update()
 
     def on_cat_toggle(self, e):
         self.selected_cat = e.control.data if e.control.selected else None
@@ -1722,7 +1846,13 @@ class MarketTable(ft.Column):
 
     def on_sub_toggle(self, e):
         self.selected_sub = e.control.data if e.control.selected else None
-        for chip in self.sub_row.controls: chip.selected = (chip.data == self.selected_sub)
+        
+        for chip in self.sub_row.controls:
+            chip.selected = (chip.data == self.selected_sub)
+        
+        if self.page:
+            self.sub_row.update()
+            
         self.apply_filters()
 
     def on_tier_toggle(self, e):
@@ -1758,74 +1888,7 @@ class MarketTable(ft.Column):
             self.page_number = new_page
             self.render_table()
 
-    def render_table(self):
-        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
-        
-        # Correctly update page number and button disabled states
-        if self.page_number > max_page: self.page_number = max_page
-        if self.page_number < 1: self.page_number = 1
 
-        self.page_info.value = f"Page {self.page_number} / {max_page}"
-        self.prev_btn.disabled = (self.page_number <= 1)
-        self.next_btn.disabled = (self.page_number >= max_page)
-        
-        if self.page:
-            self.pagination_row.update() # Refreshes both buttons and text
-            self.data_table.rows.clear()
-            self.data_table.update()
-
-        start = (self.page_number - 1) * self.items_per_page
-        end = start + self.items_per_page
-        page_items = self.filtered_items[start:end]
-
-        if page_items:
-            threading.Thread(target=self._fetch_and_update_rows, args=(page_items,), daemon=True).start()
-
-    def _fetch_and_update_rows(self, page_items):
-        item_names = [i.unique_name for i in page_items]
-        try:
-            res_order = requests.get(f"{self.dashboard.API_URL}/items/", params={"cities": ["black_market"], "type": "fast", "item_names": item_names})
-            res_fast = requests.get(f"{self.dashboard.API_URL}/items/", params={"cities": ["black_market"], "type": "order", "item_names": item_names})
-            order_data = {x['unique_name']: x for x in res_order.json()} if res_order.status_code == 200 else {}
-            fast_data = {x['unique_name']: x for x in res_fast.json()} if res_fast.status_code == 200 else {}
-
-            rows = []
-            for item in page_items:
-                f_info = fast_data.get(item.unique_name, {})
-                o_info = order_data.get(item.unique_name, {})
-                
-                p_fast_raw = f_info.get("price_black_market")
-                p_order_raw = o_info.get("price_black_market")
-                
-                price_fast = f"{int(p_fast_raw/10000):,}" if p_fast_raw else "No Data"
-                price_order = f"{int(p_order_raw/10000):,}" if p_order_raw else "No Data"
-                
-                t_fast = f_info.get("black_market_updated_at")
-                t_order = o_info.get("black_market_updated_at")
-                last_update_str = "-"
-                valid_times = [t for t in [t_fast, t_order] if t]
-                if valid_times:
-                    best_time = max(valid_times)
-                    try:
-                        dt = datetime.fromisoformat(best_time.replace("Z", "+00:00"))
-                        now = datetime.now(dt.tzinfo)
-                        diff = now - dt
-                        if diff.days > 0: last_update_str = f"{diff.days}d ago"
-                        elif diff.seconds > 3600: last_update_str = f"{diff.seconds // 3600}h ago"
-                        elif diff.seconds > 60: last_update_str = f"{diff.seconds // 60}m ago"
-                        else: last_update_str = "Just now"
-                    except: last_update_str = "Unknown"
-
-                rows.append(ft.DataRow(cells=[
-                    ft.DataCell(ft.Image(src=f"https://render.albiononline.com/v1/item/{item.unique_name}", width=40, height=40, fit=ft.ImageFit.CONTAIN, border_radius=5)),
-                    ft.DataCell(ft.Text(item.localized_name, weight="bold", color="white")),
-                    ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
-                    ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
-                    ft.DataCell(ft.Text(last_update_str, color="white70")),
-                ]))
-            self.data_table.rows = rows
-            if self.page: self.data_table.update()
-        except Exception as e: print(f"Error fetching prices: {e}")
 
 
 
