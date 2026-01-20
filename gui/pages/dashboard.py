@@ -468,7 +468,7 @@ class DashboardPanel(RightPanel):
         self.market_table = ft.Container(
             content=MarketTable(dashboard),
             padding=ft.padding.only(0, 0, 0, 150),
-            height=1100
+            height=1200
         )
 
         super().__init__(
@@ -1517,6 +1517,7 @@ class MarketTable(ft.Column):
         self.spacing = 10
         self.all_items = []
         self.filtered_items = []
+        self.raw_data = {}
         self.page_number = 1
         self.items_per_page = 15
         
@@ -1530,16 +1531,7 @@ class MarketTable(ft.Column):
         self._load_items_data()
 
     def _init_ui(self):
-        # 1. Filters UI
-        self.search_input = ft.TextField(
-            label="Search...",
-            suffix_icon=ft.Icons.SEARCH,
-            text_size=12, dense=True, height=35,
-            bgcolor=GuiStyle.Colors.DARK_BLUE, color=GuiStyle.Colors.TEXT_PRIMARY,
-            on_change=lambda e: self.apply_filters(),
-            expand=True 
-        )
-        
+        # --- 1. Filter Components (Mirrored from Presets) ---
         def create_chip(text, data, callback):
             return ft.Chip(
                 label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
@@ -1550,9 +1542,20 @@ class MarketTable(ft.Column):
                 selected_color=GuiStyle.Colors.DARK_BLUE,
             )
 
+        self.search_input = ft.TextField(
+            label="Search by name...",
+            suffix_icon=ft.Icons.SEARCH,
+            text_size=12,
+            dense=True,
+            height=35,
+            on_change=lambda e: self.apply_filters(),
+            bgcolor=GuiStyle.Colors.DARK_BLUE,
+            color=GuiStyle.Colors.TEXT_PRIMARY,
+        )
+
         self.cat_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
         self.sub_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
-        
+
         self.tier_row = ft.Row(
             wrap=True, spacing=2, run_spacing=2,
             controls=[create_chip(f"T{t}", t, self.on_tier_toggle) for t in [4, 5, 6, 7, 8]]
@@ -1568,12 +1571,10 @@ class MarketTable(ft.Column):
             self.selected_tiers.clear()
             self.selected_enchants.clear()
             self.search_input.value = ""
-
             for chip in self.cat_row.controls: chip.selected = False
             for chip in self.tier_row.controls: chip.selected = False
             for chip in self.enchant_row.controls: chip.selected = False
             self.sub_row.controls.clear()
-
             if self.page:
                 self.cat_row.update()
                 self.sub_row.update()
@@ -1582,62 +1583,26 @@ class MarketTable(ft.Column):
                 self.search_input.update()
             self.apply_filters()
 
-        # Header Row: Title + Search Bar + Reset Button
-        header_row = ft.Row(
-            controls=[
-                self.search_input,
-                ft.IconButton(
-                    icon=ft.Icons.REFRESH_ROUNDED,
-                    icon_color=ft.Colors.WHITE,
-                    tooltip="Reset Filters",
-                    on_click=remove_filters,
-                )
-            ],
-            alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10
-        )
+        # --- 2. Table UI with Header Adjustments ---
+        def header_cell(text):
+            return ft.Container(
+                content=ft.Text(text, weight="bold", size=12),
+                padding=ft.padding.symmetric(vertical=10, horizontal=5),
+                margin=ft.margin.only(top=1, left=2, right=2) # Margin prevents overlap with top border
+            )
 
-        filter_panel = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.ResponsiveRow(
-                        controls=[
-                            ft.Column(
-                                controls=[
-                                    header_row,
-                                    self.tier_row, 
-                                    self.enchant_row
-                                ],
-                                col={"md": 5}
-                            ),
-                            ft.Column(
-                                controls=[self.cat_row, self.sub_row],
-                                col={"md": 7}
-                            )
-                        ]
-                    )
-                ]
-            ),
-            bgcolor=GuiStyle.Colors.CARD_BG,
-            padding=10, border_radius=10,
-            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
-        )
-
-        # 2. Table
         self.data_table = ft.DataTable(
             columns=[
-                ft.DataColumn(ft.Text("Image")),
-                ft.DataColumn(ft.Text("Item Name")),
-                ft.DataColumn(ft.Text("BM Order Price")),
-                ft.DataColumn(ft.Text("BM Fast Price")),
-                ft.DataColumn(ft.Text("Last Update")),
+                ft.DataColumn(header_cell("Image")),
+                ft.DataColumn(header_cell("Item Name")),
+                ft.DataColumn(header_cell("BM Order Price")),
+                ft.DataColumn(header_cell("BM Fast Price")),
+                ft.DataColumn(header_cell("Last Update")),
             ],
-            heading_row_color=GuiStyle.Colors.DARK_BLUE,
+            heading_row_color=GuiStyle.Colors.CARD_BG,
             data_row_color={ft.ControlState.HOVERED: "#2A3C55"},
-            column_spacing=10, # Reduced spacing
-            heading_row_height=40, # Reduced header height
-            #data_row_min_height=50, # Set fixed row height
+            column_spacing=10,
+            heading_row_height=50,
             width=float("inf"), 
         )
         
@@ -1645,90 +1610,113 @@ class MarketTable(ft.Column):
             content=self.data_table,
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=10,
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS, # Clips the background to the rounded border
             border=ft.border.all(2, GuiStyle.Colors.BORDER_DEFAULT),
-            padding=0, # Removed padding inside table container
+            padding=0,
         )
 
-        # 3. Pagination
+        # --- 3. Pagination ---
         self.prev_btn = ft.IconButton(
-            ft.Icons.ARROW_BACK, on_click=lambda e: self.change_page(-1), disabled=True
+            ft.Icons.ARROW_BACK, 
+            on_click=lambda e: self.change_page(-1), 
+            disabled=True
         )
         self.next_btn = ft.IconButton(
-            ft.Icons.ARROW_FORWARD, on_click=lambda e: self.change_page(1)
+            ft.Icons.ARROW_FORWARD, 
+            on_click=lambda e: self.change_page(1),
+            disabled=True
         )
         self.page_info = ft.Text("Page 1", color=GuiStyle.Colors.WHITE)
 
-        pagination_row = ft.Row(
+        self.pagination_row = ft.Row(
             [self.prev_btn, self.page_info, self.next_btn],
             alignment=ft.MainAxisAlignment.CENTER
+        )
+
+        # Build Filter Panel Layout (Keeping existing logic)
+        header_row = ft.Row(
+            controls=[self.search_input],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15
+        )
+
+        filter_panel = ft.Container(
+            content=ft.ResponsiveRow(
+                controls=[
+                    ft.Column(
+                        controls=[
+                            header_row,
+                            ft.Row([ft.Text("Tier:", size=11, color="#ffffff"), self.tier_row], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                            ft.Row([ft.Text("Ench:", size=11, color="#ffffff"), self.enchant_row], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        ],
+                        col={"md": 4},
+                    ),
+                    ft.Column(
+                        controls=[
+                            ft.Column([ft.Text("Category:", size=11, color="#ffffff"), self.cat_row], spacing=0),
+                            ft.Column([ft.Text("Sub-Cat:", size=11, color="#ffffff"), self.sub_row], spacing=0),
+                        ],
+                        spacing=2,
+                        col={"md": 7},
+                    ),
+                    ft.Column(
+                        controls=[
+                            ft.IconButton(icon=ft.Icons.REFRESH_ROUNDED, icon_color=ft.Colors.WHITE, tooltip="Remove Filters", on_click=remove_filters)
+                        ],
+                        spacing=2,
+                        col={"md": 0.5},
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            ),
+            padding=5,
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            border_radius=5,
+            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
         )
 
         self.controls = [
             ft.Text("Black Market Prices", size=20, weight="bold", color=GuiStyle.Colors.TEXT_PRIMARY),
             filter_panel,
             self.table_container,
-            pagination_row
+            self.pagination_row
         ]
 
     def _load_items_data(self):
-        # Load items from bot_items.json
         path = self.dashboard.config.BOT_ITEMS_FILE
-        if not os.path.exists(path):
-            return
-        
+        if not os.path.exists(path): return
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            
             self.all_items = []
             categories = []
-            
             for cat, sub_cats in data.items():
                 categories.append(cat)
                 for sub, items in sub_cats.items():
                     if isinstance(items, dict):
-                        for uid, name in items.items():
-                            self.all_items.append(ItemData(uid, name, cat, sub))
+                        for uid, name in items.items(): self.all_items.append(ItemData(uid, name, cat, sub))
                     elif isinstance(items, list):
-                        for uid in items:
-                            self.all_items.append(ItemData(uid, uid, cat, sub))
+                        for uid in items: self.all_items.append(ItemData(uid, uid, cat, sub))
             
-            # Populate category chips
-            self.cat_row.controls = [
-                ft.Chip(
-                    label=ft.Text(c, size=11, color="white"),
-                    on_select=self.on_cat_toggle, data=c,
-                    bgcolor=GuiStyle.Colors.INNER_BG,
-                    border_side=ft.BorderSide(0, ft.Colors.TRANSPARENT),
-                    selected_color=GuiStyle.Colors.DARK_BLUE
-                ) for c in categories
-            ]
-            self.apply_filters()
-            
-        except Exception as e:
-            print(f"Error loading items for table: {e}")
+            def create_chip(text, data, callback):
+                return ft.Chip(label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE), on_select=callback, data=data, label_padding=ft.padding.symmetric(horizontal=4), bgcolor=GuiStyle.Colors.INNER_BG, border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT), selected_color=GuiStyle.Colors.DARK_BLUE)
 
-    # --- Filter Logic ---
+            self.cat_row.controls = [create_chip(c, c, self.on_cat_toggle) for c in categories]
+            self.apply_filters()
+        except Exception as e: print(f"Error loading items for table: {e}")
+
     def on_cat_toggle(self, e):
         self.selected_cat = e.control.data if e.control.selected else None
         for chip in self.cat_row.controls: chip.selected = (chip.data == self.selected_cat)
         if self.page: self.cat_row.update()
-        
         self.sub_row.controls.clear()
         self.selected_sub = None
         if self.selected_cat:
             subs = sorted(list(set(i.sub_category for i in self.all_items if i.category == self.selected_cat)))
-            for s in subs:
-                self.sub_row.controls.append(
-                    ft.Chip(
-                        label=ft.Text(s, size=11, color="white"),
-                        on_select=self.on_sub_toggle, data=s,
-                        bgcolor=GuiStyle.Colors.INNER_BG,
-                        border_side=ft.BorderSide(0, ft.Colors.TRANSPARENT),
-                        selected_color=GuiStyle.Colors.DARK_BLUE
-                    )
-                )
+            def create_chip(text, data, callback):
+                return ft.Chip(label=ft.Text(text, size=11, color="white"), on_select=callback, data=data, label_padding=ft.padding.symmetric(horizontal=4), bgcolor=GuiStyle.Colors.INNER_BG, border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT), selected_color=GuiStyle.Colors.DARK_BLUE)
+            for s in subs: self.sub_row.controls.append(create_chip(s, s, self.on_sub_toggle))
         if self.page: self.sub_row.update()
         self.apply_filters()
 
@@ -1751,86 +1739,70 @@ class MarketTable(ft.Column):
 
     def apply_filters(self):
         search_term = self.search_input.value.lower() if self.search_input.value else ""
-        
         res = []
         for item in self.all_items:
             if self.selected_cat and item.category != self.selected_cat: continue
             if self.selected_sub and item.sub_category != self.selected_sub: continue
             if self.selected_tiers and item.tier not in self.selected_tiers: continue
             if self.selected_enchants and item.enchant not in self.selected_enchants: continue
-            if search_term and not (search_term in item.localized_name.lower() or search_term in item.unique_name.lower()):
-                continue
+            if search_term and not (search_term in item.localized_name.lower() or search_term in item.unique_name.lower()): continue
             res.append(item)
-        
         self.filtered_items = res
         self.page_number = 1
         self.render_table()
 
     def change_page(self, delta):
         new_page = self.page_number + delta
-        max_page = math.ceil(len(self.filtered_items) / self.items_per_page)
+        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
         if 1 <= new_page <= max_page:
             self.page_number = new_page
             self.render_table()
 
     def render_table(self):
+        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
+        
+        # Correctly update page number and button disabled states
+        if self.page_number > max_page: self.page_number = max_page
+        if self.page_number < 1: self.page_number = 1
+
+        self.page_info.value = f"Page {self.page_number} / {max_page}"
+        self.prev_btn.disabled = (self.page_number <= 1)
+        self.next_btn.disabled = (self.page_number >= max_page)
+        
+        if self.page:
+            self.pagination_row.update() # Refreshes both buttons and text
+            self.data_table.rows.clear()
+            self.data_table.update()
+
         start = (self.page_number - 1) * self.items_per_page
         end = start + self.items_per_page
         page_items = self.filtered_items[start:end]
-        
-        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
-        self.page_info.value = f"Page {self.page_number} / {max_page}"
-        self.prev_btn.disabled = (self.page_number == 1)
-        self.next_btn.disabled = (self.page_number >= max_page)
-        
-        self.data_table.rows.clear()
-        
-        if self.page:
-            self.page_info.update()
-            self.prev_btn.update()
-            self.next_btn.update()
 
-        threading.Thread(target=self._fetch_and_update_rows, args=(page_items,), daemon=True).start()
+        if page_items:
+            threading.Thread(target=self._fetch_and_update_rows, args=(page_items,), daemon=True).start()
 
     def _fetch_and_update_rows(self, page_items):
         item_names = [i.unique_name for i in page_items]
-        
         try:
-            res_fast = requests.get(
-                f"{self.dashboard.API_URL}/items/",
-                params={"cities": ["black_market"], "type": "fast", "item_names": item_names}
-            )
-            fast_data = {x['unique_name']: x for x in res_fast.json()} if res_fast.status_code == 200 else {}
-            
-            res_order = requests.get(
-                f"{self.dashboard.API_URL}/items/",
-                params={"cities": ["black_market"], "type": "order", "item_names": item_names}
-            )
+            res_order = requests.get(f"{self.dashboard.API_URL}/items/", params={"cities": ["black_market"], "type": "fast", "item_names": item_names})
+            res_fast = requests.get(f"{self.dashboard.API_URL}/items/", params={"cities": ["black_market"], "type": "order", "item_names": item_names})
             order_data = {x['unique_name']: x for x in res_order.json()} if res_order.status_code == 200 else {}
-            
+            fast_data = {x['unique_name']: x for x in res_fast.json()} if res_fast.status_code == 200 else {}
+
             rows = []
             for item in page_items:
                 f_info = fast_data.get(item.unique_name, {})
                 o_info = order_data.get(item.unique_name, {})
                 
-                price_order = f_info.get("price_black_market", None)
-                price_fast = o_info.get("price_black_market", None)
-                print(price_order, price_fast)
-                if price_fast != None:
-                    price_fast = int(price_fast/10000)
-                else:
-                    price_fast = "No Data"
-
-                if price_order != None:
-                    price_order = int(price_order/10000)
-                else:
-                    price_order = "No Data"
+                p_fast_raw = f_info.get("price_black_market")
+                p_order_raw = o_info.get("price_black_market")
+                
+                price_fast = f"{int(p_fast_raw/10000):,}" if p_fast_raw else "No Data"
+                price_order = f"{int(p_order_raw/10000):,}" if p_order_raw else "No Data"
                 
                 t_fast = f_info.get("black_market_updated_at")
                 t_order = o_info.get("black_market_updated_at")
-                
                 last_update_str = "-"
-                
                 valid_times = [t for t in [t_fast, t_order] if t]
                 if valid_times:
                     best_time = max(valid_times)
@@ -1838,44 +1810,23 @@ class MarketTable(ft.Column):
                         dt = datetime.fromisoformat(best_time.replace("Z", "+00:00"))
                         now = datetime.now(dt.tzinfo)
                         diff = now - dt
-                        
-                        if diff.days > 0:
-                            last_update_str = f"{diff.days}d ago"
-                        elif diff.seconds > 3600:
-                            last_update_str = f"{diff.seconds // 3600}h ago"
-                        elif diff.seconds > 60:
-                            last_update_str = f"{diff.seconds // 60}m ago"
-                        else:
-                            last_update_str = "Just now"
-                    except:
-                        last_update_str = "Unknown"
+                        if diff.days > 0: last_update_str = f"{diff.days}d ago"
+                        elif diff.seconds > 3600: last_update_str = f"{diff.seconds // 3600}h ago"
+                        elif diff.seconds > 60: last_update_str = f"{diff.seconds // 60}m ago"
+                        else: last_update_str = "Just now"
+                    except: last_update_str = "Unknown"
 
-                rows.append(
-                    ft.DataRow(
-                        cells=[
-                            ft.DataCell(
-                                ft.Image(
-                                    src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
-                                    width=40, height=40, fit=ft.ImageFit.CONTAIN,
-                                    border_radius=5
-                                )
-                            ),
-                            ft.DataCell(
-                                ft.Text(item.localized_name, weight="bold", color="white")
-                            ),
-                            ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
-                            ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
-                            ft.DataCell(ft.Text(last_update_str, color="white70")),
-                        ]
-                    )
-                )
-
+                rows.append(ft.DataRow(cells=[
+                    ft.DataCell(ft.Image(src=f"https://render.albiononline.com/v1/item/{item.unique_name}", width=40, height=40, fit=ft.ImageFit.CONTAIN, border_radius=5)),
+                    ft.DataCell(ft.Text(item.localized_name, weight="bold", color="white")),
+                    ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
+                    ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
+                    ft.DataCell(ft.Text(last_update_str, color="white70")),
+                ]))
             self.data_table.rows = rows
-            if self.page:
-                self.data_table.update()
+            if self.page: self.data_table.update()
+        except Exception as e: print(f"Error fetching prices: {e}")
 
-        except Exception as e:
-            print(f"Error fetching prices: {e}")
 
 
 
