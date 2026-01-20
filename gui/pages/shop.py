@@ -110,9 +110,9 @@ class ShopingCard(ft.Column):
 
 
 class ShopCards(ft.ResponsiveRow):
-    def __init__(self):
+    def __init__(self, api_url):
         super().__init__()
-
+        self.api_url = api_url
         self.alignment = ft.MainAxisAlignment.CENTER
         self.vertical_alignment = ft.CrossAxisAlignment.CENTER
         self.spacing = 30
@@ -222,7 +222,7 @@ class Shop(ft.Container):
         self.login_state = login_state
         self.page = page
 
-        self.shop_cards = ShopCards()
+        self.shop_cards = ShopCards(self.settings.API_URL)
         self.gift_info = GiftInfo()
 
         self.content = ft.Column(

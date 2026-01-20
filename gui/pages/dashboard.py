@@ -8,6 +8,7 @@ from bot import Bot, SettingsHandler
 import requests
 from datetime import datetime
 import sys
+import math, json, re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -461,8 +462,15 @@ class DashboardPanel(RightPanel):
             ),
             padding=ft.padding.only(0, 0, 0, 10),
         )
+        
         self.overview_panel = OverviewPanel(dashboard=dashboard)
         self.orders_graph = OrdersGraph(dashboard)
+        self.market_table = ft.Container(
+            content=MarketTable(dashboard),
+            padding=ft.padding.only(0, 0, 0, 150),
+            height=1100
+        )
+
         super().__init__(
             content_controls=[
                 self.title,
@@ -470,6 +478,8 @@ class DashboardPanel(RightPanel):
                 self.overview_panel,
                 ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 self.orders_graph,
+                ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
+                self.market_table,
             ]
         )
 
@@ -1477,6 +1487,396 @@ class ActivityLogsPanel(RightPanel):
 
                 if self.logs_view.visible:
                     self.show_logs_list()
+
+
+#========================================
+# PRICES DISPLAY PART
+#========================================
+class ItemData:
+    """Helper class to parse item data for filtering."""
+    def __init__(self, unique_name, localized_name, category, sub_category):
+        self.unique_name = unique_name
+        self.localized_name = localized_name
+        self.category = category
+        self.sub_category = sub_category
+        match = re.match(r"T(\d+)_", unique_name)
+        self.tier = int(match.group(1)) if match else 0
+        if "@" in unique_name:
+            try:
+                self.enchant = int(unique_name.split("@")[1])
+            except:
+                self.enchant = 0
+        else:
+            self.enchant = 0
+
+
+class MarketTable(ft.Column):
+    def __init__(self, dashboard: "Dashboard"):
+        super().__init__()
+        self.dashboard = dashboard
+        self.spacing = 10
+        self.all_items = []
+        self.filtered_items = []
+        self.page_number = 1
+        self.items_per_page = 15
+        
+        # Filters state
+        self.selected_cat = None
+        self.selected_sub = None
+        self.selected_tiers = set()
+        self.selected_enchants = set()
+        
+        self._init_ui()
+        self._load_items_data()
+
+    def _init_ui(self):
+        # 1. Filters UI
+        self.search_input = ft.TextField(
+            label="Search...",
+            suffix_icon=ft.Icons.SEARCH,
+            text_size=12, dense=True, height=35,
+            bgcolor=GuiStyle.Colors.DARK_BLUE, color=GuiStyle.Colors.TEXT_PRIMARY,
+            on_change=lambda e: self.apply_filters(),
+            expand=True 
+        )
+        
+        def create_chip(text, data, callback):
+            return ft.Chip(
+                label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
+                on_select=callback, data=data,
+                label_padding=ft.padding.symmetric(horizontal=4),
+                bgcolor=GuiStyle.Colors.INNER_BG,
+                border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
+                selected_color=GuiStyle.Colors.DARK_BLUE,
+            )
+
+        self.cat_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
+        self.sub_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
+        
+        self.tier_row = ft.Row(
+            wrap=True, spacing=2, run_spacing=2,
+            controls=[create_chip(f"T{t}", t, self.on_tier_toggle) for t in [4, 5, 6, 7, 8]]
+        )
+        self.enchant_row = ft.Row(
+            wrap=True, spacing=2, run_spacing=2,
+            controls=[create_chip(f".{e}", e, self.on_enchant_toggle) for e in [0, 1, 2, 3, 4]]
+        )
+
+        def remove_filters(e):
+            self.selected_cat = None
+            self.selected_sub = None
+            self.selected_tiers.clear()
+            self.selected_enchants.clear()
+            self.search_input.value = ""
+
+            for chip in self.cat_row.controls: chip.selected = False
+            for chip in self.tier_row.controls: chip.selected = False
+            for chip in self.enchant_row.controls: chip.selected = False
+            self.sub_row.controls.clear()
+
+            if self.page:
+                self.cat_row.update()
+                self.sub_row.update()
+                self.tier_row.update()
+                self.enchant_row.update()
+                self.search_input.update()
+            self.apply_filters()
+
+        # Header Row: Title + Search Bar + Reset Button
+        header_row = ft.Row(
+            controls=[
+                self.search_input,
+                ft.IconButton(
+                    icon=ft.Icons.REFRESH_ROUNDED,
+                    icon_color=ft.Colors.WHITE,
+                    tooltip="Reset Filters",
+                    on_click=remove_filters,
+                )
+            ],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10
+        )
+
+        filter_panel = ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.ResponsiveRow(
+                        controls=[
+                            ft.Column(
+                                controls=[
+                                    header_row,
+                                    self.tier_row, 
+                                    self.enchant_row
+                                ],
+                                col={"md": 5}
+                            ),
+                            ft.Column(
+                                controls=[self.cat_row, self.sub_row],
+                                col={"md": 7}
+                            )
+                        ]
+                    )
+                ]
+            ),
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            padding=10, border_radius=10,
+            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+        )
+
+        # 2. Table
+        self.data_table = ft.DataTable(
+            columns=[
+                ft.DataColumn(ft.Text("Image")),
+                ft.DataColumn(ft.Text("Item Name")),
+                ft.DataColumn(ft.Text("BM Order Price")),
+                ft.DataColumn(ft.Text("BM Fast Price")),
+                ft.DataColumn(ft.Text("Last Update")),
+            ],
+            heading_row_color=GuiStyle.Colors.DARK_BLUE,
+            data_row_color={ft.ControlState.HOVERED: "#2A3C55"},
+            column_spacing=10, # Reduced spacing
+            heading_row_height=40, # Reduced header height
+            #data_row_min_height=50, # Set fixed row height
+            width=float("inf"), 
+        )
+        
+        self.table_container = ft.Container(
+            content=self.data_table,
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            border_radius=10,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            border=ft.border.all(2, GuiStyle.Colors.BORDER_DEFAULT),
+            padding=0, # Removed padding inside table container
+        )
+
+        # 3. Pagination
+        self.prev_btn = ft.IconButton(
+            ft.Icons.ARROW_BACK, on_click=lambda e: self.change_page(-1), disabled=True
+        )
+        self.next_btn = ft.IconButton(
+            ft.Icons.ARROW_FORWARD, on_click=lambda e: self.change_page(1)
+        )
+        self.page_info = ft.Text("Page 1", color=GuiStyle.Colors.WHITE)
+
+        pagination_row = ft.Row(
+            [self.prev_btn, self.page_info, self.next_btn],
+            alignment=ft.MainAxisAlignment.CENTER
+        )
+
+        self.controls = [
+            ft.Text("Black Market Prices", size=20, weight="bold", color=GuiStyle.Colors.TEXT_PRIMARY),
+            filter_panel,
+            self.table_container,
+            pagination_row
+        ]
+
+    def _load_items_data(self):
+        # Load items from bot_items.json
+        path = self.dashboard.config.BOT_ITEMS_FILE
+        if not os.path.exists(path):
+            return
+        
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            self.all_items = []
+            categories = []
+            
+            for cat, sub_cats in data.items():
+                categories.append(cat)
+                for sub, items in sub_cats.items():
+                    if isinstance(items, dict):
+                        for uid, name in items.items():
+                            self.all_items.append(ItemData(uid, name, cat, sub))
+                    elif isinstance(items, list):
+                        for uid in items:
+                            self.all_items.append(ItemData(uid, uid, cat, sub))
+            
+            # Populate category chips
+            self.cat_row.controls = [
+                ft.Chip(
+                    label=ft.Text(c, size=11, color="white"),
+                    on_select=self.on_cat_toggle, data=c,
+                    bgcolor=GuiStyle.Colors.INNER_BG,
+                    border_side=ft.BorderSide(0, ft.Colors.TRANSPARENT),
+                    selected_color=GuiStyle.Colors.DARK_BLUE
+                ) for c in categories
+            ]
+            self.apply_filters()
+            
+        except Exception as e:
+            print(f"Error loading items for table: {e}")
+
+    # --- Filter Logic ---
+    def on_cat_toggle(self, e):
+        self.selected_cat = e.control.data if e.control.selected else None
+        for chip in self.cat_row.controls: chip.selected = (chip.data == self.selected_cat)
+        if self.page: self.cat_row.update()
+        
+        self.sub_row.controls.clear()
+        self.selected_sub = None
+        if self.selected_cat:
+            subs = sorted(list(set(i.sub_category for i in self.all_items if i.category == self.selected_cat)))
+            for s in subs:
+                self.sub_row.controls.append(
+                    ft.Chip(
+                        label=ft.Text(s, size=11, color="white"),
+                        on_select=self.on_sub_toggle, data=s,
+                        bgcolor=GuiStyle.Colors.INNER_BG,
+                        border_side=ft.BorderSide(0, ft.Colors.TRANSPARENT),
+                        selected_color=GuiStyle.Colors.DARK_BLUE
+                    )
+                )
+        if self.page: self.sub_row.update()
+        self.apply_filters()
+
+    def on_sub_toggle(self, e):
+        self.selected_sub = e.control.data if e.control.selected else None
+        for chip in self.sub_row.controls: chip.selected = (chip.data == self.selected_sub)
+        self.apply_filters()
+
+    def on_tier_toggle(self, e):
+        t = e.control.data
+        if e.control.selected: self.selected_tiers.add(t)
+        else: self.selected_tiers.discard(t)
+        self.apply_filters()
+
+    def on_enchant_toggle(self, e):
+        en = e.control.data
+        if e.control.selected: self.selected_enchants.add(en)
+        else: self.selected_enchants.discard(en)
+        self.apply_filters()
+
+    def apply_filters(self):
+        search_term = self.search_input.value.lower() if self.search_input.value else ""
+        
+        res = []
+        for item in self.all_items:
+            if self.selected_cat and item.category != self.selected_cat: continue
+            if self.selected_sub and item.sub_category != self.selected_sub: continue
+            if self.selected_tiers and item.tier not in self.selected_tiers: continue
+            if self.selected_enchants and item.enchant not in self.selected_enchants: continue
+            if search_term and not (search_term in item.localized_name.lower() or search_term in item.unique_name.lower()):
+                continue
+            res.append(item)
+        
+        self.filtered_items = res
+        self.page_number = 1
+        self.render_table()
+
+    def change_page(self, delta):
+        new_page = self.page_number + delta
+        max_page = math.ceil(len(self.filtered_items) / self.items_per_page)
+        if 1 <= new_page <= max_page:
+            self.page_number = new_page
+            self.render_table()
+
+    def render_table(self):
+        start = (self.page_number - 1) * self.items_per_page
+        end = start + self.items_per_page
+        page_items = self.filtered_items[start:end]
+        
+        max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
+        self.page_info.value = f"Page {self.page_number} / {max_page}"
+        self.prev_btn.disabled = (self.page_number == 1)
+        self.next_btn.disabled = (self.page_number >= max_page)
+        
+        self.data_table.rows.clear()
+        
+        if self.page:
+            self.page_info.update()
+            self.prev_btn.update()
+            self.next_btn.update()
+
+        threading.Thread(target=self._fetch_and_update_rows, args=(page_items,), daemon=True).start()
+
+    def _fetch_and_update_rows(self, page_items):
+        item_names = [i.unique_name for i in page_items]
+        
+        try:
+            res_fast = requests.get(
+                f"{self.dashboard.API_URL}/items/",
+                params={"cities": ["black_market"], "type": "fast", "item_names": item_names}
+            )
+            fast_data = {x['unique_name']: x for x in res_fast.json()} if res_fast.status_code == 200 else {}
+            
+            res_order = requests.get(
+                f"{self.dashboard.API_URL}/items/",
+                params={"cities": ["black_market"], "type": "order", "item_names": item_names}
+            )
+            order_data = {x['unique_name']: x for x in res_order.json()} if res_order.status_code == 200 else {}
+            
+            rows = []
+            for item in page_items:
+                f_info = fast_data.get(item.unique_name, {})
+                o_info = order_data.get(item.unique_name, {})
+                
+                price_order = f_info.get("price_black_market", None)
+                price_fast = o_info.get("price_black_market", None)
+                print(price_order, price_fast)
+                if price_fast != None:
+                    price_fast = int(price_fast/10000)
+                else:
+                    price_fast = "No Data"
+
+                if price_order != None:
+                    price_order = int(price_order/10000)
+                else:
+                    price_order = "No Data"
+                
+                t_fast = f_info.get("black_market_updated_at")
+                t_order = o_info.get("black_market_updated_at")
+                
+                last_update_str = "-"
+                
+                valid_times = [t for t in [t_fast, t_order] if t]
+                if valid_times:
+                    best_time = max(valid_times)
+                    try:
+                        dt = datetime.fromisoformat(best_time.replace("Z", "+00:00"))
+                        now = datetime.now(dt.tzinfo)
+                        diff = now - dt
+                        
+                        if diff.days > 0:
+                            last_update_str = f"{diff.days}d ago"
+                        elif diff.seconds > 3600:
+                            last_update_str = f"{diff.seconds // 3600}h ago"
+                        elif diff.seconds > 60:
+                            last_update_str = f"{diff.seconds // 60}m ago"
+                        else:
+                            last_update_str = "Just now"
+                    except:
+                        last_update_str = "Unknown"
+
+                rows.append(
+                    ft.DataRow(
+                        cells=[
+                            ft.DataCell(
+                                ft.Image(
+                                    src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
+                                    width=40, height=40, fit=ft.ImageFit.CONTAIN,
+                                    border_radius=5
+                                )
+                            ),
+                            ft.DataCell(
+                                ft.Text(item.localized_name, weight="bold", color="white")
+                            ),
+                            ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
+                            ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
+                            ft.DataCell(ft.Text(last_update_str, color="white70")),
+                        ]
+                    )
+                )
+
+            self.data_table.rows = rows
+            if self.page:
+                self.data_table.update()
+
+        except Exception as e:
+            print(f"Error fetching prices: {e}")
+
 
 
 class Dashboard(ft.Container):
