@@ -19,8 +19,8 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "60",
-        "default_buy_amount": "10",
+        "min_profit_rate": "150",
+        "default_buy_amount": "15",
         "presets": {
             "caerleon": "Demo Preset.json",
             "martlock": "Demo Preset.json",
@@ -32,28 +32,36 @@
         },
         "buy_logic": [
             {
-                "amount_to_buy": "8",
+                "amount_to_buy": "10",
                 "price_larger_then": "1000"
             },
             {
-                "amount_to_buy": "6",
+                "amount_to_buy": "8",
                 "price_larger_then": "6000"
             },
             {
-                "amount_to_buy": "4",
+                "amount_to_buy": "6",
                 "price_larger_then": "10000"
             },
             {
-                "amount_to_buy": "2",
+                "amount_to_buy": "4",
                 "price_larger_then": "20000"
             },
             {
-                "amount_to_buy": "1",
+                "amount_to_buy": "3",
                 "price_larger_then": "50000"
+            },
+            {
+                "amount_to_buy": "2",
+                "price_larger_then": "80000"
+            },
+            {
+                "amount_to_buy": "1",
+                "price_larger_then": "120000"
             }
         ]
     },
-    "auth_token": null,
-    "user_id": null,
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzY4ODY3MzY5fQ.F3btQYfF7_FvSkKlKFphPZuXhw1FXfSf8FJnLvIVxnY",
+    "user_id": "1",
     "home_island": ""
 }

@@ -177,6 +177,7 @@ class MarketHandler(InputSender):
     def fast_sale_item(self, market_title: str = "black_market"):
         if market_title == "black_market":
             self.click(self.mouse_positions["opened_item_sell_bm"])
+            self.sleep(.1)
         self.click(self.mouse_positions["button_create_order"])
         self.sleep(.1)
 
@@ -203,5 +204,5 @@ class MarketHandler(InputSender):
         self.sleep(.1)
 
     def change_duration(self):
-        self.click(self.mouse_positions["button_duration"])
+        #self.click(self.mouse_positions["button_duration"])
         self.sleep(.2)

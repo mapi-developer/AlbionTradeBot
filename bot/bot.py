@@ -246,6 +246,8 @@ class Bot:
             quality = order.get("QualityLevel", 1)
             if quality > 3 and not bm_update:
                 continue
+            if bm_update and order.get("BuyerName", "") != "@BLACK_MARKET" and find_min == False:
+                continue
 
             full_name = order.get("ItemTypeId", "Unknown")
             base_name, tier, enchant = self._parse_item_info(full_unique_name=full_name)
@@ -418,8 +420,9 @@ class Bot:
             self.market_handler.sleep(.3)
             self.market_handler.check_pages(20)
             orders_exists = self.sniffer.get_market_buffers("request")
-            if len(orders_exists) == 0: return                
-            my_nickname = self.local_player.nickname if self.local_player.nickname != "" else orders_exists[0].get("BuyerName")
+            if len(orders_exists) == 0: return
+            
+            my_nickname = orders_exists[0].get("SellerName")
             for i, exist_order in enumerate(orders_exists):
                 await self._wait_for_resume()
                 self.settings.reload_settings()
@@ -428,16 +431,13 @@ class Bot:
                 self._update_overlay()
 
                 self.market_handler.search_item(item_unique_name, True, False)
-                self.market_handler.sleep(.2)             
+                self.market_handler.sleep(.2)
                 self.market_handler.change_tab("buy")
                 self.market_handler.sleep(.2)
                 self.sniffer.clear_market_buffers()
                 self.market_handler.change_tab("create_buy_order")
-                self.market_handler.change_duration()
 
-                for i, order in enumerate(self.sniffer.get_market_buffers("request")):
-                    if order.get("ItemTypeId") == item_unique_name:
-                        self.market_handler.open_item(True, i+1)
+                self.market_handler.open_item(True)
                 self.market_handler.sleep(.3)
                 current_offer, current_requests = self.sniffer.get_market_buffers()
                 if len(current_offer) == 0 and len(current_requests) == 0:
@@ -449,19 +449,20 @@ class Bot:
                 order_price = float("inf")
                 for order in current_offer:
                     if order.get("ItemTypeId") == item_unique_name:
-                        order_buyer = order.get("BuyerName", "")
+                        order_buyer = order.get("SellerName", "")
                         price = order.get("UnitPriceSilver", 0)/10000
                         if price < order_price and price > 0:
                             order_price = price
                             current_buyer = order_buyer
+                
                 if current_buyer == my_nickname:
                     self.market_handler.close_item()
                     continue
-
+                
                 base_name, tier, enchant = self._parse_item_info(full_unique_name=item_unique_name)
-                order_sale_price = int(self._calculate_price_extremum(current_offer, bm_update=True).get((base_name, tier, enchant), 0)/10000)
-                fast_sale_price = int(self._calculate_price_extremum(current_requests, False, bm_update=True).get((base_name, tier, enchant), 0)/10000)
-
+                order_sale_price = int(int(self._calculate_price_extremum(current_offer, bm_update=True).get((base_name, tier, enchant), 0))/10000)
+                fast_sale_price = int(int(self._calculate_price_extremum(current_requests, False, bm_update=True).get((base_name, tier, enchant), 0))/10000)
+                
                 if (fast_sale_price != 0 and order_sale_price != 0) and (fast_sale_price/order_sale_price) > 0.95:
                         self.market_handler.make_sell_order(order_price=fast_sale_price-1)
                 if order_sale_price == 0:

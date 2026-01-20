@@ -12,7 +12,7 @@ IPN_SECRET = "hu/tEkZncUayeSgrE/82nH7w8YixECa/"
 WEBHOOK_URL = "https://trade-backend-service-1014783260724.europe-west1.run.app/payments/webhook"
 
 # 3. The User ID you want to upgrade
-USER_ID = 1
+USER_ID = 3
 DAYS_TO_ADD = 30 # Simulate a 1-month plan
 
 def force_payment_success():
