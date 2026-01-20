@@ -120,17 +120,29 @@ class ShopCards(ft.ResponsiveRow):
         self.chosen_plan_id = None 
         self.chosen_subscription_name = None
 
+        plans_data = {
+            "1_week": {"price": 14.90, "days": 7},
+            "1_month": {"price": 49.90, "days": 30},
+            "3_months": {"price": 124.90, "days": 90},
+        }
+        try:
+            res = requests.get(f"{self.api_url}/payments/plans", timeout=5)
+            
+            if res.status_code == 200:
+                plans_data = res.json()
+        except: pass
+
         self.controls = [
             ShopingCard(
-                "Starter Plan", "Full bot access for a week", "$15", "1_week", self.select_plan
+                "Starter Pass", "Full bot access for a week", f"${plans_data["1_week"]["price"]}", "1_week", self.select_plan
             ),
             ShopingCard(
-                "Monthly Plan", "Full bot access for one month", "$50", "1_month", self.select_plan
+                "Monthly Pass", "Full bot access for one month", f"${plans_data["1_month"]["price"]}", "1_month", self.select_plan
             ),
             ShopingCard(
                 "Three Month Pass",
                 "Full bot access for three months",
-                "$130", 
+                f"${plans_data["3_months"]["price"]}", 
                 "3_months",
                 self.select_plan,
             ),

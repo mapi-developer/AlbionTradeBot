@@ -10,7 +10,7 @@ TO DO before release:
 9. Try to fix issue when launch on other language ✅
 10. Add orders statistic ✅
 11. Add filters by artifacts in preset tab (ПОХУЙ)
-12. Percentage of up-to-date orders. Black market always, other cities on hover
+12. Percentage of up-to-date orders. Black market always, other cities on hover ✅
 
 Game Settings for best bot work:
 Borderless full screen

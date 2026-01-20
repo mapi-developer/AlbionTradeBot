@@ -143,42 +143,87 @@ class InfoCard(ft.Container):
     def __init__(self, title: str, icon: str, value: str = "Data Loading..."):
         super().__init__()
         self.col = {"xs": 12, "sm": 6, "md": 3}
+        self.on_hover = self._handle_hover
+        
         self.display_value = ft.Text(
             value=value,
             size=24,
             weight=ft.FontWeight.BOLD,
             color=GuiStyle.Colors.TEXT_PRIMARY,
         )
-        self.content = ft.Container(
-            content=ft.Container(
-                padding=15,
-                content=ft.Column(
-                    controls=[
-                        ft.ResponsiveRow(
-                            controls=[
-                                ft.Row(
-                                    controls=[
-                                        ft.Icon(icon, color=GuiStyle.Colors.GREY_TEXT),
-                                        ft.Text(title, size=12, color=GuiStyle.Colors.WHITE_70),
-                                    ]
-                                ),
-                                ft.Column(
-                                    controls=[self.display_value],
-                                    spacing=5,
-                                ),
-                            ]
-                        ),
-                    ]
-                ),
+        
+        self.main_content = ft.Container(
+            padding=15,
+            content=ft.Column(
+                controls=[
+                    ft.ResponsiveRow(
+                        controls=[
+                            ft.Row(
+                                controls=[
+                                    ft.Icon(icon, color=GuiStyle.Colors.GREY_TEXT),
+                                    ft.Text(title, size=12, color=GuiStyle.Colors.WHITE_70),
+                                ]
+                            ),
+                            ft.Column(
+                                controls=[self.display_value],
+                                spacing=5,
+                            ),
+                        ]
+                    ),
+                ]
             ),
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=15,
             border=ft.border.all(width=1, color=GuiStyle.Colors.BORDER_DEFAULT),
-            margin=ft.margin.only(5, 0, 5, 0)
+            expand=True,
         )
 
-    def set_data(self, new_value: str):
+        self.popup_content_col = ft.Column(spacing=2)
+        
+        self.popup_container = ft.Container(
+            content=ft.Container(
+                content=self.popup_content_col,
+                padding=10,
+                alignment=ft.alignment.center
+            ),
+            bgcolor=GuiStyle.Colors.SIDEBAR_BG, # Slightly darker/different bg for contrast
+            border_radius=15,
+            border=ft.border.all(width=1, color=GuiStyle.Colors.ACCENT_BLUE), # Highlight border
+            opacity=0, # Invisible by default
+            animate_opacity=200, # Smooth fade in
+            visible=False, # Hidden from hit-testing when not active
+            expand=True, # Overlay the whole card
+        )
+
+        self.content = ft.Stack(
+            controls=[
+                self.main_content,
+                self.popup_container
+            ]
+        )
+        
+        self.margin = ft.margin.only(5, 0, 5, 0)
+
+    def _handle_hover(self, e):
+        if e.data == "true" and self.popup_content_col.controls != []:
+            self.popup_container.visible = True
+            self.popup_container.opacity = 1
+        else:
+            self.popup_container.opacity = 0
+            self.popup_container.visible = False
+        self.update()
+
+    def set_data(self, new_value: str, popup_controls: list[ft.Control] = None):
+        """
+        Updates the main value and optionally the popup content.
+        :param new_value: The text to display on the main card.
+        :param popup_controls: A list of Controls (e.g. Text rows) to show in the popup.
+        """
         self.display_value.value = str(new_value)
+        
+        if popup_controls:
+            self.popup_content_col.controls = popup_controls
+        
         self.update()
 
 
@@ -187,7 +232,7 @@ class OverviewPanel(ft.Container):
         super().__init__()
         self.dashboard = dashboard
 
-        self.last_prices_update = InfoCard("Last Prices Update (UTC)", ft.Icons.UPDATE, "Loading...")
+        self.last_prices_update = InfoCard("Prices Up-to-Date", ft.Icons.UPDATE, "Loading...")
         self.database_status = InfoCard("Database Status", ft.Icons.ACCOUNT_TREE, "Loading...")
         self.bot_status = InfoCard("Bot Status", ft.Icons.ADB)
         self.subscribed_until = InfoCard("Subscribed until", ft.Icons.ADD_TASK, "Loading...")
@@ -217,19 +262,31 @@ class OverviewPanel(ft.Container):
                 data = status_res.json()
                 status = data.get("status")
 
-            last_update_res = requests.get(
-                f"{self.dashboard.API_URL}/items/?item_names=T4_SHOES_PLATE_UNDEAD&type=fast"
-            )
-            formatted_date = "Unknown"
-            if last_update_res.status_code == 200:
-                data = last_update_res.json()
-                if data and len(data) > 0:
-                    last_update = data[0].get("updated_at")
-                    if last_update:
-                        dt_object = datetime.fromisoformat(
-                            last_update.replace("Z", "+00:00")
+            up_to_date_res = requests.get(f"{self.dashboard.API_URL}/items/prices-up-to-date")
+            bm_val = "Unknown"
+            popup_items = []
+
+            if up_to_date_res.status_code == 200:
+                data = up_to_date_res.json()
+                
+                bm_val = data.get("black_market", "N/A")
+
+                for city in sorted(data.keys()):
+                    if city != "black_market":
+                        percent = data[city]
+                        city_name = city.replace("_", " ").title()
+                        
+                        row = ft.Row(
+                            controls=[
+                                ft.Text(f"{city_name}:", size=12, color=GuiStyle.Colors.GREY_TEXT),
+                                ft.Text(f"{percent}", size=12, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY),
+                            ],
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
                         )
-                        formatted_date = dt_object.strftime("%d.%m.%Y | %H:%M")
+                        popup_items.append(row)
+                
+                if not popup_items:
+                    popup_items = [ft.Text("No other city data", size=12, color=GuiStyle.Colors.GREY_TEXT)]
 
             headers = {"Authorization": f"Bearer {self.dashboard.login.state.token}"}
             res = requests.get(
@@ -250,12 +307,13 @@ class OverviewPanel(ft.Container):
                     sub_formatted_date = "Not Active"
 
             if self.page:
-                self.last_prices_update.set_data(formatted_date)
+                self.last_prices_update.set_data(f"Black Market: {bm_val}", popup_controls=popup_items)
                 self.database_status.set_data(
                     "Connected" if status == "alive" else "Not Connected"
                 )
                 self.bot_status.set_data(self.dashboard.bot.get_status())
                 self.subscribed_until.set_data(sub_formatted_date)
+
         except Exception as e:
             print(f"Error updating data: {e}")
 
