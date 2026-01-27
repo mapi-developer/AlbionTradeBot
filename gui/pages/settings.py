@@ -56,6 +56,19 @@ class GeneralSettings(ft.Container):
         self.padding = 20
         self.col={"sm": 12, "md": 4, "xl": 4}
 
+        self.server = SettingsDropdown(
+            value=general_settings.get("server", "US"),
+            data="server",
+            label="Game Server", 
+            tooltip="Choose your Realm",
+            options=[
+                ft.DropdownOption(key="US", text="Americas"),
+                ft.DropdownOption(key="EU", text="Europe"),
+                ft.DropdownOption(key="AS", text="Asia")
+            ],
+            save_callback=save_callback
+        )
+
         self.buy_mode = SettingsDropdown(
             value=general_settings["buy_mode"],
             data="buy_mode",
@@ -94,6 +107,7 @@ class GeneralSettings(ft.Container):
                 ft.Column(
                     controls = [
                         self.buy_mode,
+                        self.server,
                         #self.game_language,
                         self.stop_silver_threshold,
                     ],
@@ -505,7 +519,8 @@ class Settings(ft.Container):
         self.config.set("general", {
             "buy_mode": gen.buy_mode.value,
             "game_language": gen.game_language.value,
-            "min_silver": gen.stop_silver_threshold.value
+            "min_silver": gen.stop_silver_threshold.value,
+            "server": gen.server.value
         })
 
         rt = self.content_main.right_tab

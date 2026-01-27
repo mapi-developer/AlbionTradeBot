@@ -45,6 +45,7 @@ class SettingsHandler:
                 "min_silver": 1000000,
                 "game_language": "EN-US",
                 "buy_mode": "order",
+                "server": "US",
             },
             "fast_buy": {
                 "min_profit_rate": 25,

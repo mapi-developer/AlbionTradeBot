@@ -275,6 +275,7 @@ class Bot:
         
         Returns a tuple of dicts ({unique_name: price}, {unique_name: price}) for offers and requests.
         """
+        server = self.settings.get("general").get("server", "US")
         updated_offers = {}
         updated_requests = {}
         if offers:
@@ -289,7 +290,7 @@ class Bot:
                         f"price_{market_title}": int(price),
                     })
                 if payload:
-                    self.db.update_item_prices(payload, item_type="fast")
+                    self.db.update_item_prices(payload, item_type="fast", server=server)
 
         if requests:
             found_requests = self._calculate_price_extremum(requests, find_min=False)
@@ -304,7 +305,7 @@ class Bot:
                     })
 
                 if payload:
-                    self.db.update_item_prices(payload, item_type="order")
+                    self.db.update_item_prices(payload, item_type="order", server=server)
         
         return updated_offers, updated_requests
 
@@ -668,8 +669,9 @@ class Bot:
             if items_to_buy_list == None:
                 items_to_buy_list = self._load_preset_items(market_title)
             is_fast_buy = buy_mode == "fast"
-            items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
-            items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
+            server = self.settings.get("general").get("server", "US")
+            items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast", server=server)
+            items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order", server=server)
             self.current_task_name = "Buying Items"
             self._update_overlay()
 
@@ -824,8 +826,9 @@ class Bot:
                 await self._update_bm_orders()
                 return
             items_to_buy_list = self._load_preset_items(market_title)
-            items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast")
-            items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order")
+            server = self.settings.get("general").get("server", "US")
+            items_prices_order = self.db.get_all_prices_for_city("black_market", item_type="fast", server=server)
+            items_prices_fast = self.db.get_all_prices_for_city("black_market", item_type="order", server=server)
 
             self.current_task_name = "Orders Update"
             self._update_overlay()
@@ -840,6 +843,7 @@ class Bot:
             self.market_handler.sleep(.3)
             self.market_handler.reset_my_orders()
             orders_exists = []
+            self.market_handler.sleep(.5)
             temp_orders_exists = self.sniffer.get_market_buffers("request")
             while len(temp_orders_exists) != 0:
                 orders_exists.extend(temp_orders_exists)
@@ -865,6 +869,7 @@ class Bot:
                     self.market_handler.sleep(.2)                
                     self.sniffer.clear_market_buffers()
                     self.market_handler.reset_my_orders()
+                    self.market_handler.sleep(.2)
                     for i, order in enumerate(self.sniffer.get_market_buffers("request")):
                         if order.get("ItemTypeId") == item_unique_name:
                             self.market_handler.open_item(True, i+1)
@@ -939,6 +944,7 @@ class Bot:
             self.market_handler.sleep(.3)
             self.market_handler.reset_my_orders()
             orders_exists = []
+            self.market_handler.sleep(.5)
             temp_orders_exists = self.sniffer.get_market_buffers("request")
             while len(temp_orders_exists) != 0:
                 orders_exists.extend(temp_orders_exists)
