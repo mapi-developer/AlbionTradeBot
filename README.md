@@ -1,37 +1,48 @@
-TO DO before release:
-1. Update Black Market sell orders ✅
-2. Make Random clicks everywhere on market
-3. Handle logout after long waiting
-4. Handle Server Restart Time
-5. Check subscription status on each bot function start ✅
-6. Display User ID in right upper corner (possible to copy) ✅
-7. Make price labels come from Google Sheet for changes without update ~ !
-8. Change language on functions start and after resume ✅
-9. Try to fix issue when launch on other language ✅
-10. Add orders statistic ✅
-11. Add filters by artifacts in preset tab (ПОХУЙ)
-12. Percentage of up-to-date orders. Black market always, other cities on hover ✅
+An advanced desktop automation and analytics suite designed to optimize market trading in Albion Online. The application automates complex trading workflows—including flipping items to the Black Market—while synchronizing real-time price data across all users via a GCP-hosted backend.
 
-Game Settings for best bot work:
-Borderless full screen
-Hud Scale: 100%
-Window Scale: 80%
-arrows for travel
+🚀 **Key Features**
 
-city codes:
-4000 - fort sterling
-4002 - fort market
-1000 - lymhurst
-1002 - lym market
-2000 - bridgewatch
-2004 - bridgewatch market
-3004 - martlock
-3008 - martlock market
-0000 - thetford
-0007 - thetford market
-5000 - brecilien
-5003 - brecilien market
-3003 - caerleon / black market
-3005 - caerleon market
+- **Market Automation**: Automates Buy Order creation, Sell Order management, and "Fast Buy" logic across all major Royal Cities and the Caerleon Black Market.
 
-market popup about premium
+- **Global Price Synchronization**: Continuously updates an external database with the latest market scans, providing all users with up-to-date analytics and profit margins.
+
+- **Intelligent Inventory Management**: Includes a ChestHandler to automate moving items between bank tabs, guild chests, and your inventory for efficient bulk trading.
+
+- **Network Sniffing**: Utilizes a low-level Sniffer to capture real-time market data directly from game packets, ensuring 100% accuracy without manual input.
+
+- **Custom Trading Presets**: Create and manage specific lists of items to track and trade based on your personal strategy.
+
+- **Dashboard & Analytics**: Real-time visualization of order statistics and trading activity over 72-hour windows.
+
+🛠 **Tech Stack**
+
+- **Frontend**: Built with Flet (Python framework) for a high-performance, responsive desktop GUI.
+
+- **Backend**: Python-based automation logic integrated with GCP (Google Cloud Platform) for data persistence and user authentication.
+
+- **Networking**: Scapy and Pyshark for packet inspection and market data extraction.
+
+- **OS Integration**: PyWin32 and ctypes for window management and simulated user input.
+
+📋 **Recommended Game Settings**
+
+For optimal bot performance, configure your Albion Online client as follows:
+
+- **Display**: Borderless Full Screen
+
+- **HUD Scale**: 100%
+
+- **Window Scale**: 80%
+
+- **Controls**: Use arrows for travel
+
+🏗 **Project Structure**
+- **/bot**: Core automation logic, including market handlers, travel logic, and the sniffer.
+
+- **/gui**: Flet-based interface components and pages such as Dashboard, Settings, and Shop.
+
+- **/config**: Static data including item dictionaries, location IDs, and user settings.
+
+- **/docs**: Technical documentation and class overviews.
+
+*Developed by Matvei Pisarev*
