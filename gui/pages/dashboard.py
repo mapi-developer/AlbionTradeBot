@@ -263,7 +263,12 @@ class OverviewPanel(ft.Container):
                 data = status_res.json()
                 status = data.get("status")
 
-            up_to_date_res = requests.get(f"{self.dashboard.API_URL}/items/prices-up-to-date")
+            server = self.dashboard.config.get("general").get("server", "US")
+            
+            up_to_date_res = requests.get(
+                f"{self.dashboard.API_URL}/items/prices-up-to-date",
+                params={"server": server}    
+            )
             bm_val = "Unknown"
             popup_items = []
 
@@ -1738,39 +1743,37 @@ class MarketTable(ft.Column):
             print(f"Error loading items: {e}")
 
     def refresh_all_prices(self):
-        """Fetches prices for all items in chunks to populate the cache once."""
+        """Fetches prices for all items for the server to populate the cache once."""
         if self.is_loading_prices: return
         self.is_loading_prices = True
         
-        all_names = [i.unique_name for i in self.all_items]
-        chunk_size = 150 # Chunking to avoid URL length limits
-        
-        for i in range(0, len(all_names), chunk_size):
-            chunk = all_names[i:i + chunk_size]
-            try:
-                # Fetching 'fast' type prices
-                res_fast = requests.get(
-                    f"{self.dashboard.API_URL}/items/", 
-                    params={"cities": ["black_market"], "type": "order", "item_names": chunk}
-                )
-                if res_fast.status_code == 200:
-                    for x in res_fast.json():
-                        self.price_cache_fast[x['unique_name']] = x
+        try:
+            # 1. Get the current server from settings
+            server = self.dashboard.config.get("general").get("server", "US")
 
-                # Fetching 'order' type prices
-                res_order = requests.get(
-                    f"{self.dashboard.API_URL}/items/", 
-                    params={"cities": ["black_market"], "type": "fast", "item_names": chunk}
-                )
-                if res_order.status_code == 200:
-                    for x in res_order.json():
-                        self.price_cache_order[x['unique_name']] = x
-                
-                # Update the table UI as chunks load
-                self.render_table()
-                
-            except Exception as e:
-                print(f"Error fetching price chunk: {e}")
+            # 2. Fetch 'fast' type prices (Requesting ALL items for the server - No item_names list)
+            res_fast = requests.get(
+                f"{self.dashboard.API_URL}/items/", 
+                params={"cities": ["black_market"], "type": "order", "server": server}
+            )
+            if res_fast.status_code == 200:
+                for x in res_fast.json():
+                    self.price_cache_fast[x['unique_name']] = x
+
+            # 3. Fetch 'order' type prices
+            res_order = requests.get(
+                f"{self.dashboard.API_URL}/items/", 
+                params={"cities": ["black_market"], "type": "fast", "server": server}
+            )
+            if res_order.status_code == 200:
+                for x in res_order.json():
+                    self.price_cache_order[x['unique_name']] = x
+            
+            # Update the table UI
+            self.render_table()
+            
+        except Exception as e:
+            print(f"Error fetching prices: {e}")
         
         self.is_loading_prices = False
 

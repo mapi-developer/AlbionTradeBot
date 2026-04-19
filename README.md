@@ -35,3 +35,8 @@ city codes:
 3005 - caerleon market
 
 market popup about premium
+
+
+Tom of spell
+torch
+frost

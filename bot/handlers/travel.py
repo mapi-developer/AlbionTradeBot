@@ -101,7 +101,7 @@ class TravelHandler(InputSender):
             self.current_keys = best_keys
 
     def choose_destination(self, destination: str):
-        self.sleep(1)
+        self.sleep(3)
         if destination in CONNECTED_LOCATIONS.values() and destination != "5000":
             self.click(self.mouse_positions[destination+"_section"])
             self.sleep(.3)

@@ -866,12 +866,13 @@ class Bot:
                     self._update_overlay()
 
                     self.market_handler.search_item(item_unique_name, True, False)
-                    self.market_handler.sleep(.2)                
+                    self.market_handler.sleep(.3)                
                     self.sniffer.clear_market_buffers()
-                    self.market_handler.reset_my_orders()
                     self.market_handler.sleep(.2)
+                    self.market_handler.reset_my_orders()
+                    self.market_handler.sleep(.3)
                     for i, order in enumerate(self.sniffer.get_market_buffers("request")):
-                        if order.get("ItemTypeId") == item_unique_name:
+                        if order.get("ItemTypeId") == item_unique_name and i < 5:
                             self.market_handler.open_item(True, i+1)
                     self.market_handler.sleep(.3)
                     current_offer, current_requests = self.sniffer.get_market_buffers()

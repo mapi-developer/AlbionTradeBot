@@ -27,7 +27,7 @@ class APIClient:
     def update_item_price(self, unique_name: str, city_key: str, price: int, item_type: str = "fast", server: str = "US"):
         """
         Queue a price update.
-        :param item_type: 'fast' or 'order'
+        :param item_type: 'fast' or 'order' (matches backend API)
         :param city_key: e.g. 'price_caerleon'
         :param server: 'US', 'EU', or 'AS'
         """

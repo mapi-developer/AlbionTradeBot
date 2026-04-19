@@ -79,7 +79,8 @@ class LocalPlayer(Player):
         return self.inventory
 
     def on_new_item(self, local_index: int, item_id: int, is_inventory: bool = False):
-        if is_inventory: self.inventory[local_index] = item_id
+        if is_inventory: 
+            self.inventory[local_index] = item_id
 
     def on_silver_changed(self, value: int):
         self.silver_balance = value

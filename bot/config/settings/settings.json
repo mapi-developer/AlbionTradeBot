@@ -2,7 +2,8 @@
     "general": {
         "buy_mode": "order",
         "game_language": "EN-US",
-        "min_silver": "1000000"
+        "min_silver": "1000000",
+        "server": "EU"
     },
     "fast_buy": {
         "min_profit_rate": "50",
@@ -19,7 +20,7 @@
         "buy_logic": []
     },
     "order_buy": {
-        "min_profit_rate": "150",
+        "min_profit_rate": "90",
         "default_buy_amount": "15",
         "presets": {
             "caerleon": "Demo Preset.json",
@@ -58,10 +59,14 @@
             {
                 "amount_to_buy": "1",
                 "price_larger_then": "120000"
+            },
+            {
+                "amount_to_buy": "0",
+                "price_larger_then": "800000"
             }
         ]
     },
-    "auth_token": null,
-    "user_id": null,
+    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzcxMDcyMjE3fQ.q1n5ZYnkOOVtvvhdQPRL9joMQV8ZyUnr-z1JknENS2Q",
+    "user_id": "1",
     "home_island": ""
 }
