@@ -1,1 +1,0 @@
-Could not find assets at: C:\Users\Matvei\Projects\AlbionTradeBot\config
