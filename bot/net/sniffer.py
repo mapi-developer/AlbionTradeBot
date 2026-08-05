@@ -101,11 +101,10 @@ class Sniffer:
         try:
             payload = bytes(packet[UDP].payload)
             layer = PhotonLayer.unpack(io.BytesIO(payload))
-            
             for cmd in layer.commands:
                 if cmd.type == CommandType.SendReliableType:
                     self.process(cmd.data)
-                    
+
                 elif cmd.type == CommandType.SendReliableFragmentType:
                     try:
                         frag = cmd.reliable_fragment()

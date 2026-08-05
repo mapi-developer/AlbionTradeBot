@@ -207,7 +207,6 @@ class InfoCard(ft.Container):
         self.margin = ft.Margin.only(left=5, top=0, right=5, bottom=0)
 
     def _handle_hover(self, e):
-        print(f"{e.data} | {self.popup_content_col.controls}")
         if e.data == "true" and self.popup_content_col.controls != []:
             self.popup_container.visible = True
             self.popup_container.opacity = 1
@@ -218,7 +217,6 @@ class InfoCard(ft.Container):
         try:
             self.update()
         except RuntimeError:
-            print("Handle Hover on dashboard card.")
             pass
 
     def set_data(self, new_value: str, popup_controls: list[ft.Control] = None):
