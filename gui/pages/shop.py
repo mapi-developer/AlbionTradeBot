@@ -21,7 +21,7 @@ class ShopingCard(ft.Column):
         self.col = {"sm": 12, "md": 4, "xl": 3}
 
         self.check_icon = ft.Icon(
-            name=ft.Icons.CHECK_CIRCLE,
+            icon=ft.Icons.CHECK_CIRCLE,
             color=GuiStyle.Colors.WHITE,
             size=24,
             opacity=0,
@@ -32,7 +32,7 @@ class ShopingCard(ft.Column):
             bgcolor=GuiStyle.Colors.CARD_BG,
             padding=20,
             border_radius=15,
-            border=ft.border.all(5, ft.Colors.TRANSPARENT),
+            border=ft.Border.all(5, ft.Colors.TRANSPARENT),
             animate=ft.Animation(300, ft.AnimationCurve.DECELERATE),
             on_hover=self.handle_hover,
             on_click=self.handle_click,
@@ -81,14 +81,14 @@ class ShopingCard(ft.Column):
     def handle_hover(self, e):
         if not self.selected:
             if e.data == "true":
-                self.card_container.border = ft.border.all(5, GuiStyle.Colors.BORDER_DEFAULT)
+                self.card_container.border = ft.Border.all(5, GuiStyle.Colors.BORDER_DEFAULT)
 
                 self.card_container.shadow = ft.BoxShadow(
                     blur_radius=20, color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK)
                 )
 
             else:
-                self.card_container.border = ft.border.all(5, ft.Colors.TRANSPARENT)
+                self.card_container.border = ft.Border.all(5, ft.Colors.TRANSPARENT)
                 self.card_container.shadow = None
 
             self.card_container.update()
@@ -98,11 +98,11 @@ class ShopingCard(ft.Column):
 
     def update_state(self):
         if self.selected:
-            self.card_container.border = ft.border.all(5, GuiStyle.Colors.WHITE)
+            self.card_container.border = ft.Border.all(5, GuiStyle.Colors.WHITE)
             self.card_container.bgcolor = GuiStyle.Colors.CARD_BG
             self.check_icon.opacity = 1
         else:
-            self.card_container.border = ft.border.all(5, ft.Colors.TRANSPARENT)
+            self.card_container.border = ft.Border.all(5, ft.Colors.TRANSPARENT)
             self.card_container.bgcolor = GuiStyle.Colors.CARD_BG
             self.check_icon.opacity = 0
 
@@ -165,7 +165,7 @@ class ShopCards(ft.ResponsiveRow):
 class GiftInfo(ft.Container):
     def __init__(self):
         super().__init__()
-        self.margin = ft.margin.only(top=20, bottom=20)
+        self.margin = ft.Margin.only(top=20, bottom=20)
 
         self.gift_checkbox = ft.Checkbox(
             label="Is it a Gift?",
@@ -218,9 +218,8 @@ class Shop(ft.Container):
     def __init__(self, settings: SettingsHandler, login_state: "State", page=None):
         super().__init__()
         self.settings = settings
-        self.padding = ft.padding.all(30)
+        self.padding = ft.Padding.all(30)
         self.login_state = login_state
-        self.page = page
 
         self.shop_cards = ShopCards(self.settings.API_URL)
         self.gift_info = GiftInfo()
@@ -235,7 +234,7 @@ class Shop(ft.Container):
                 self.gift_info,
                 ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                 ft.ElevatedButton(
-                    text="Proceed to Checkout",
+                    content=ft.Text("Proceed to Checkout"),
                     icon=ft.Icons.SHOPPING_CART,
                     style=ft.ButtonStyle(
                         color="white",
@@ -305,7 +304,7 @@ class Shop(ft.Container):
 def main(page: ft.Page):
     page.padding = 0
     page.title = "Subscription Shop"
-    page.scroll = "auto"
+    page.scroll = ft.ScrollMode.AUTO
     
     class MockState:
         user_id = 1

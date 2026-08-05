@@ -1,4 +1,5 @@
 import flet as ft
+import flet_charts as fch
 import threading
 import asyncio
 import time
@@ -76,7 +77,7 @@ class LeftPanelButton(ft.Container):
         self.padding = 0
         self.col = {"sm": 12, "md": 12, "xl": 12}
         self.content = ft.ElevatedButton(
-            text=text,
+            content=ft.Text(text),
             data=data,
             style=ft.ButtonStyle(
                 color=GuiStyle.Colors.TEXT_PRIMARY,
@@ -84,7 +85,7 @@ class LeftPanelButton(ft.Container):
                 bgcolor=ft.Colors.TRANSPARENT,
                 shadow_color=ft.Colors.TRANSPARENT,
                 text_style=ft.TextStyle(size=18),
-                padding=ft.padding.only(0, 15, 0, 15),
+                padding=ft.Padding.only(left=0, top=15, right=0, bottom=15),
                 overlay_color=GuiStyle.Colors.CARD_BG,
             ),
         )
@@ -175,7 +176,7 @@ class InfoCard(ft.Container):
             ),
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=15,
-            border=ft.border.all(width=1, color=GuiStyle.Colors.BORDER_DEFAULT),
+            border=ft.Border.all(width=1, color=GuiStyle.Colors.BORDER_DEFAULT),
             expand=True,
         )
 
@@ -189,7 +190,7 @@ class InfoCard(ft.Container):
             ),
             bgcolor=GuiStyle.Colors.SIDEBAR_BG, # Slightly darker/different bg for contrast
             border_radius=15,
-            border=ft.border.all(width=1, color=GuiStyle.Colors.ACCENT_BLUE), # Highlight border
+            border=ft.Border.all(width=1, color=GuiStyle.Colors.ACCENT_BLUE), # Highlight border
             opacity=0, # Invisible by default
             animate_opacity=200, # Smooth fade in
             visible=False, # Hidden from hit-testing when not active
@@ -203,7 +204,7 @@ class InfoCard(ft.Container):
             ]
         )
         
-        self.margin = ft.margin.only(5, 0, 5, 0)
+        self.margin = ft.Margin.only(left=5, top=0, right=5, bottom=0)
 
     def _handle_hover(self, e):
         if e.data == "true" and self.popup_content_col.controls != []:
@@ -326,67 +327,65 @@ class OverviewPanel(ft.Container):
 
 class OrdersGraph(ft.Container):
     def __init__(self, dashboard: "Dashboard", max_y: int = 40):
-        super().__init__()
         self.dashboard = dashboard
-        self.padding = 20
-        self.bgcolor = GuiStyle.Colors.CARD_BG
-        self.border_radius = 15
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
-        self.margin = ft.margin.only(top=10)
 
+        # Use ft.LineChartDataPoint
         self.chart_data = [
-            ft.LineChartDataPoint(0, 5),
-            ft.LineChartDataPoint(1, 12),
-            ft.LineChartDataPoint(2, 8),
-            ft.LineChartDataPoint(3, 25),
-            ft.LineChartDataPoint(4, 15),
-            ft.LineChartDataPoint(5, 30),
-            ft.LineChartDataPoint(6, 22),
-            ft.LineChartDataPoint(7, 5),
-            ft.LineChartDataPoint(8, 12),
-            ft.LineChartDataPoint(9, 8),
-            ft.LineChartDataPoint(10, 25),
+            fch.LineChartDataPoint(0, 5),
+            fch.LineChartDataPoint(1, 12),
+            fch.LineChartDataPoint(2, 8),
+            fch.LineChartDataPoint(3, 25),
+            fch.LineChartDataPoint(4, 15),
+            fch.LineChartDataPoint(5, 30),
+            fch.LineChartDataPoint(6, 22),
+            fch.LineChartDataPoint(7, 5),
+            fch.LineChartDataPoint(8, 12),
+            fch.LineChartDataPoint(9, 8),
+            fch.LineChartDataPoint(10, 25),
         ]
 
-        self.chart = ft.LineChart(
+        self.chart = fch.LineChart(
             data_series=[
-                ft.LineChartData(
-                    data_points=self.chart_data,
+                fch.LineChartData(
+                    points=self.chart_data,
                     stroke_width=4,
                     color=GuiStyle.Colors.WHITE_70,
                     curved=False,
                     point=True,
                 )
             ],
-            bottom_axis=ft.ChartAxis(
+            bottom_axis=fch.ChartAxis(
                 labels=[
-                    ft.ChartAxisLabel(value=2, label=ft.Text("2d ago", size=15)),
-                    ft.ChartAxisLabel(value=4, label=ft.Text("1d 12h ago", size=15)),
-                    ft.ChartAxisLabel(value=6, label=ft.Text("24h ago", size=15)),
-                    ft.ChartAxisLabel(value=8, label=ft.Text("12h ago", size=15)),
-                    ft.ChartAxisLabel(value=10, label=ft.Text("Now", size=15)),
+                    fch.ChartAxisLabel(value=2, label=ft.Text("2d ago", size=15)),
+                    fch.ChartAxisLabel(value=4, label=ft.Text("1d 12h ago", size=15)),
+                    fch.ChartAxisLabel(value=6, label=ft.Text("24h ago", size=15)),
+                    fch.ChartAxisLabel(value=8, label=ft.Text("12h ago", size=15)),
+                    fch.ChartAxisLabel(value=10, label=ft.Text("Now", size=15)),
                 ],
-                labels_size=30,
+                label_size=30,
             ),
-            left_axis=ft.ChartAxis(
+            left_axis=fch.ChartAxis(
                 labels=[
-                    ft.ChartAxisLabel(value=0, label=ft.Text("0", size=15)),
-                    ft.ChartAxisLabel(
+                    fch.ChartAxisLabel(value=0, label=ft.Text("0", size=15)),
+                    fch.ChartAxisLabel(
                         value=int(max_y / 2),
                         label=ft.Text(str(int(max_y / 2)), size=15),
                     ),
-                    ft.ChartAxisLabel(value=max_y, label=ft.Text(str(max_y), size=15)),
+                    fch.ChartAxisLabel(value=max_y, label=ft.Text(str(max_y), size=15)),
                 ],
-                labels_size=30,
+                label_size=30,
             ),
-            border=ft.border.all(3, ft.Colors.with_opacity(0.5, ft.Colors.ON_SURFACE)),
-            tooltip_bgcolor=ft.Colors.with_opacity(0.8, GuiStyle.Colors.DARK_BLUE),
-            horizontal_grid_lines=ft.ChartGridLines(
+            border=ft.border.Border.all(3, ft.Colors.with_opacity(0.5, ft.Colors.ON_SURFACE)),
+            # Replaced 'tooltip_bgcolor' with 'tooltip=fch.LineChartTooltip(...)'
+            tooltip=fch.LineChartTooltip(
+                bgcolor=ft.Colors.with_opacity(0.8, GuiStyle.Colors.DARK_BLUE)
+            ),
+            horizontal_grid_lines=fch.ChartGridLines(
                 interval=max_y / 4,
                 color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
                 width=1,
             ),
-            vertical_grid_lines=ft.ChartGridLines(
+            vertical_grid_lines=fch.ChartGridLines(
                 interval=1,
                 color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
                 width=1,
@@ -396,51 +395,67 @@ class OrdersGraph(ft.Container):
             expand=True,
         )
 
-        self.content = ft.Column(
-            [
-                ft.Text("Order Activity (Last 3 Days)", size=16, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY),
-                ft.Container(height=10),
-                ft.Container(content=self.chart, height=300),
-            ]
+        super().__init__(
+            padding=20,
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            border_radius=15,
+            border=ft.border.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
+            margin=ft.margin.Margin.only(top=10),
+            content=ft.Column(
+                [
+                    ft.Text(
+                        "Order Activity (Last 3 Days)",
+                        size=16,
+                        weight=ft.FontWeight.BOLD,
+                        color=GuiStyle.Colors.TEXT_PRIMARY,
+                    ),
+                    ft.Container(height=10),
+                    ft.Container(content=self.chart, height=300),
+                ]
+            ),
         )
+
     def update_graph_data(self):
         stats = self.dashboard.bot.get_order_stats()
-        # Assuming self.chart.data_series[0].data_points exists
         new_points = []
         max_y = 0
         for i, count in enumerate(stats):
-            new_points.append(ft.LineChartDataPoint(i, count))
+            new_points.append(fch.LineChartDataPoint(i, count))
             if count > max_y:
                 max_y = int(count)
 
-        max_y = max(20, int(max_y*1.2))
-        
-        self.chart.data_series[0].data_points = new_points
-        self.chart.left_axis=ft.ChartAxis(
+        max_y = max(20, int(max_y * 1.2))
+
+        # Updated property name 'points'
+        self.chart.data_series[0].points = new_points
+        self.chart.left_axis = fch.ChartAxis(
             labels=[
-                ft.ChartAxisLabel(value=0, label=ft.Text("0", size=15)),
-                ft.ChartAxisLabel(
+                fch.ChartAxisLabel(value=0, label=ft.Text("0", size=15)),
+                fch.ChartAxisLabel(
                     value=int(max_y / 2),
                     label=ft.Text(str(int(max_y / 2)), size=15),
                 ),
-                ft.ChartAxisLabel(value=max_y, label=ft.Text(str(max_y), size=15)),
+                fch.ChartAxisLabel(value=max_y, label=ft.Text(str(max_y), size=15)),
             ],
-            labels_size=30,
+            label_size=30,
         )
-        self.chart.horizontal_grid_lines=ft.ChartGridLines(
+        self.chart.horizontal_grid_lines = fch.ChartGridLines(
             interval=max_y / 4,
             color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
             width=1,
         )
-        self.chart.vertical_grid_lines=ft.ChartGridLines(
+        self.chart.vertical_grid_lines = fch.ChartGridLines(
             interval=1,
             color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE),
             width=1,
         )
-        self.chart.min_y=0
-        self.chart.max_y=max_y
-        if self.page:
+        self.chart.min_y = 0
+        self.chart.max_y = max_y
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
 
 class RightPanel(ft.Column):
@@ -453,7 +468,7 @@ class RightPanel(ft.Column):
             ft.Container(
                 content=ft.Column(spacing=0, controls=content_controls, expand=expand_content),
                 bgcolor=ft.Colors.TRANSPARENT,
-                padding=ft.padding.only(20, 10, 20, 0),
+                padding=ft.Padding.only(left=20, top=10, right=20, bottom=0),
                 expand=True,
             )
         ]
@@ -465,14 +480,14 @@ class DashboardPanel(RightPanel):
             content=ft.ResponsiveRow(
                 controls=[ft.Text("Bot Overview", size=30, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY)],
             ),
-            padding=ft.padding.only(0, 0, 0, 10),
+            padding=ft.Padding.only(left=0, top=0, right=0, bottom=10),
         )
         
         self.overview_panel = OverviewPanel(dashboard=dashboard)
         self.orders_graph = OrdersGraph(dashboard)
         self.market_table = ft.Container(
             content=MarketTable(dashboard),
-            padding=ft.padding.only(0, 0, 0, 150),
+            padding=ft.Padding.only(left=0, top=0, right=0, bottom=150),
             height=1200
         )
 
@@ -503,9 +518,9 @@ class BotExecutionWarning(ft.Container):
             vertical_alignment=ft.CrossAxisAlignment.START,
         )
         self.bgcolor = GuiStyle.Colors.LIGHT_BLUE
-        self.padding = 15
+        self.padding = ft.Padding.only(left=15, top=15, right=15, bottom=15)
         self.border_radius = 12
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+        self.border = ft.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
 
 class AddSequenceFunctionButton(ft.ElevatedButton):
@@ -513,7 +528,7 @@ class AddSequenceFunctionButton(ft.ElevatedButton):
         super().__init__()
         self.data = cmd_id
         self.style = ft.ButtonStyle(
-            padding=ft.padding.only(10, 15, 10, 15),
+            padding=ft.Padding.only(left=10, top=15, right=10, bottom=15),
             bgcolor=GuiStyle.Colors.GRAY_BLUE,
             shape=ft.RoundedRectangleBorder(radius=10),
         )
@@ -553,9 +568,9 @@ class FunctionsAvaliablePanel(ft.Container):
             width=float("inf"),
         )
         self.bgcolor = GuiStyle.Colors.CARD_BG
-        self.padding = ft.padding.only(20, 15, 20, 20)
+        self.padding = ft.Padding.only(left=20, top=15, right=20, bottom=20)
         self.border_radius = 15
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+        self.border = ft.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
         self.travel_to_button = AddSequenceFunctionButton("travel_to")
         self.price_check_button = AddSequenceFunctionButton("price_check_fast")
@@ -613,7 +628,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="market", text="Market"),
                     ft.DropdownOption(key="island", text="Island"),
                 ],
-                on_change=self.on_destination_type_change,
+                on_select=self.on_destination_type_change,
                 bgcolor=GuiStyle.Colors.DARK_BLUE,
                 color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
@@ -635,7 +650,7 @@ class TravelToAdditionalInfo(ft.Container):
                     ft.DropdownOption(key="3005", text="Caerleon"),
                     ft.DropdownOption(key="5003", text="Brecilien"),
                 ],
-                on_change=lambda _: self.trigger_save(),
+                on_select=lambda _: self.trigger_save(),
                 bgcolor=GuiStyle.Colors.DARK_BLUE,
                 color=GuiStyle.Colors.TEXT_PRIMARY,
             ),
@@ -729,7 +744,7 @@ class FunctionToExecute(ft.Container):
             bgcolor=COMMAND_TYPES[function_type]["color"],
             border_radius=4,
             alignment=ft.Alignment.CENTER,
-            content=ft.Icon(name=COMMAND_TYPES[function_type]["icon"], color="#ffffff"),
+            content=ft.Icon(icon=COMMAND_TYPES[function_type]["icon"], color="#ffffff"),
         )
 
         self.remove_btn_container = ft.Container(
@@ -823,8 +838,10 @@ class ExecutionFunctionsList(ft.Container):
             function.remove_button.on_click = self.remove_function
             function.content.controls[1] = function.remove_btn_container
 
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
 
 class ExecutionSequencePanel(ft.Container):
@@ -889,9 +906,9 @@ class ExecutionSequencePanel(ft.Container):
                 spacing=10,
             ),
             bgcolor=GuiStyle.Colors.BOT_STATUS_BG,
-            padding=ft.padding.symmetric(15, 10),
+            padding=ft.Padding.symmetric(vertical=15, horizontal=10),
             border_radius=10,
-            border=ft.border.all(1, "#1e293b"),
+            border=ft.Border.all(1, "#1e293b"),
             col={"sm": 4, "md": 4, "xl": 4},
         )
 
@@ -947,15 +964,15 @@ class ExecutionSequencePanel(ft.Container):
                 ],
                 alignment=ft.MainAxisAlignment.END,
             ),
-            padding=ft.padding.only(right=10),
+            padding=ft.Padding.only(right=10),
             col={"sm": 7, "md": 8.5, "xl": 9.55},
             visible=False
         )
 
         self.bgcolor = GuiStyle.Colors.CARD_BG
-        self.padding = ft.padding.only(20, 15, 20, 20)
+        self.padding = ft.Padding.only(left=20, top=15, right=20, bottom=20)
         self.border_radius = 15
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+        self.border = ft.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.content = ft.Column(
             controls=[
                 ft.ResponsiveRow(
@@ -969,7 +986,7 @@ class ExecutionSequencePanel(ft.Container):
                 self.execution_functions_list,
                 ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
                 ft.Container(
-                    content=self.lower_row, padding=ft.padding.only(0, 0, 0, 10)
+                    content=self.lower_row, padding=ft.Padding.only(left=0, top=0, right=0, bottom=10)
                 ),
                 ft.ResponsiveRow(
                     controls=[self.run_warning, self.run_button], alignment=ft.MainAxisAlignment.END,
@@ -1057,7 +1074,7 @@ class BotControlPanel(ft.Container):
     def __init__(self, dashboard, login):
         super().__init__()
         left_side_size = 3
-        self.padding = ft.padding.only(0, 10, 0, 0)
+        self.padding = ft.Padding.only(left=0, top=10, right=0, bottom=0)
 
         self.execution_warning = BotExecutionWarning()
         self.execution_sequence_panel = ExecutionSequencePanel(dashboard)
@@ -1109,7 +1126,7 @@ class SubscriptionBlocker(ft.Container):
                 ),
                 ft.Container(height=20),
                 ft.ElevatedButton(
-                    text="Go to Shop",
+                    content=ft.Text("Go to Shop"),
                     icon=ft.Icons.SHOPPING_BAG,
                     style=ft.ButtonStyle(
                         bgcolor=GuiStyle.Colors.ACCENT_ORANGE, color=GuiStyle.Colors.WHITE, padding=20
@@ -1137,7 +1154,7 @@ class BotSequencePanel(RightPanel):
                     )
                 ],
             ),
-            padding=ft.padding.only(0, 0, 0, 10),
+            padding=ft.Padding.only(left=0, top=0, right=0, bottom=10),
         )
 
         self.bot_control_panel = BotControlPanel(dashboard=dashboard, login=login)
@@ -1154,7 +1171,7 @@ class BotSequencePanel(RightPanel):
                 expand=True,
                 scroll=ft.ScrollMode.AUTO,
             ),
-            padding=ft.padding.only(20, 10, 20, 0),
+            padding=ft.Padding.only(left=20, top=10, right=20, bottom=0),
             expand=True,
         )
 
@@ -1193,8 +1210,11 @@ class BotSequencePanel(RightPanel):
                 avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
             elif avaliable_functions.price_check_order_button in avaliable_functions.content.controls and avaliable_functions.login.state.user_id != "1":
                 avaliable_functions.content.controls.remove(avaliable_functions.price_check_order_button)
-            if self.page:
+
+            try:
                 self.update()
+            except RuntimeError:
+                pass
 
 
 class ActivityLogItem(ft.Container):
@@ -1215,7 +1235,7 @@ class ActivityLogItem(ft.Container):
                 ]
             ),
             style=ft.ButtonStyle(
-                padding=ft.padding.all(20),
+                padding=ft.Padding.all(20),
                 bgcolor=GuiStyle.Colors.CARD_BG,
                 shape=ft.RoundedRectangleBorder(radius=8),
                 side=ft.BorderSide(1, GuiStyle.Colors.BORDER_DEFAULT),
@@ -1239,7 +1259,7 @@ class ActivityLogItem(ft.Container):
             border_radius=8,
             alignment=ft.Alignment.CENTER,
             padding=5,
-            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+            border=ft.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         )
 
         # 3. Layout
@@ -1265,7 +1285,7 @@ class LogsView(ft.Container):
                         category.upper(), size=10, weight="bold", color=ft.Colors.BLACK
                     ),
                     bgcolor=color,
-                    padding=ft.padding.symmetric(horizontal=5, vertical=2),
+                    padding=ft.Padding.symmetric(horizontal=5, vertical=2),
                     border_radius=3,
                     width=70,
                     alignment=ft.Alignment.CENTER,
@@ -1276,7 +1296,7 @@ class LogsView(ft.Container):
     def __init__(self, initial_logs=None):
         super().__init__()
         self.padding = 10
-        self.border = ft.border.all(1, ft.Colors.OUTLINE_VARIANT)
+        self.border = ft.Border.all(1, ft.Colors.OUTLINE_VARIANT)
         self.border_radius = 8
         self.bgcolor = ft.Colors.BLACK12
         self.expand = True
@@ -1334,7 +1354,7 @@ class ActivityLogsPanel(RightPanel):
                 spacing=10,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=ft.padding.only(0, 0, 0, 10),
+            padding=ft.Padding.only(left=0, top=0, right=0, bottom=10),
         )
 
         self.logs_list_content = ft.Column(
@@ -1343,7 +1363,7 @@ class ActivityLogsPanel(RightPanel):
 
         self.logs_view = LogsView()
         self.logs_view.visible = False
-        self.logs_view.margin = ft.margin.only(0, 10, 0, 20)
+        self.logs_view.margin = ft.Margin.only(left=0, top=10, right=0, bottom=20)
 
         self.inner_column = self.controls[0].content
 
@@ -1475,8 +1495,10 @@ class ActivityLogsPanel(RightPanel):
                     data=f,
                 )
             )
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def handle_log_delete(self, e):
         """Deletes the log file and refreshes the list."""
@@ -1524,18 +1546,18 @@ class MarketTable(ft.Column):
         self.filtered_items = []
         self.page_number = 1
         self.items_per_page = 15
-        
-        # New: Price Cache
+
+        # Price Cache
         self.price_cache_fast = {}
         self.price_cache_order = {}
         self.is_loading_prices = False
-        
+
         # Filters state
         self.selected_cat = None
         self.selected_sub = None
         self.selected_tiers = set()
         self.selected_enchants = set()
-        
+
         self._init_ui()
         self._load_items_data()
 
@@ -1543,21 +1565,21 @@ class MarketTable(ft.Column):
         """Helper method to create consistent filter chips."""
         return ft.Chip(
             label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
-            on_select=callback, 
+            on_select=callback,
             data=data,
-            label_padding=ft.padding.symmetric(horizontal=4),
+            label_padding=ft.padding.Padding.symmetric(horizontal=4),
             bgcolor=GuiStyle.Colors.INNER_BG,
             border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
             selected_color=GuiStyle.Colors.DARK_BLUE,
         )
 
     def _init_ui(self):
-        # --- 1. Filter Components (Mirrored from Presets) ---
         def create_chip(text, data, callback):
             return ft.Chip(
                 label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
-                on_select=callback, data=data,
-                label_padding=ft.padding.symmetric(horizontal=4),
+                on_select=callback,
+                data=data,
+                label_padding=ft.padding.Padding.symmetric(horizontal=4),
                 bgcolor=GuiStyle.Colors.INNER_BG,
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
                 selected_color=GuiStyle.Colors.DARK_BLUE,
@@ -1569,38 +1591,47 @@ class MarketTable(ft.Column):
             text_size=12,
             dense=True,
             height=35,
-            expand=True, # Added expand to fill space in the row
+            expand=True,
             on_change=lambda e: self.apply_filters(),
             bgcolor=GuiStyle.Colors.DARK_BLUE,
             color=GuiStyle.Colors.TEXT_PRIMARY,
         )
 
-        # New Refresh Text Button
+        # FIXED: Replaced 'text=' with 'content=ft.Text(...)'
         self.refresh_prices_btn = ft.TextButton(
-            text="Refresh Prices",
+            content=ft.Text("Refresh Prices"),
             icon=ft.Icons.REFRESH_ROUNDED,
-            on_click=lambda _: threading.Thread(target=self.refresh_all_prices, daemon=True).start(),
-            style=ft.ButtonStyle(color=GuiStyle.Colors.TEXT_PRIMARY)
+            on_click=lambda _: threading.Thread(
+                target=self.refresh_all_prices, daemon=True
+            ).start(),
+            style=ft.ButtonStyle(color=GuiStyle.Colors.TEXT_PRIMARY),
         )
 
-        # Updated Header Row with the button next to search
         header_row = ft.Row(
             controls=[self.search_input, self.refresh_prices_btn],
             alignment=ft.MainAxisAlignment.START,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10
+            spacing=10,
         )
 
         self.cat_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
         self.sub_row = ft.Row(wrap=True, spacing=2, run_spacing=2)
 
         self.tier_row = ft.Row(
-            wrap=True, spacing=2, run_spacing=2,
-            controls=[create_chip(f"T{t}", t, self.on_tier_toggle) for t in [4, 5, 6, 7, 8]]
+            wrap=True,
+            spacing=2,
+            run_spacing=2,
+            controls=[
+                create_chip(f"T{t}", t, self.on_tier_toggle) for t in [4, 5, 6, 7, 8]
+            ],
         )
         self.enchant_row = ft.Row(
-            wrap=True, spacing=2, run_spacing=2,
-            controls=[create_chip(f".{e}", e, self.on_enchant_toggle) for e in [0, 1, 2, 3, 4]]
+            wrap=True,
+            spacing=2,
+            run_spacing=2,
+            controls=[
+                create_chip(f".{e}", e, self.on_enchant_toggle) for e in [0, 1, 2, 3, 4]
+            ],
         )
 
         def remove_filters(e):
@@ -1609,24 +1640,30 @@ class MarketTable(ft.Column):
             self.selected_tiers.clear()
             self.selected_enchants.clear()
             self.search_input.value = ""
-            for chip in self.cat_row.controls: chip.selected = False
-            for chip in self.tier_row.controls: chip.selected = False
-            for chip in self.enchant_row.controls: chip.selected = False
+            for chip in self.cat_row.controls:
+                chip.selected = False
+            for chip in self.tier_row.controls:
+                chip.selected = False
+            for chip in self.enchant_row.controls:
+                chip.selected = False
             self.sub_row.controls.clear()
-            if self.page:
+
+            try:
                 self.cat_row.update()
                 self.sub_row.update()
                 self.tier_row.update()
                 self.enchant_row.update()
                 self.search_input.update()
+            except RuntimeError:
+                pass
+
             self.apply_filters()
 
-        # --- 2. Table UI with Header Adjustments ---
         def header_cell(text):
             return ft.Container(
                 content=ft.Text(text, weight="bold", size=12),
-                padding=ft.padding.symmetric(vertical=10, horizontal=5),
-                margin=ft.margin.only(top=1, left=2, right=2) # Margin prevents overlap with top border
+                padding=ft.padding.Padding.symmetric(vertical=10, horizontal=5),
+                margin=ft.margin.Margin.only(top=1, left=2, right=2),
             )
 
         self.data_table = ft.DataTable(
@@ -1641,34 +1678,34 @@ class MarketTable(ft.Column):
             data_row_color={ft.ControlState.HOVERED: "#2A3C55"},
             column_spacing=10,
             heading_row_height=50,
-            width=float("inf"), 
+            width=float("inf"),
         )
-        
+
         self.table_container = ft.Container(
             content=self.data_table,
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=10,
-            clip_behavior=ft.ClipBehavior.ANTI_ALIAS, # Clips the background to the rounded border
-            border=ft.border.all(2, GuiStyle.Colors.BORDER_DEFAULT),
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            border=ft.border.Border.all(2, GuiStyle.Colors.BORDER_DEFAULT),
             padding=0,
         )
 
-        # --- 3. Pagination ---
+        # FIXED: Explicit 'icon=' parameters for IconButton
         self.prev_btn = ft.IconButton(
-            ft.Icons.ARROW_BACK, 
-            on_click=lambda e: self.change_page(-1), 
-            disabled=True
+            icon=ft.Icons.ARROW_BACK,
+            on_click=lambda e: self.change_page(-1),
+            disabled=True,
         )
         self.next_btn = ft.IconButton(
-            ft.Icons.ARROW_FORWARD, 
+            icon=ft.Icons.ARROW_FORWARD,
             on_click=lambda e: self.change_page(1),
-            disabled=True
+            disabled=True,
         )
         self.page_info = ft.Text("Page 1", color=GuiStyle.Colors.WHITE)
 
         self.pagination_row = ft.Row(
             [self.prev_btn, self.page_info, self.next_btn],
-            alignment=ft.MainAxisAlignment.CENTER
+            alignment=ft.MainAxisAlignment.CENTER,
         )
 
         filter_panel = ft.Container(
@@ -1677,22 +1714,51 @@ class MarketTable(ft.Column):
                     ft.Column(
                         controls=[
                             header_row,
-                            ft.Row([ft.Text("Tier:", size=11, color="#ffffff"), self.tier_row], vertical_alignment=ft.CrossAxisAlignment.CENTER),
-                            ft.Row([ft.Text("Ench:", size=11, color="#ffffff"), self.enchant_row], vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                            ft.Row(
+                                [
+                                    ft.Text("Tier:", size=11, color="#ffffff"),
+                                    self.tier_row,
+                                ],
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            ),
+                            ft.Row(
+                                [
+                                    ft.Text("Ench:", size=11, color="#ffffff"),
+                                    self.enchant_row,
+                                ],
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            ),
                         ],
                         col={"md": 4},
                     ),
                     ft.Column(
                         controls=[
-                            ft.Column([ft.Text("Category:", size=11, color="#ffffff"), self.cat_row], spacing=0),
-                            ft.Column([ft.Text("Sub-Category:", size=11, color="#ffffff"), self.sub_row], spacing=0),
+                            ft.Column(
+                                [
+                                    ft.Text("Category:", size=11, color="#ffffff"),
+                                    self.cat_row,
+                                ],
+                                spacing=0,
+                            ),
+                            ft.Column(
+                                [
+                                    ft.Text("Sub-Category:", size=11, color="#ffffff"),
+                                    self.sub_row,
+                                ],
+                                spacing=0,
+                            ),
                         ],
                         spacing=2,
                         col={"md": 7},
                     ),
                     ft.Column(
                         controls=[
-                            ft.IconButton(icon=ft.Icons.REFRESH_ROUNDED, icon_color=ft.Colors.WHITE, tooltip="Remove Filters", on_click=remove_filters)
+                            ft.IconButton(
+                                icon=ft.Icons.REFRESH_ROUNDED,
+                                icon_color=ft.Colors.WHITE,
+                                tooltip="Remove Filters",
+                                on_click=remove_filters,
+                            )
                         ],
                         spacing=2,
                         col={"md": 0.5},
@@ -1703,20 +1769,26 @@ class MarketTable(ft.Column):
             padding=5,
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=5,
-            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
+            border=ft.border.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
         )
 
         self.controls = [
-            ft.Text("Black Market Prices", size=20, weight="bold", color=GuiStyle.Colors.TEXT_PRIMARY),
+            ft.Text(
+                "Black Market Prices",
+                size=20,
+                weight="bold",
+                color=GuiStyle.Colors.TEXT_PRIMARY,
+            ),
             filter_panel,
             self.table_container,
-            self.pagination_row
+            self.pagination_row,
         ]
 
     def _load_items_data(self):
         """Loads item definitions and triggers the one-time price fetch."""
         path = self.dashboard.config.BOT_ITEMS_FILE
-        if not os.path.exists(path): return
+        if not os.path.exists(path):
+            return
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -1726,84 +1798,85 @@ class MarketTable(ft.Column):
                 categories.append(cat)
                 for sub, items in sub_cats.items():
                     if isinstance(items, dict):
-                        for uid, name in items.items(): 
+                        for uid, name in items.items():
                             self.all_items.append(ItemData(uid, name, cat, sub))
                     elif isinstance(items, list):
-                        for uid in items: 
+                        for uid in items:
                             self.all_items.append(ItemData(uid, uid, cat, sub))
-            
-            # Setup category chips
-            self.cat_row.controls = [self._create_chip(c, c, self.on_cat_toggle) for c in categories]
-            
-            # Start the one-time price background fetch
+
+            self.cat_row.controls = [
+                self._create_chip(c, c, self.on_cat_toggle) for c in categories
+            ]
+
             threading.Thread(target=self.refresh_all_prices, daemon=True).start()
-            
+
             self.apply_filters()
-        except Exception as e: 
+        except Exception as e:
             print(f"Error loading items: {e}")
 
     def refresh_all_prices(self):
         """Fetches prices for all items for the server to populate the cache once."""
-        if self.is_loading_prices: return
+        if self.is_loading_prices:
+            return
         self.is_loading_prices = True
-        
+
         try:
-            # 1. Get the current server from settings
             server = self.dashboard.config.get("general").get("server", "US")
 
-            # 2. Fetch 'fast' type prices (Requesting ALL items for the server - No item_names list)
             res_fast = requests.get(
-                f"{self.dashboard.API_URL}/items/", 
-                params={"cities": ["black_market"], "type": "order", "server": server}
+                f"{self.dashboard.API_URL}/items/",
+                params={"cities": ["black_market"], "type": "order", "server": server},
             )
             if res_fast.status_code == 200:
                 for x in res_fast.json():
-                    self.price_cache_fast[x['unique_name']] = x
+                    self.price_cache_fast[x["unique_name"]] = x
 
-            # 3. Fetch 'order' type prices
             res_order = requests.get(
-                f"{self.dashboard.API_URL}/items/", 
-                params={"cities": ["black_market"], "type": "fast", "server": server}
+                f"{self.dashboard.API_URL}/items/",
+                params={"cities": ["black_market"], "type": "fast", "server": server},
             )
             if res_order.status_code == 200:
                 for x in res_order.json():
-                    self.price_cache_order[x['unique_name']] = x
-            
-            # Update the table UI
+                    self.price_cache_order[x["unique_name"]] = x
+
             self.render_table()
-            
+
         except Exception as e:
             print(f"Error fetching prices: {e}")
-        
+
         self.is_loading_prices = False
 
     def render_table(self):
         """Renders the table immediately using the cached data."""
         max_page = math.ceil(len(self.filtered_items) / self.items_per_page) or 1
-        if self.page_number > max_page: self.page_number = max_page
-        if self.page_number < 1: self.page_number = 1
+        if self.page_number > max_page:
+            self.page_number = max_page
+        if self.page_number < 1:
+            self.page_number = 1
 
         self.page_info.value = f"Page {self.page_number} / {max_page}"
-        self.prev_btn.disabled = (self.page_number <= 1)
-        self.next_btn.disabled = (self.page_number >= max_page)
-        
+        self.prev_btn.disabled = self.page_number <= 1
+        self.next_btn.disabled = self.page_number >= max_page
+
         start = (self.page_number - 1) * self.items_per_page
         end = start + self.items_per_page
         page_items = self.filtered_items[start:end]
 
         rows = []
         for item in page_items:
-            # Pull from cache instead of making new API requests
             f_info = self.price_cache_fast.get(item.unique_name, {})
             o_info = self.price_cache_order.get(item.unique_name, {})
-            
+
             p_fast_raw = f_info.get("price_black_market")
             p_order_raw = o_info.get("price_black_market")
-            
-            price_fast = f"{int(p_fast_raw/10000):,}" if p_fast_raw else "No Data"
-            price_order = f"{int(p_order_raw/10000):,}" if p_order_raw else "No Data"
-            
-            # Last Update Logic
+
+            price_fast = (
+                f"{int(p_fast_raw/10000):,}" if p_fast_raw else "No Data"
+            )
+            price_order = (
+                f"{int(p_order_raw/10000):,}" if p_order_raw else "No Data"
+            )
+
             t_fast = f_info.get("black_market_updated_at")
             t_order = o_info.get("black_market_updated_at")
             last_update_str = "-"
@@ -1814,71 +1887,152 @@ class MarketTable(ft.Column):
                     dt = datetime.fromisoformat(best_time.replace("Z", "+00:00"))
                     now = datetime.now(dt.tzinfo)
                     diff = now - dt
-                    if diff.days > 0: last_update_str = f"{diff.days}d ago"
-                    elif diff.seconds > 3600: last_update_str = f"{diff.seconds // 3600}h ago"
-                    elif diff.seconds > 60: last_update_str = f"{diff.seconds // 60}m ago"
-                    else: last_update_str = "Just now"
-                except: last_update_str = "Unknown"
+                    if diff.days > 0:
+                        last_update_str = f"{diff.days}d ago"
+                    elif diff.seconds > 3600:
+                        last_update_str = f"{diff.seconds // 3600}h ago"
+                    elif diff.seconds > 60:
+                        last_update_str = f"{diff.seconds // 60}m ago"
+                    else:
+                        last_update_str = "Just now"
+                except Exception:
+                    last_update_str = "Unknown"
 
-            rows.append(ft.DataRow(cells=[
-                ft.DataCell(ft.Image(src=f"https://render.albiononline.com/v1/item/{item.unique_name}", width=40, height=40, fit=ft.ImageFit.CONTAIN, border_radius=5)),
-                ft.DataCell(ft.Text(item.localized_name, weight="bold", color="white")),
-                ft.DataCell(ft.Text(str(price_order), color=GuiStyle.Colors.ACCENT_GREEN, weight=ft.FontWeight.BOLD)),
-                ft.DataCell(ft.Text(str(price_fast), color=GuiStyle.Colors.ACCENT_ORANGE, weight=ft.FontWeight.BOLD)),
-                ft.DataCell(ft.Text(last_update_str, color="white70")),
-            ]))
+            rows.append(
+                ft.DataRow(
+                    cells=[
+                        ft.DataCell(
+                            ft.Image(
+                                src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
+                                width=40,
+                                height=40,
+                                fit=ft.ImageFit.CONTAIN,
+                                border_radius=5,
+                            )
+                        ),
+                        ft.DataCell(
+                            ft.Text(item.localized_name, weight="bold", color="white")
+                        ),
+                        ft.DataCell(
+                            ft.Text(
+                                str(price_order),
+                                color=GuiStyle.Colors.ACCENT_GREEN,
+                                weight=ft.FontWeight.BOLD,
+                            )
+                        ),
+                        ft.DataCell(
+                            ft.Text(
+                                str(price_fast),
+                                color=GuiStyle.Colors.ACCENT_ORANGE,
+                                weight=ft.FontWeight.BOLD,
+                            )
+                        ),
+                        ft.DataCell(
+                            ft.Text(last_update_str, color="white70")
+                        ),
+                    ]
+                )
+            )
 
         self.data_table.rows = rows
-        if self.page:
+        try:
             self.pagination_row.update()
             self.data_table.update()
+        except RuntimeError:
+            pass
 
     def on_cat_toggle(self, e):
         self.selected_cat = e.control.data if e.control.selected else None
-        for chip in self.cat_row.controls: chip.selected = (chip.data == self.selected_cat)
-        if self.page: self.cat_row.update()
+        for chip in self.cat_row.controls:
+            chip.selected = chip.data == self.selected_cat
+        try:
+            self.cat_row.update()
+        except RuntimeError:
+            pass
+
         self.sub_row.controls.clear()
         self.selected_sub = None
         if self.selected_cat:
-            subs = sorted(list(set(i.sub_category for i in self.all_items if i.category == self.selected_cat)))
+            subs = sorted(
+                list(
+                    set(
+                        i.sub_category
+                        for i in self.all_items
+                        if i.category == self.selected_cat
+                    )
+                )
+            )
+
             def create_chip(text, data, callback):
-                return ft.Chip(label=ft.Text(text, size=11, color="white"), on_select=callback, data=data, label_padding=ft.padding.symmetric(horizontal=4), bgcolor=GuiStyle.Colors.INNER_BG, border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT), selected_color=GuiStyle.Colors.DARK_BLUE)
-            for s in subs: self.sub_row.controls.append(create_chip(s, s, self.on_sub_toggle))
-        if self.page: self.sub_row.update()
+                return ft.Chip(
+                    label=ft.Text(text, size=11, color="white"),
+                    on_select=callback,
+                    data=data,
+                    label_padding=ft.padding.symmetric(horizontal=4),
+                    bgcolor=GuiStyle.Colors.INNER_BG,
+                    border_side=ft.BorderSide(
+                        width=0, color=ft.Colors.TRANSPARENT
+                    ),
+                    selected_color=GuiStyle.Colors.DARK_BLUE,
+                )
+
+            for s in subs:
+                self.sub_row.controls.append(create_chip(s, s, self.on_sub_toggle))
+
+        try:
+            self.sub_row.update()
+        except RuntimeError:
+            pass
+
         self.apply_filters()
 
     def on_sub_toggle(self, e):
         self.selected_sub = e.control.data if e.control.selected else None
-        
         for chip in self.sub_row.controls:
-            chip.selected = (chip.data == self.selected_sub)
-        
-        if self.page:
+            chip.selected = chip.data == self.selected_sub
+
+        try:
             self.sub_row.update()
-            
+        except RuntimeError:
+            pass
+
         self.apply_filters()
 
     def on_tier_toggle(self, e):
         t = e.control.data
-        if e.control.selected: self.selected_tiers.add(t)
-        else: self.selected_tiers.discard(t)
+        if e.control.selected:
+            self.selected_tiers.add(t)
+        else:
+            self.selected_tiers.discard(t)
         self.apply_filters()
 
     def on_enchant_toggle(self, e):
         en = e.control.data
-        if e.control.selected: self.selected_enchants.add(en)
-        else: self.selected_enchants.discard(en)
+        if e.control.selected:
+            self.selected_enchants.add(en)
+        else:
+            self.selected_enchants.discard(en)
         self.apply_filters()
 
     def apply_filters(self):
-        search_term = self.search_input.value.lower() if self.search_input.value else ""
+        search_term = (
+            self.search_input.value.lower() if self.search_input.value else ""
+        )
         res = []
         for item in self.all_items:
-            if self.selected_cat and item.category != self.selected_cat: continue
-            if self.selected_sub and item.sub_category != self.selected_sub: continue
-            if self.selected_tiers and item.tier not in self.selected_tiers: continue
-            if self.selected_enchants and item.enchant not in self.selected_enchants: continue
-            if search_term and not (search_term in item.localized_name.lower() or search_term in item.unique_name.lower()): continue
+            if self.selected_cat and item.category != self.selected_cat:
+                continue
+            if self.selected_sub and item.sub_category != self.selected_sub:
+                continue
+            if self.selected_tiers and item.tier not in self.selected_tiers:
+                continue
+            if self.selected_enchants and item.enchant not in self.selected_enchants:
+                continue
+            if search_term and not (
+                search_term in item.localized_name.lower()
+                or search_term in item.unique_name.lower()
+            ):
+                continue
             res.append(item)
         self.filtered_items = res
         self.page_number = 1
@@ -1910,7 +2064,6 @@ class Dashboard(ft.Container):
         self.expand = True
         self.app = app
         self.config = config
-        self.page = page
         self.bot = bot
         self.login = login
         self.header = header
@@ -1995,8 +2148,10 @@ class Dashboard(ft.Container):
             if not self.is_running_sequence:
                 panel.run_button.disabled = should_block
                 panel.run_warning.visible = should_block
-                if panel.page:
+                try:
                     panel.update()
+                except RuntimeError:
+                    pass
 
     def save_sequence(self):
         self.bot_sequence = [

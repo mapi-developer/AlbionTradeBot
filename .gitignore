@@ -2,5 +2,5 @@ redist
 dist
 builddist/
 redist/
-.venv
 .vscode
+.venv

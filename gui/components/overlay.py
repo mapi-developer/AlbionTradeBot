@@ -61,7 +61,7 @@ def run_flet_overlay(status_queue):
                 bgcolor="#CC131415", # Semi-transparent dark
                 padding=15,
                 border_radius=10,
-                border=ft.border.all(1, "#294D7C")
+                border=ft.Border.all(1, "#294D7C")
             )
         )
 

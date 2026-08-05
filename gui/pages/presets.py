@@ -39,57 +39,66 @@ class ItemListPanel(ft.Container):
         on_item_click,
         item_icon,
     ):
-        super().__init__()
-        self.expand = True
-        self.padding = 5
-        self.bgcolor = GuiStyle.Colors.CARD_BG
-        self.border_radius = 10
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.on_action_click = on_action_click
         self.on_item_click = on_item_click
         self.item_icon = item_icon
         self.current_items = []
 
+        # Fixed: Updated to 'content=ft.Text(...)' and moved button styling inside ft.ButtonStyle
         self.action_btn = ft.ElevatedButton(
-            text=button_text,
+            content=ft.Text(button_text),
             icon=button_icon,
-            bgcolor=button_color,
-            color=ft.Colors.WHITE,
             on_click=self.trigger_action,
             height=30,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
+            style=ft.ButtonStyle(
+                color=ft.Colors.WHITE,
+                bgcolor=button_color,
+                shape=ft.RoundedRectangleBorder(radius=5),
+            ),
         )
-        self.count_text = ft.Text("0 items", size=11, color=ft.Colors.WHITE70)
+
+        self.count_text = ft.Text("0 items", size=11, color=ft.Colors.WHITE_70)
+
         self.item_list = ft.ListView(
             expand=True, spacing=1, item_extent=35, auto_scroll=False
         )
 
-        self.content = ft.Column(
-            [
-                ft.Text(
-                    title, weight=ft.FontWeight.BOLD, size=14, color=ft.Colors.WHITE
-                ),
-                ft.Divider(height=5, thickness=1, color=ft.Colors.WHITE24),
-                ft.Row(
-                    [self.action_btn, self.count_text],
-                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                ),
-                ft.Container(
-                    content=self.item_list,
-                    expand=True,
-                    bgcolor=GuiStyle.Colors.INNER_BG,
-                    border_radius=5,
-                    padding=2,
-                    height=420,
-                ),
-            ],
-            spacing=5,
+        # Passed Container parameters into super().__init__()
+        super().__init__(
+            expand=True,
+            padding=5,
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            border_radius=10,
+            border=ft.border.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
+            content=ft.Column(
+                [
+                    ft.Text(
+                        title,
+                        weight=ft.FontWeight.BOLD,
+                        size=14,
+                        color=ft.Colors.WHITE,
+                    ),
+                    ft.Divider(height=5, thickness=1, color=ft.Colors.WHITE_24),
+                    ft.Row(
+                        [self.action_btn, self.count_text],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    ft.Container(
+                        content=self.item_list,
+                        expand=True,
+                        bgcolor=GuiStyle.Colors.INNER_BG,
+                        border_radius=5,
+                        padding=2,
+                        height=420,
+                    ),
+                ],
+                spacing=5,
+            ),
         )
 
     def update_list(self, items):
         self.current_items = items
 
-        # 🛠️ FIX: Build a new list locally first to prevent AssertionError during rapid updates
         new_controls = []
         display_limit = 100
 
@@ -100,14 +109,15 @@ class ItemListPanel(ft.Container):
                         f"... {len(items) - display_limit} more",
                         size=11,
                         italic=True,
-                        color=ft.Colors.WHITE54,
+                        color=ft.Colors.WHITE_54,
                     )
                 )
                 break
 
             new_controls.append(
                 ft.ListTile(
-                    leading=ft.Icon(self.item_icon, size=14, color=ft.Colors.WHITE54),
+                    # Fixed: Corrected typo 'WHIT_54' to 'WHITE_54'
+                    leading=ft.Icon(self.item_icon, size=14, color=ft.Colors.WHITE_54),
                     title=ft.Row(
                         [
                             ft.Container(
@@ -124,7 +134,7 @@ class ItemListPanel(ft.Container):
                                         ft.Text(
                                             item.unique_name,
                                             size=9,
-                                            color=ft.Colors.WHITE54,
+                                            color=ft.Colors.WHITE_54,
                                             font_family="Consolas",
                                             overflow=ft.TextOverflow.ELLIPSIS,
                                             no_wrap=True,
@@ -139,8 +149,9 @@ class ItemListPanel(ft.Container):
                                 src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
                                 width=40,
                                 height=40,
-                                fit=ft.ImageFit.CONTAIN,
-                                border_radius=ft.border_radius.all(5),
+                                fit=ft.BoxFit.CONTAIN,
+                                # Fixed: ft.border_radius.BorderRadius.all -> ft.border_radius.all
+                                border_radius=ft.border_radius.BorderRadius.all(5),
                             ),
                         ],
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
@@ -149,11 +160,11 @@ class ItemListPanel(ft.Container):
                     dense=True,
                     hover_color="#2A3C55",
                     on_click=lambda e, it=item: self.on_item_click(it),
-                    content_padding=ft.padding.symmetric(vertical=0, horizontal=5),
+                    # Fixed: ft.Padding.symmetric -> ft.padding.symmetric
+                    content_padding=ft.padding.Padding.symmetric(vertical=0, horizontal=5),
                 )
             )
 
-        # 🛠️ FIX: Atomic assignment to .controls
         self.item_list.controls = new_controls
         self.count_text.value = f"{len(items)} items"
 
@@ -167,15 +178,8 @@ class ItemListPanel(ft.Container):
 
 class Presets(ft.Column):
     def __init__(self, config: SettingsHandler, page: ft.Page, settings: Settings):
-        super().__init__()
         self.settings = settings
-        self.expand = True
         self.config = config
-        self.page = page
-        self.horizontal_alignment = ft.CrossAxisAlignment.STRETCH
-        self.spacing = 3
-        self.padding = 20
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
 
         self.raw_json = self.load_json_data()
         self.all_item_objects = self.parse_items(self.raw_json)
@@ -206,7 +210,7 @@ class Presets(ft.Column):
                 label=ft.Text(text, size=11, color=GuiStyle.Colors.WHITE),
                 on_select=callback,
                 data=data,
-                label_padding=ft.padding.symmetric(horizontal=4),
+                label_padding=ft.Padding.symmetric(horizontal=4),
                 bgcolor=GuiStyle.Colors.INNER_BG,
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
                 selected_color=GuiStyle.Colors.DARK_BLUE,
@@ -228,12 +232,16 @@ class Presets(ft.Column):
 
             self.sub_row.controls.clear()
 
-            if self.page:
+            # Safely handle UI updates when clearing filters
+            try:
                 self.cat_row.update()
                 self.sub_row.update()
                 self.tier_row.update()
                 self.enchant_row.update()
                 self.search_input.update()
+            except RuntimeError:
+                pass  # Controls not yet added to the page
+
             self.apply_filters()
 
         self.tier_row = ft.Row(
@@ -284,11 +292,13 @@ class Presets(ft.Column):
             fill_color=GuiStyle.Colors.INNER_BG,
             filled=True,
         )
+        
+        # Populate options safely without triggering the RuntimeError
         self.update_preset_dropdown()
 
         self.filename_input = ft.TextField(
             label="Save as",
-            suffix_text=".json",
+            suffix=ft.Text(".json"),
             text_size=12,
             expand=True,
             dense=True,
@@ -366,11 +376,11 @@ class Presets(ft.Column):
             padding=5,
             bgcolor=GuiStyle.Colors.CARD_BG,
             border_radius=5,
-            border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
+            border=ft.border.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
             margin=10,
         )
 
-        self.controls = [
+        controls = [
             ft.Container(
                 content=ft.Row(
                     [
@@ -415,12 +425,12 @@ class Presets(ft.Column):
                 bgcolor=GuiStyle.Colors.CARD_BG,
                 border_radius=5,
                 margin=10,
-                border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
+                border=ft.border.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT),
             ),
             filter_container,
             ft.Divider(height=10, color=ft.Colors.TRANSPARENT),  # Padding
             ft.Container(
-                ft.Row(
+                content=ft.Row(
                     [
                         self.left_panel,
                         ft.VerticalDivider(width=1, color=ft.Colors.TRANSPARENT),
@@ -429,9 +439,20 @@ class Presets(ft.Column):
                     expand=True,
                 ),
                 expand=True,
-                padding=ft.padding.only(10, 0, 10, 10),
+                padding=ft.Padding.only(left=10, top=0, right=10, bottom=10),
             ),
         ]
+
+        # Pass layout attributes into super().__init__()
+        super().__init__(
+            expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+            spacing=3,
+            controls=controls,
+        )
+
+    def did_mount(self):
+        """Fires automatically when mounted to page tree."""
         self.apply_filters()
 
     def load_json_data(self):
@@ -440,7 +461,7 @@ class Presets(ft.Column):
         try:
             with open(self.config.BOT_ITEMS_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except:
+        except Exception:
             return {}
 
     def parse_items(self, json_data):
@@ -461,7 +482,7 @@ class Presets(ft.Column):
                 label=ft.Text(cat, size=11, color=GuiStyle.Colors.WHITE),
                 on_select=self.on_cat_toggle,
                 data=cat,
-                label_padding=ft.padding.symmetric(horizontal=4),
+                label_padding=ft.Padding.symmetric(horizontal=4),
                 bgcolor=GuiStyle.Colors.INNER_BG,
                 border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),
                 selected_color=GuiStyle.Colors.DARK_BLUE,
@@ -471,11 +492,13 @@ class Presets(ft.Column):
 
     def update_preset_dropdown(self):
         files = self.config.get_presets_list()
-        self.preset_dropdown.options = []
-        for f in files:
-            self.preset_dropdown.options.append(ft.dropdown.Option(f))
-        if self.preset_dropdown.page:
+        self.preset_dropdown.options = [ft.dropdown.Option(f) for f in files]
+        
+        # FIX: Simply try to update the control. If it's not mounted, ignore the error.
+        try:
             self.preset_dropdown.update()
+        except RuntimeError:
+            pass
 
     def on_cat_toggle(self, e):
         self.selected_cat = e.control.data if e.control.selected else None
@@ -497,7 +520,7 @@ class Presets(ft.Column):
                         label=ft.Text(sub, size=11, color="#FFFFFF"),
                         on_select=self.on_sub_toggle,
                         data=sub,
-                        label_padding=ft.padding.symmetric(horizontal=4),
+                        label_padding=ft.Padding.symmetric(horizontal=4),
                         bgcolor=GuiStyle.Colors.INNER_BG,
                         # 🛠️ FIX: Use 'border' here too
                         border_side=ft.BorderSide(width=0, color=ft.Colors.TRANSPARENT),

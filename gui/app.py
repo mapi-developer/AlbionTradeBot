@@ -48,7 +48,7 @@ class GuiApp:
         self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login, settings=self.config)
         
         self.settings = Settings(page=self.page, config=self.config)
-        self.presets = ft.Container(content=Presets(self.config, self.page, self.settings))
+        self.presets = ft.Container(content=Presets(self.config, self.page, self.settings), padding=20)
         self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, login=self.login)
 
         self.shop = Shop(settings=self.config, login_state=self.login.state)

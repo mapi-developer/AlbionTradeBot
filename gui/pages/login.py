@@ -68,7 +68,6 @@ class Login(ft.Container):
     ):
         super().__init__()
         self.settings = settings
-        self.page = page
         self.expand = True
         self.bgcolor = GuiStyle.Colors.DARK_BLUE
         self.state = State()
@@ -175,7 +174,7 @@ class Login(ft.Container):
                         ),
                         content=ft.Row(
                             [
-                                ft.Image(src_base64=svg_base64_google, width=24, height=24),
+                                ft.Image(src=svg_base64_google, width=24, height=24),
                                 ft.Text("LogIn with Google", size=16, weight=ft.FontWeight.W_500),
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
@@ -198,7 +197,7 @@ class Login(ft.Container):
                         ),
                         content=ft.Row(
                             [
-                                ft.Image(src_base64=svg_base64_discord, width=24, height=24),
+                                ft.Image(src=svg_base64_discord, width=24, height=24),
                                 ft.Text("LogIn with Discord", size=16, weight=ft.FontWeight.W_500),
                             ],
                             alignment=ft.MainAxisAlignment.CENTER,
@@ -216,14 +215,14 @@ class Login(ft.Container):
             width=350,
             padding=40,
             bgcolor=GuiStyle.Colors.LIGHT_BLUE,
-            border_radius=ft.border_radius.all(20),
-            border=ft.border.all(width=1, color=ft.Colors.WHITE70),
+            border_radius=ft.border_radius.BorderRadius.all(20),
+            border=ft.border.Border.all(width=1, color=ft.Colors.WHITE_70),
             shadow=ft.BoxShadow(
                 spread_radius=1,
                 blur_radius=10,
-                color=ft.Colors.WHITE70,
+                color=ft.Colors.WHITE_70,
                 offset=ft.Offset(0, 0),
-                blur_style=ft.ShadowBlurStyle.OUTER,
+                blur_style=ft.BlurStyle.OUTER,
             ),
             alignment=ft.Alignment.CENTER,
         )

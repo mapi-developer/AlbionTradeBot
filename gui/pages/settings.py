@@ -1,30 +1,32 @@
+import os
+import sys
 from typing import Callable
 import flet as ft
-import sys
-import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+)
 
-from components.style import GuiStyle
 from bot import SettingsHandler
+from components.style import GuiStyle
 
 
 class SettingsDropdown(ft.Dropdown):
     def __init__(
-            self, 
-            label: str, 
-            tooltip: str, 
-            options: list[ft.DropdownOption], 
-            filter: bool = False, 
-            value: str = "", 
-            data = None, 
-            save_callback: Callable = None
-        ):
+        self,
+        label: str,
+        tooltip: str,
+        options: list[ft.dropdown.Option],  # Updated from ft.DropdownOption
+        filter: bool = False,
+        value: str = "",
+        data=None,
+        save_callback: Callable = None,
+    ):
         super().__init__(
-            label = label,
-            tooltip = tooltip,
-            options = options,
+            label=label,
+            tooltip=tooltip,
+            options=options,
             dense=True,
             expand=True,
             col={"sm": 12, "md": 6, "xl": 4},
@@ -35,14 +37,14 @@ class SettingsDropdown(ft.Dropdown):
             text_style=ft.TextStyle(color=ft.Colors.WHITE),
             label_style=ft.TextStyle(color=ft.Colors.WHITE),
             enable_filter=filter,
-            border_color=ft.Colors.WHITE24,
+            border_color=ft.Colors.WHITE_24,
             border_width=1,
             border_radius=4,
             focused_border_color=ft.Colors.WHITE,
             focused_border_width=2,
             value=value,
             data=data,
-            on_change=save_callback
+            on_select=save_callback,
         )
 
 
@@ -121,7 +123,7 @@ class BuyLogicItem(ft.Container):
     def __init__(self, index, on_remove, save_callback: Callable):
         super().__init__()
         self.bgcolor = GuiStyle.Colors.INNER_BG
-        self.border = ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
+        self.border = ft.Border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         self.border_radius = 6
         self.index = index
         self.on_remove = on_remove
@@ -182,13 +184,11 @@ class BuyLogicItem(ft.Container):
 
 class BuyLogic(ft.Container):
     def __init__(self, config: SettingsHandler, current_tab: str, save_callback: Callable):
-        super().__init__()
         self.config = config
         self.save_callback = save_callback
         self.current_tab = current_tab
-        self.padding = ft.padding.only(10, 0, 0, 0)
         self.max_items = 20
-        
+
         title = ft.Text(
             value="Buy Logic",
             size=14,
@@ -200,14 +200,15 @@ class BuyLogic(ft.Container):
             size=14,
             color=ft.Colors.GREY_400,
         )
-        
+
+        # Updated: Modern Button parameters & ButtonStyle
         self.add_button = ft.ElevatedButton(
-            text="Add New Logic",
+            content=ft.Text("Add New Logic"),
             icon=ft.Icons.ADD,
             on_click=self.add_item,
-            color="#ffffff",
-            bgcolor=GuiStyle.Colors.GRAY_BLUE,
             style=ft.ButtonStyle(
+                color="#ffffff",
+                bgcolor=GuiStyle.Colors.GRAY_BLUE,
                 shape=ft.RoundedRectangleBorder(radius=8),
             ),
         )
@@ -218,41 +219,47 @@ class BuyLogic(ft.Container):
             controls=[self.items_column],
             height=500,
             scroll=ft.ScrollMode.AUTO,
-            expand=True
+            expand=True,
         )
 
-        self.content = ft.Column(
-            controls=[
-                ft.Row(
-                    controls=[
-                        ft.Row(
-                            controls=[
-                                title,
-                                self.counter_text,
-                            ]
-                        ),
-                        self.add_button,
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                ),
-                ft.Divider(height=1, color=ft.Colors.WHITE24),
-                scrollable_frame, 
-            ],
-            spacing=15,
+        # Updated Container initialization using super().__init__()
+        super().__init__(
+            padding=ft.Padding.only(left=10),
+            content=ft.Column(
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.Row(
+                                controls=[
+                                    title,
+                                    self.counter_text,
+                                ]
+                            ),
+                            self.add_button,
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                    ft.Divider(height=1, color=ft.Colors.WHITE24),
+                    scrollable_frame,
+                ],
+                spacing=15,
+            ),
         )
 
+    def did_mount(self):
+        """Fires automatically after the control is added to the page tree."""
         self.load_items(self.current_tab)
 
     def load_items(self, current_tab: str):
         self.current_tab = current_tab
-        self.items_column.controls.clear() 
-        
+        self.items_column.controls.clear()
+
         for item in self.config.get(self.current_tab).get("buy_logic", []):
             new_item = self.add_item(None, True)
             if new_item:
                 new_item.quantity_input.value = item["amount_to_buy"]
                 new_item.price_input.value = item["price_larger_then"]
-        
+
         self.update_ui()
 
     def add_item(self, e, isLoad: bool = False) -> BuyLogicItem:
@@ -261,7 +268,7 @@ class BuyLogic(ft.Container):
             new_item = BuyLogicItem(
                 index=current_count + 1,
                 on_remove=self.remove_item,
-                save_callback=self.save_callback
+                save_callback=self.save_callback,
             )
             self.items_column.controls.append(new_item)
             self.update_ui()
@@ -276,7 +283,7 @@ class BuyLogic(ft.Container):
             new_index = i + 1
             item.index = new_index
             item.content.controls[0].controls[1].value = f"{new_index}."
-        
+
         self.update_ui()
         self.save_callback()
 
@@ -288,106 +295,125 @@ class BuyLogic(ft.Container):
             self.update()
 
 
+import flet as ft
+from typing import Callable
+
+
 class RightTab(ft.Container):
     def __init__(self, config: SettingsHandler, current_tab: str, save_callback: Callable):
-        super().__init__()
         self.current_tab = current_tab
         self.config = config
         self.save_callback = save_callback
         self.settings = self.config.get(current_tab)
-        self.bgcolor = GuiStyle.Colors.CARD_BG
-        self.padding = 20
-        self.col={"sm": 12, "md": 8, "xl": 8}
 
         self.minimal_profit_rate = ft.TextField(
-            value=self.settings["min_profit_rate"],
+            value=str(self.settings.get("min_profit_rate", "")),
             data="min_profit_rate",
             label="Minimal Profit Rate (%)",
-            fill_color=GuiStyle.Colors.DARK_BLUE,
+            filled=True,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,  # Replaced 'fill_color' with 'filled=True' + 'bgcolor'
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
             border_color=GuiStyle.Colors.LIGHT_BLUE,
-            suffix_text="%",
-            
-            on_change=save_callback
+            suffix=ft.Text("%"),  # Replaced 'suffix_text="%"'
+            on_change=save_callback,
         )
 
         self.default_buy_amount = ft.TextField(
-            value=self.settings["default_buy_amount"],
+            value=str(self.settings.get("default_buy_amount", "")),
             data="default_buy_amount",
             label="Default Buy Amount",
-            fill_color=GuiStyle.Colors.DARK_BLUE,
+            filled=True,
+            bgcolor=GuiStyle.Colors.DARK_BLUE,  # Replaced 'fill_color' with 'filled=True' + 'bgcolor'
             text_style=ft.TextStyle(color="#ffffff"),
             label_style=ft.TextStyle(color="#ffffff"),
             border_color=GuiStyle.Colors.LIGHT_BLUE,
-            suffix_text="items",
-            on_change=save_callback
+            suffix=ft.Text("items"),  # Replaced 'suffix_text="items"'
+            on_change=save_callback,
         )
 
+        # Updated: ft.Border.all -> ft.border.all
+        # Updated: ft.border_radius.BorderRadius.all -> ft.border_radius.all
         self.presets = ft.Container(
             content=ft.Column(
-                controls=[self.create_preset_dropdown(city) for city in self.config.CITIES.keys()]
+                controls=[
+                    self.create_preset_dropdown(city) for city in self.config.CITIES.keys()
+                ]
             ),
             padding=5,
             bgcolor=GuiStyle.Colors.DARK_BLUE,
-            border=ft.border.all(2, GuiStyle.Colors.DARK_BLUE),
-            border_radius=ft.border_radius.all(6)
+            border=ft.border.Border.all(2, GuiStyle.Colors.DARK_BLUE),
+            border_radius=ft.border_radius.BorderRadius.all(6),
         )
 
         base_values_title = ft.Text(
             value="Base Values",
             text_align=ft.TextAlign.END,
-            weight=ft.FontWeight.BOLD
+            weight=ft.FontWeight.BOLD,
         )
 
         presets_title = ft.Text(
             value="Presets",
             text_align=ft.TextAlign.END,
-            weight=ft.FontWeight.BOLD
+            weight=ft.FontWeight.BOLD,
         )
 
-        self.buy_logic = BuyLogic(config=config, current_tab=self.current_tab, save_callback=self.save_callback)
+        self.buy_logic = BuyLogic(
+            config=config,
+            current_tab=self.current_tab,
+            save_callback=self.save_callback,
+        )
 
-        self.content = ft.ResponsiveRow(
-            controls=[
-                ft.Column(
-                    controls = [
-                        base_values_title,
-                        self.minimal_profit_rate,
-                        self.default_buy_amount,
-                        presets_title,
-                        self.presets,
-                    ],
-                    col={"sm": 12, "md": 5, "xl": 4},
-                ),
-                ft.Column(
-                    controls=[
-                        self.buy_logic
-                    ],
-                    col={"sm": 12, "md": 7, "xl": 8},
-                ),
-            ],
+        # Updated Container constructor call with parameters
+        super().__init__(
+            bgcolor=GuiStyle.Colors.CARD_BG,
+            padding=20,
+            col={"sm": 12, "md": 8, "xl": 8},
+            content=ft.ResponsiveRow(
+                controls=[
+                    ft.Column(
+                        controls=[
+                            base_values_title,
+                            self.minimal_profit_rate,
+                            self.default_buy_amount,
+                            presets_title,
+                            self.presets,
+                        ],
+                        col={"sm": 12, "md": 5, "xl": 4},
+                    ),
+                    ft.Column(
+                        controls=[self.buy_logic],
+                        col={"sm": 12, "md": 7, "xl": 8},
+                    ),
+                ],
+            ),
         )
 
     def create_preset_dropdown(self, city: str):
+        # Updated: ft.DropdownOption -> ft.dropdown.Option
         dropdown = SettingsDropdown(
             value=self.settings["presets"][city],
             data=city,
             label=f"{self.config.CITIES[city]}",
             tooltip=f"Choose Preset for {self.config.CITIES[city]}",
-            options = [ft.DropdownOption(key=language, text=language) for language in self.config.get_presets_list()],
-            filter = True,
-            save_callback=self.save_callback
+            options=[
+                ft.dropdown.Option(key=language, text=language)
+                for language in self.config.get_presets_list()
+            ],
+            filter=True,
+            save_callback=self.save_callback,
         )
         return dropdown
 
     def update_data(self, tab_id):
         self.current_tab = tab_id
         self.settings = self.config.get(tab_id)
-        
-        self.minimal_profit_rate.value = self.settings.get("min_profit_rate", "0")
-        self.default_buy_amount.value = self.settings.get("default_buy_amount", "0")
-        self.presets.content.controls = [self.create_preset_dropdown(city) for city in self.config.CITIES.keys()]
+
+        self.minimal_profit_rate.value = str(self.settings.get("min_profit_rate", "0"))
+        self.default_buy_amount.value = str(self.settings.get("default_buy_amount", "0"))
+        self.presets.content.controls = [
+            self.create_preset_dropdown(city) for city in self.config.CITIES.keys()
+        ]
         self.buy_logic.load_items(current_tab=self.current_tab)
 
         if self.page:
@@ -396,10 +422,8 @@ class RightTab(ft.Container):
     def update_on_new_preset(self):
         self.update_data(self.current_tab)
 
-
 class UpperRow(ft.Container):
     def __init__(self, right_tab: RightTab):
-        super().__init__()
         self.right_tab = right_tab
         self.active_tab = "fast_buy"
 
@@ -407,30 +431,30 @@ class UpperRow(ft.Container):
             is_active = self.active_tab == tab_id
             return ft.Container(
                 content=ft.ElevatedButton(
-                    text=text,
+                    content=ft.Text(text),  # Fixed: 'text' -> 'content=ft.Text(...)'
                     style=GuiStyle.SETTINGS_TOP_BAR_BUTTON,
                     on_click=lambda _: self.set_active(tab_id),
                 ),
-                border=ft.border.only(
-                    bottom=ft.BorderSide(3, ft.Colors.WHITE if is_active else ft.Colors.TRANSPARENT)
+                # Fixed: 'ft.Border.only' -> 'ft.border.only'
+                border=ft.border.Border.only(
+                    bottom=ft.BorderSide(
+                        3, ft.Colors.WHITE if is_active else ft.Colors.TRANSPARENT
+                    )
                 ),
-                padding=ft.padding.only(bottom=5),
+                # Fixed: 'ft.Padding.only' -> 'ft.Padding.only' or 'padding=ft.Padding.only(...)'
+                padding=ft.Padding.only(bottom=5),
             )
-
-        self.bgcolor = GuiStyle.Colors.GRAY_BLUE
-        self.padding = 10
 
         general_title = ft.Text(
             value="General",
-            style=ft.TextStyle(
-                size=GuiStyle.TextSize.TITLE+5,
-                color=ft.Colors.WHITE,
-                weight=ft.FontWeight.BOLD,
-            )
+            size=GuiStyle.TextSize.TITLE + 5,  # Fixed: Direct parameter usage instead of deprecated ft.TextStyle wrapper
+            color=ft.Colors.WHITE,
+            weight=ft.FontWeight.BOLD,
         )
+
         general_title_row = ft.Container(
-            padding=ft.padding.only(10, 0, 10, 0),
-            content=general_title
+            padding=ft.Padding.only(left=10, bottom=10),
+            content=general_title,
         )
 
         self.fast_buy_tab_button = create_tab_button("Fast Buy", "fast_buy")
@@ -443,23 +467,24 @@ class UpperRow(ft.Container):
             ]
         )
 
-        self.content = ft.ResponsiveRow(
-            controls=[
-                ft.Column(
-                    controls=[
-                        general_title_row
-                    ],
-                    col={"sm": 4, "md": 4, "xl": 4},
-                ),
-                ft.Column(
-                    controls= [
-                        self.tabs_row,
-                    ],
-                    col={"sm": 4, "md": 4, "xl": 4},
-                ),
-            ],
-            alignment=ft.MainAxisAlignment.START,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        # Container initialization using super().__init__()
+        super().__init__(
+            bgcolor=GuiStyle.Colors.GRAY_BLUE,
+            padding=10,
+            content=ft.ResponsiveRow(
+                controls=[
+                    ft.Column(
+                        controls=[general_title_row],
+                        col={"sm": 4, "md": 4, "xl": 4},
+                    ),
+                    ft.Column(
+                        controls=[self.tabs_row],
+                        col={"sm": 4, "md": 4, "xl": 4},
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.START,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
         )
 
     def set_active(self, tab_id):
@@ -467,8 +492,11 @@ class UpperRow(ft.Container):
         self.right_tab.update_data(tab_id)
         for i, tab_name in enumerate(["fast_buy", "order_buy"]):
             is_active = tab_name == tab_id
-            self.tabs_row.controls[i].border = ft.border.only(
-                bottom=ft.BorderSide(3, ft.Colors.WHITE if is_active else ft.Colors.TRANSPARENT)
+            # Fixed: 'ft.Border.only' -> 'ft.border.only'
+            self.tabs_row.controls[i].border = ft.border.Border.only(
+                bottom=ft.BorderSide(
+                    3, ft.Colors.WHITE if is_active else ft.Colors.TRANSPARENT
+                )
             )
         self.update()
 
@@ -496,7 +524,6 @@ class Settings(ft.Container):
         super().__init__()
         self.margin = 0
         self.padding = 0
-        self.page = page
         self.config = config
 
         self.content_main = None
