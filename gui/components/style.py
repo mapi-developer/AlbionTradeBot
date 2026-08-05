@@ -73,7 +73,7 @@ class GuiStyle:
         bgcolor=Colors.ACCENT_GREEN,
         shape=ft.RoundedRectangleBorder(radius=8),
         text_style=ft.TextStyle(size=TextSize.TITLE, weight=ft.FontWeight.BOLD),
-        alignment=ft.alignment.center,
+        alignment=ft.Alignment.CENTER,
     )
 
     SETTINGS_TOP_BAR_BUTTON = ft.ButtonStyle(

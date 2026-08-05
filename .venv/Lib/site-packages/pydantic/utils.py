@@ -710,7 +710,6 @@ DUNDER_ATTRIBUTES = {
     '__qualname__',
     '__firstlineno__',
     '__static_attributes__',
-    '__classdictcell__',
 }
 
 

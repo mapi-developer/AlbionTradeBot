@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-__all__ = (
-    "run_sync",
-    "current_default_interpreter_limiter",
-)
-
 import atexit
 import os
 import sys
@@ -25,9 +20,7 @@ else:
 if sys.version_info >= (3, 14):
     from concurrent.interpreters import ExecutionFailed, create
 
-    def _interp_call(
-        func: Callable[..., Any], args: tuple[Any, ...]
-    ) -> tuple[Any, bool]:
+    def _interp_call(func: Callable[..., Any], args: tuple[Any, ...]):
         try:
             retval = func(*args)
         except BaseException as exc:
@@ -35,7 +28,7 @@ if sys.version_info >= (3, 14):
         else:
             return retval, False
 
-    class _Worker:
+    class Worker:
         last_used: float = 0
 
         def __init__(self) -> None:
@@ -97,7 +90,7 @@ except NotShareableError:
         "exec",
     )
 
-    class _Worker:
+    class Worker:
         last_used: float = 0
 
         def __init__(self) -> None:
@@ -135,7 +128,7 @@ except NotShareableError:
             return res
 else:
 
-    class _Worker:
+    class Worker:
         last_used: float = 0
 
         def __init__(self) -> None:
@@ -160,11 +153,11 @@ MAX_WORKER_IDLE_TIME = (
 T_Retval = TypeVar("T_Retval")
 PosArgsT = TypeVarTuple("PosArgsT")
 
-_idle_workers = RunVar[deque[_Worker]]("_available_workers")
+_idle_workers = RunVar[deque[Worker]]("_available_workers")
 _default_interpreter_limiter = RunVar[CapacityLimiter]("_default_interpreter_limiter")
 
 
-def _stop_workers(workers: deque[_Worker]) -> None:
+def _stop_workers(workers: deque[Worker]) -> None:
     for worker in workers:
         worker.destroy()
 
@@ -206,7 +199,7 @@ async def run_sync(
         try:
             worker = idle_workers.pop()
         except IndexError:
-            worker = _Worker()
+            worker = Worker()
 
     try:
         return await to_thread.run_sync(

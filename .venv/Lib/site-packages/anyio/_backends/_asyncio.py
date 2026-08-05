@@ -34,7 +34,7 @@ from collections.abc import (
 from concurrent.futures import Future
 from contextlib import AbstractContextManager, suppress
 from contextvars import Context, copy_context
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import partial, wraps
 from inspect import (
     CORO_RUNNING,
@@ -59,6 +59,8 @@ from typing import (
 )
 from weakref import WeakKeyDictionary
 
+import sniffio
+
 from .. import (
     CapacityLimiterStatistics,
     EventStatistics,
@@ -66,11 +68,7 @@ from .. import (
     TaskInfo,
     abc,
 )
-from .._core._eventloop import (
-    claim_worker_thread,
-    set_current_async_library,
-    threadlocals,
-)
+from .._core._eventloop import claim_worker_thread, threadlocals
 from .._core._exceptions import (
     BrokenResourceError,
     BusyResourceError,
@@ -153,18 +151,18 @@ else:
 
         def __exit__(
             self,
-            exc_type: type[BaseException] | None,
-            exc_val: BaseException | None,
-            exc_tb: TracebackType | None,
+            exc_type: type[BaseException],
+            exc_val: BaseException,
+            exc_tb: TracebackType,
         ) -> None:
             self.close()
 
         def close(self) -> None:
             """Shutdown and close event loop."""
-            loop = self._loop
-            if self._state is not _State.INITIALIZED or loop is None:
+            if self._state is not _State.INITIALIZED:
                 return
             try:
+                loop = self._loop
                 _cancel_all_tasks(loop)
                 loop.run_until_complete(loop.shutdown_asyncgens())
                 if hasattr(loop, "shutdown_default_executor"):
@@ -803,11 +801,6 @@ class TaskGroup(abc.TaskGroup):
         task_status_future: asyncio.Future | None = None,
     ) -> asyncio.Task:
         def task_done(_task: asyncio.Task) -> None:
-            if sys.version_info >= (3, 14) and self.cancel_scope._host_task is not None:
-                asyncio.future_discard_from_awaited_by(
-                    _task, self.cancel_scope._host_task
-                )
-
             task_state = _task_states[_task]
             assert task_state.cancel_scope is not None
             assert _task in task_state.cancel_scope._tasks
@@ -889,9 +882,6 @@ class TaskGroup(abc.TaskGroup):
         )
         self.cancel_scope._tasks.add(task)
         self._tasks.add(task)
-        if sys.version_info >= (3, 14) and self.cancel_scope._host_task is not None:
-            asyncio.future_add_to_awaited_by(task, self.cancel_scope._host_task)
-
         task.add_done_callback(task_done)
         return task
 
@@ -1062,30 +1052,12 @@ class StreamReaderWrapper(abc.ByteReceiveStream):
 @dataclass(eq=False)
 class StreamWriterWrapper(abc.ByteSendStream):
     _stream: asyncio.StreamWriter
-    _closed: bool = field(init=False, default=False)
 
     async def send(self, item: bytes) -> None:
-        await AsyncIOBackend.checkpoint_if_cancelled()
-        stream_paused = self._stream._protocol._paused  # type: ignore[attr-defined]
-        try:
-            self._stream.write(item)
-            await self._stream.drain()
-        except (ConnectionResetError, BrokenPipeError, RuntimeError) as exc:
-            # If closed by us and/or the peer:
-            # * on stdlib, drain() raises ConnectionResetError or BrokenPipeError
-            # * on uvloop and Winloop, write() eventually starts raising RuntimeError
-            if self._closed:
-                raise ClosedResourceError from exc
-            elif self._stream.is_closing():
-                raise BrokenResourceError from exc
-
-            raise
-
-        if not stream_paused:
-            await AsyncIOBackend.cancel_shielded_checkpoint()
+        self._stream.write(item)
+        await self._stream.drain()
 
     async def aclose(self) -> None:
-        self._closed = True
         self._stream.close()
         await AsyncIOBackend.checkpoint()
 
@@ -1153,7 +1125,7 @@ def _forcibly_shutdown_process_pool_on_exit(
 ) -> None:
     """
     Forcibly shuts down worker processes belonging to this event loop."""
-    child_watcher: asyncio.AbstractChildWatcher | None = None  # type: ignore[name-defined]
+    child_watcher: asyncio.AbstractChildWatcher | None = None
     if sys.version_info < (3, 12):
         try:
             child_watcher = asyncio.get_event_loop_policy().get_child_watcher()
@@ -1161,7 +1133,7 @@ def _forcibly_shutdown_process_pool_on_exit(
             pass
 
     # Close as much as possible (w/o async/await) to avoid warnings
-    for process in workers.copy():
+    for process in workers:
         if process.returncode is None:
             continue
 
@@ -1185,7 +1157,6 @@ async def _shutdown_process_pool_on_exit(workers: set[abc.Process]) -> None:
     try:
         await sleep(math.inf)
     except asyncio.CancelledError:
-        workers = workers.copy()
         for process in workers:
             if process.returncode is None:
                 process.kill()
@@ -1628,8 +1599,8 @@ class UDPSocket(abc.UDPSocket):
         return self._transport.get_extra_info("socket")
 
     async def aclose(self) -> None:
-        self._closed = True
         if not self._transport.is_closing():
+            self._closed = True
             self._transport.close()
 
     async def receive(self) -> tuple[bytes, IPSockAddrType]:
@@ -1676,8 +1647,8 @@ class ConnectedUDPSocket(abc.ConnectedUDPSocket):
         return self._transport.get_extra_info("socket")
 
     async def aclose(self) -> None:
-        self._closed = True
         if not self._transport.is_closing():
+            self._closed = True
             self._transport.close()
 
     async def receive(self) -> bytes:
@@ -2000,9 +1971,8 @@ class CapacityLimiter(BaseCapacityLimiter):
     def total_tokens(self, value: float) -> None:
         if not isinstance(value, int) and not math.isinf(value):
             raise TypeError("total_tokens must be an int or math.inf")
-
-        if value < 0:
-            raise ValueError("total_tokens must be >= 0")
+        if value < 1:
+            raise ValueError("total_tokens must be >= 1")
 
         waiters_to_notify = max(value - self._total_tokens, 0)
         self._total_tokens = value
@@ -2188,14 +2158,9 @@ class TestRunner(abc.TestRunner):
         loop_factory: Callable[[], AbstractEventLoop] | None = None,
     ) -> None:
         if use_uvloop and loop_factory is None:
-            if sys.platform != "win32":
-                import uvloop
+            import uvloop
 
-                loop_factory = uvloop.new_event_loop
-            else:
-                import winloop
-
-                loop_factory = winloop.new_event_loop
+            loop_factory = uvloop.new_event_loop
 
         self._runner = Runner(debug=debug, loop_factory=loop_factory)
         self._exceptions: list[BaseException] = []
@@ -2352,14 +2317,9 @@ class AsyncIOBackend(AsyncBackend):
         debug = options.get("debug", None)
         loop_factory = options.get("loop_factory", None)
         if loop_factory is None and options.get("use_uvloop", False):
-            if sys.platform != "win32":
-                import uvloop
+            import uvloop
 
-                loop_factory = uvloop.new_event_loop
-            else:
-                import winloop
-
-                loop_factory = winloop.new_event_loop
+            loop_factory = uvloop.new_event_loop
 
         with Runner(debug=debug, loop_factory=loop_factory) as runner:
             return runner.run(wrapper())
@@ -2515,7 +2475,7 @@ class AsyncIOBackend(AsyncBackend):
                         expired_worker.stop()
 
                 context = copy_context()
-                context.run(set_current_async_library, None)
+                context.run(sniffio.current_async_library_cvar.set, None)
                 if abandon_on_cancel or scope._parent_scope is None:
                     worker_scope = scope
                 else:
@@ -2564,7 +2524,7 @@ class AsyncIOBackend(AsyncBackend):
             raise RunFinishedError
 
         context = copy_context()
-        context.run(set_current_async_library, "asyncio")
+        context.run(sniffio.current_async_library_cvar.set, "asyncio")
         scope = getattr(threadlocals, "current_cancel_scope", None)
         f: concurrent.futures.Future[T_Retval] = context.run(
             asyncio.run_coroutine_threadsafe, task_wrapper(), loop=loop
@@ -2581,7 +2541,7 @@ class AsyncIOBackend(AsyncBackend):
         @wraps(func)
         def wrapper() -> None:
             try:
-                set_current_async_library("asyncio")
+                sniffio.current_async_library_cvar.set("asyncio")
                 f.set_result(func(*args))
             except BaseException as exc:
                 f.set_exception(exc)

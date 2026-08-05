@@ -225,14 +225,14 @@ class Login(ft.Container):
                 offset=ft.Offset(0, 0),
                 blur_style=ft.ShadowBlurStyle.OUTER,
             ),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
         )
 
         self.content = ft.Container(
             content=ft.Column(
-                controls=[self.login_card], alignment=ft.alignment.center
+                controls=[self.login_card], alignment=ft.Alignment.CENTER
             ),
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             bgcolor=ft.Colors.TRANSPARENT,
             padding=50,
             margin=50,

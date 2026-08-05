@@ -129,7 +129,7 @@ class LeftPanel(ft.Column):
         self.controls = [
             ft.Container(
                 expand=True,
-                alignment=ft.alignment.top_left,
+                alignment=ft.Alignment.TOP_LEFT,
                 content=ft.Column(
                     spacing=0,
                     controls=[upper_buttons, lower_buttons],
@@ -185,7 +185,7 @@ class InfoCard(ft.Container):
             content=ft.Container(
                 content=self.popup_content_col,
                 padding=10,
-                alignment=ft.alignment.center
+                alignment=ft.Alignment.CENTER
             ),
             bgcolor=GuiStyle.Colors.SIDEBAR_BG, # Slightly darker/different bg for contrast
             border_radius=15,
@@ -717,7 +717,7 @@ class FunctionToExecute(ft.Container):
         self.function_type = function_type
         self.index = ft.Container(
             content=ft.Text("0", color=GuiStyle.Colors.TEXT_PRIMARY), 
-            col={"sm": 0.6}, alignment=ft.alignment.center,
+            col={"sm": 0.6}, alignment=ft.Alignment.CENTER,
         )
         self.title = ft.Text(
             COMMAND_TYPES[function_type]["label"], size=18, weight="bold", 
@@ -728,14 +728,14 @@ class FunctionToExecute(ft.Container):
             aspect_ratio=1,
             bgcolor=COMMAND_TYPES[function_type]["color"],
             border_radius=4,
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             content=ft.Icon(name=COMMAND_TYPES[function_type]["icon"], color="#ffffff"),
         )
 
         self.remove_btn_container = ft.Container(
             content=ft.IconButton(icon=ft.Icons.DELETE, icon_color=GuiStyle.Colors.ACCENT_RED),
             col={"sm": 1},
-            alignment=ft.alignment.center_right,
+            alignment=ft.Alignment.CENTER_RIGHT,
         )
         self.remove_button = self.remove_btn_container.content
 
@@ -1095,7 +1095,7 @@ class SubscriptionBlocker(ft.Container):
     def __init__(self, on_shop_click):
         super().__init__()
         self.bgcolor = ft.Colors.with_opacity(0.8, "#131415")
-        self.alignment = ft.alignment.center
+        self.alignment = ft.Alignment.CENTER
         self.expand = True
         self.border_radius = 10
         self.content = ft.Column(
@@ -1237,7 +1237,7 @@ class ActivityLogItem(ft.Container):
             ),
             bgcolor=GuiStyle.Colors.CARD_BG,  # Darker background for the delete action
             border_radius=8,
-            alignment=ft.alignment.center,
+            alignment=ft.Alignment.CENTER,
             padding=5,
             border=ft.border.all(1, GuiStyle.Colors.BORDER_DEFAULT)
         )
@@ -1268,7 +1268,7 @@ class LogsView(ft.Container):
                     padding=ft.padding.symmetric(horizontal=5, vertical=2),
                     border_radius=3,
                     width=70,
-                    alignment=ft.alignment.center,
+                    alignment=ft.Alignment.CENTER,
                 ),
                 ft.Text(message, size=13, font_family="monospace", expand=True),
             ]
