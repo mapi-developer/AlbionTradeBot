@@ -4,23 +4,20 @@ import asyncio
 
 from gui import Header
 from gui import Presets
-from gui import Login
-from gui import Subscription
 from gui import BotOverlay
 from gui import Dashboard
 from gui import Settings
-from gui import Shop
 from gui.components.style import GuiStyle
 
 from bot import Bot, SettingsHandler, LocalPlayer, Sniffer
 
 class GuiApp:
-    overlay:BotOverlay
+    overlay: BotOverlay
 
     def __init__(self, page: ft.Page):
         self.main_column = None
         self.page = page
-        self.page.title = "Market Trader"
+        self.page.title = "Market Trader - Local Version"
         self.page.window.icon = "app_icon.ico"
         self.page.theme_mode = ft.ThemeMode.DARK
         self.page.padding = 0
@@ -30,108 +27,58 @@ class GuiApp:
             "Roboto Mono": "https://github.com/google/fonts/raw/main/apache/robotomono/RobotoMono-Regular.ttf"
         }
 
+        # Initialize core bot components
         self.local_player = LocalPlayer()
         self.sniffer = Sniffer(self.local_player)
         sniffer_thread = threading.Thread(target=self.sniffer.start, daemon=True)
         sniffer_thread.start()
 
         self.config = SettingsHandler()
-        self.login = Login(self.page, on_login_success=self.show_main_app, settings=self.config)
         self.overlay = BotOverlay()
         self.bot = Bot(self.sniffer, self.config, self.overlay, self.local_player)
 
         self.logger = self.bot.log_handler
         self.logger.start_session()
-        self.logger.add_log("app", "Application started")
+        self.logger.add_log("app", "Local Application started")
 
+        # Initialize UI Components (Removed Login/Shop/Subscription)
         self.presets = self.config.get_presets_list()
-        self.header = Header(page = self.page, on_nav_click=self.on_nav_click, login=self.login, settings=self.config)
+        self.header = Header(page=self.page, on_nav_click=self.on_nav_click, settings=self.config)
         
         self.settings = Settings(page=self.page, config=self.config)
         self.presets = ft.Container(content=Presets(self.config, self.page, self.settings), padding=20)
-        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header, login=self.login)
-
-        self.shop = Shop(settings=self.config, login_state=self.login.state)
-        
-        self.subscription_tab = Subscription(
-            self.page, 
-            self.login
-        )
-
-        self.header.subscription.open_subscriptions_offer.on_click = lambda e: self.go_to_subscription()
+        self.dashboard = Dashboard(app=self, config=self.config, page=self.page, bot=self.bot, header=self.header)
 
         self.body = ft.Container(content=self.dashboard, expand=True)
-
         self.main_column = ft.Column([self.header, self.body], expand=True, spacing=0)
-        saved_token = self.config.get("auth_token")
-        saved_user_id = self.config.get("user_id")
 
-        if saved_token and saved_user_id:
-            print("Auto-login found. Skipping login screen.")
-            self.login.state.token = saved_token
-            self.login.state.user_id = saved_user_id
-            
-            self.show_main_app()
-        else:
-            if self.page:
-                self.page.add(self.login)
-
-        try:
-            self.page.update()
-        except RuntimeError:
-            pass
+        # Bypass login and go straight to the main app
+        self.show_main_app()
 
     def show_main_app(self):
-        self.header.subscription.check_subscription()
-        self.header.update_user_id()
         self.page.controls.clear()
         self.page.add(self.main_column)
-
         try:
             self.page.update()
         except RuntimeError:
             pass
-        #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
-            if not self.bot:
-                return
-
-            if self.bot:
-                task_to_run = getattr(self.bot, task_name, None)
-                if callable(task_to_run):
-                    threading.Thread(
-                        target=self._run_async_task, 
-                        args=(task_to_run,), 
-                        daemon=True
-                    ).start()
+        if not self.bot:
+            return
+        task_to_run = getattr(self.bot, task_name, None)
+        if callable(task_to_run):
+            threading.Thread(
+                target=self._run_async_task, 
+                args=(task_to_run,), 
+                daemon=True
+            ).start()
 
     def _run_async_task(self, task_func):
         try:
             asyncio.run(task_func())
         except Exception as e:
             self.logger.add_log("error", f"Manual Task Error: {e}")
-
-    def go_to_subscription(self):
-        for control in self.header.nav_rows.controls:
-            control.style = ft.ButtonStyle(
-                text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
-                color=GuiStyle.Colors.GREY_TEXT,
-                bgcolor=GuiStyle.Colors.HEADER_BG,
-                shape=ft.RoundedRectangleBorder(radius=8),
-            )
-        self.header.nav_rows.controls[2].style = ft.ButtonStyle(
-            text_style=ft.TextStyle(color=GuiStyle.Colors.WHITE),
-            color=GuiStyle.Colors.WHITE,
-            bgcolor=GuiStyle.Colors.HEADER_NAV_BUTTON_ACTIVE,
-            shape=ft.RoundedRectangleBorder(radius=8),
-            side={ft.ControlState.DEFAULT: ft.BorderSide(1, "#CDC7C7")},
-        )
-        self.body.content = self.shop
-        try:
-            self.page.update()
-        except RuntimeError:
-            pass
 
     def on_nav_click(self, event):
         for control in self.header.nav_rows.controls:
@@ -155,25 +102,11 @@ class GuiApp:
             self.body.content = self.presets
         elif event.control.data == "dashboard":
             self.body.content = self.dashboard
-        elif event.control.data == "shop":
-            self.body.content = self.shop
         else:
             self.body.content = ft.Container(
-                content=ft.Column(
-                    [
-                        ft.Text(
-                            f"{event.control.text} View Placeholder",
-                            size=24,
-                            color=ft.Colors.GREY_500,
-                        )
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                ),
-                alignment=ft.Alignment.CENTER,
-                padding=50,
+                content=ft.Text(f"{event.control.text} View Placeholder", size=24, color=ft.Colors.GREY_500),
+                alignment=ft.Alignment.CENTER, padding=50
             )
-
         try:
             self.page.update()
         except RuntimeError:
@@ -185,7 +118,6 @@ class GuiApp:
         except RuntimeError:
             pass
 
-
 def main(page: ft.Page):
     app = GuiApp(page=page)
     page.window.prevent_close = True
@@ -194,16 +126,16 @@ def main(page: ft.Page):
         if e.data == "close":
             if hasattr(app, 'overlay') and app.overlay:
                 app.overlay.stop()
-
             if hasattr(app, 'logger'):
                 app.logger.add_log("app", "Application closing")
                 app.logger.end_session()
-            
             page.window.destroy()
 
     page.window.on_event = on_window_event
-    app.page.update()
-
+    try:
+        app.page.update()
+    except RuntimeError:
+        pass
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.run(main=main)

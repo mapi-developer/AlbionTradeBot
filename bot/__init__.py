@@ -1,5 +1,5 @@
 from .core import WindowCapture, InputSender, Point, WaypointGraph
-from .handlers import TravelHandler, MarketHandler, ChestHandler, LogHandler, LoginHandler, SettingsHandler
+from .handlers import TravelHandler, MarketHandler, ChestHandler, LogHandler, SettingsHandler
 from .api import DatabaseInterface
 from .classes import Player, LocalPlayer, Equipment
 from .net import Sniffer
@@ -12,7 +12,6 @@ __all__ = [
     "ChestHandler",
     "LogHandler",
     "SettingsHandler",
-    "LoginHandler",
     "WindowCapture",
     "InputSender",
     "WaypointGraph",

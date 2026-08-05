@@ -12,7 +12,7 @@ from .core.input import BotStopped
 from .api import DatabaseInterface
 from .net import Sniffer
 from .classes import LocalPlayer
-from .handlers import SettingsHandler, TravelHandler, MarketHandler, LoginHandler, LogHandler, ChestHandler
+from .handlers import SettingsHandler, TravelHandler, MarketHandler, LogHandler, ChestHandler
 
 def change_keyboard_layout(language_id_hex=0x04090409):
     hwnd = win32gui.GetForegroundWindow()
@@ -33,7 +33,6 @@ class Bot:
         self.overlay = overlay
         self.db = DatabaseInterface()
         self.log_handler = LogHandler()
-        self.login_handler = LoginHandler()
         self.market_handler = MarketHandler(self, self.capture, self.settings)
         self.chest_handler = ChestHandler(self.capture, self.settings)
 
@@ -128,35 +127,10 @@ class Bot:
 
     def _check_subscription(self):
         """
-        Checks if the user's subscription is active.
-        Returns True if active, False otherwise.
+        Subscription is disabled for the local version. 
+        Always returns True to allow the bot to run.
         """
-        try:
-            user_id = self.settings.get("user_id")
-            token = self.settings.get("auth_token")
-
-            if not user_id or not token:
-                self.log_handler.add_log("error", "Authentication missing. Please login.")
-                return False
-
-            headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(f"{self.settings.API_URL}/users/{user_id}", headers=headers)
-
-            if response.status_code == 200:
-                data = response.json()
-                sub_date = data.get("subscribed_until")
-                if sub_date and (datetime.strptime(sub_date, '%Y-%m-%dT%H:%M:%S.%f%z') > datetime.now(timezone.utc)):
-                    return True
-                else:
-                    self.log_handler.add_log("error", "Subscription expired or inactive. Please update.")
-                    return False
-            else:
-                self.log_handler.add_log("error", f"Subscription check failed: HTTP {response.status_code}")
-                return False
-
-        except Exception as e:
-            self.log_handler.add_log("error", f"Subscription check error: {e}")
-            return False
+        return True
 
     async def _run_task(self, func, *args, **kwargs):
         self._stop_requested = False

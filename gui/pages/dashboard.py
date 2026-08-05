@@ -605,8 +605,7 @@ class FunctionsAvaliablePanel(ft.Container):
             ]
         )
 
-        if login.state.user_id == "1":
-            self.content.controls.append(self.price_check_order_button)
+        self.content.controls.append(self.price_check_order_button)
 
 
 class TravelToAdditionalInfo(ft.Container):
@@ -1201,15 +1200,13 @@ class BotSequencePanel(RightPanel):
         self.scroll = None
 
     def show_tab(self):
-        if self.dashboard.header and self.dashboard.header.subscription:
-            is_subscribed = self.dashboard.header.subscription.is_active
+        if self.dashboard.header:
+            is_subscribed = True
             self.blocker.visible = not is_subscribed
             self.bot_control_panel.disabled = not is_subscribed
             avaliable_functions = self.bot_control_panel.functions_avaliable_panel
-            if avaliable_functions.login.state.user_id == "1" and not avaliable_functions.price_check_order_button in avaliable_functions.content.controls:
-                avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
-            elif avaliable_functions.price_check_order_button in avaliable_functions.content.controls and avaliable_functions.login.state.user_id != "1":
-                avaliable_functions.content.controls.remove(avaliable_functions.price_check_order_button)
+
+            avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
 
             try:
                 self.update()
