@@ -76,16 +76,21 @@ class GuiApp:
             if self.page:
                 self.page.add(self.login)
 
-        if self.page:
+        try:
             self.page.update()
+        except RuntimeError:
+            pass
 
     def show_main_app(self):
         self.header.subscription.check_subscription()
         self.header.update_user_id()
         self.page.controls.clear()
         self.page.add(self.main_column)
-        if self.page:
+
+        try:
             self.page.update()
+        except RuntimeError:
+            pass
         #self.dashboard.update_overview()
 
     def run_bot(self, task_name: str):
@@ -123,8 +128,10 @@ class GuiApp:
             side={ft.ControlState.DEFAULT: ft.BorderSide(1, "#CDC7C7")},
         )
         self.body.content = self.shop
-        if self.page:
+        try:
             self.page.update()
+        except RuntimeError:
+            pass
 
     def on_nav_click(self, event):
         for control in self.header.nav_rows.controls:
@@ -167,12 +174,16 @@ class GuiApp:
                 padding=50,
             )
 
-        if self.page:
+        try:
             self.page.update()
+        except RuntimeError:
+            pass
 
     def on_page_resize(self, e):
-        if self.main_column.page:
-            self.main_column.page.update()
+        try:
+            self.page.update()
+        except RuntimeError:
+            pass
 
 
 def main(page: ft.Page):

@@ -168,9 +168,11 @@ class ItemListPanel(ft.Container):
         self.item_list.controls = new_controls
         self.count_text.value = f"{len(items)} items"
 
-        if self.item_list.page:
+        try:
             self.item_list.update()
             self.count_text.update()
+        except RuntimeError:
+            pass  
 
     def trigger_action(self, e):
         self.on_action_click(self.current_items)
@@ -504,8 +506,12 @@ class Presets(ft.Column):
         self.selected_cat = e.control.data if e.control.selected else None
         for chip in self.cat_row.controls:
             chip.selected = chip.data == self.selected_cat
-        if self.cat_row.page:
+
+        try:
             self.cat_row.update()
+        except RuntimeError:
+            pass
+
         self.selected_sub = None
         self.reload_sub_categories()
         self.apply_filters()
@@ -527,15 +533,21 @@ class Presets(ft.Column):
                         selected_color=GuiStyle.Colors.DARK_BLUE,
                     )
                 )
-        if self.sub_row.page:
+
+        try:
             self.sub_row.update()
+        except RuntimeError:
+            pass
 
     def on_sub_toggle(self, e):
         self.selected_sub = e.control.data if e.control.selected else None
         for chip in self.sub_row.controls:
             chip.selected = chip.data == self.selected_sub
-        if self.sub_row.page:
+        try:
             self.sub_row.update()
+        except RuntimeError:
+            pass
+
         self.apply_filters()
 
     def on_tier_toggle(self, e):
@@ -610,8 +622,11 @@ class Presets(ft.Column):
                 self.preset_set = set(json.load(f))
 
             self.filename_input.value = fname.replace(".json", "")
-            if self.filename_input.page:
+
+            try:
                 self.filename_input.update()
+            except RuntimeError:
+                pass
 
             self.apply_filters()
             #

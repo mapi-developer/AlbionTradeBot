@@ -150,5 +150,7 @@ class Header(ft.Container):
         self.page.controls.clear()
         self.page.add(self.login)
 
-        if self.page:
+        try:
             self.page.update()
+        except RuntimeError:
+            pass

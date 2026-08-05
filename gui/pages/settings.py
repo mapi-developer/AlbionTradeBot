@@ -291,8 +291,11 @@ class BuyLogic(ft.Container):
         count = len(self.items_column.controls)
         self.counter_text.value = f"{count}/{self.max_items}"
         self.add_button.disabled = count >= self.max_items
-        if self.page:
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
 
 import flet as ft
@@ -416,8 +419,10 @@ class RightTab(ft.Container):
         ]
         self.buy_logic.load_items(current_tab=self.current_tab)
 
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def update_on_new_preset(self):
         self.update_data(self.current_tab)
