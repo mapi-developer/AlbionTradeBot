@@ -66,7 +66,7 @@
             }
         ]
     },
-    "auth_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJtYXBpLmdhbWVkZXZAZ21haWwuY29tIiwiZXhwIjoxNzcxMDcyMjE3fQ.q1n5ZYnkOOVtvvhdQPRL9joMQV8ZyUnr-z1JknENS2Q",
-    "user_id": "1",
+    "auth_token": null,
+    "user_id": null,
     "home_island": ""
 }

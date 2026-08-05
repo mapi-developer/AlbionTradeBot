@@ -49,7 +49,7 @@ def main():
             with open("asset_error.txt", "w") as f:
                 f.write(f"Could not find assets at: {assets_path}")
 
-        ft.app(target=gui_main, assets_dir=assets_path)
+        ft.run(main=gui_main, assets_dir=assets_path)
 
     except Exception:
         error_path = "crash_log.txt"

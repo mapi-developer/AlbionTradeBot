@@ -296,9 +296,11 @@ class Shop(ft.Container):
             self.show_snack(f"Connection Error: {ex}")
 
     def show_snack(self, message):
-        if self.page:
+        try:
             show_popup(self.page, message)
             self.page.update()
+        except RuntimeError:
+            pass
 
 
 def main(page: ft.Page):

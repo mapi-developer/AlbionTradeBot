@@ -62,7 +62,10 @@ class Subscription(ft.Container):
             self.status_text.value = "Not Logged In"
             self.status_text.color = GuiStyle.Colors.ACCENT_ORANGE
             self.open_subscriptions_offer.visible = True
-            self.update()
+            try:
+                self.update()
+            except RuntimeError:
+                pass
             return
 
         headers = {"Authorization": f"Bearer {self.state.token}"}
@@ -99,12 +102,18 @@ class Subscription(ft.Container):
                     self.status_text.color = GuiStyle.Colors.ACCENT_ORANGE
                     self.is_active = False
 
-                self.update()
+                try:
+                    self.update()
+                except RuntimeError:
+                    pass
 
             elif res.status_code == 404:
                 print("Error to check subscription status")
                 self.is_active = False
-                self.update()
+                try:
+                    self.update()
+                except RuntimeError:
+                    pass
 
         except Exception as e:
             print(f"Connection error during status check: {e}")

@@ -1325,8 +1325,10 @@ class LogsView(ft.Container):
                 category, message = entry.split(";", 1)
                 color = GuiStyle.Colors.LOG_COLORS.get(category.lower(), ft.Colors.GREY_400)
                 self.log_column.controls.append(self.LogRow(category, message, color))
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
 
 class ActivityLogsPanel(RightPanel):
@@ -1906,7 +1908,7 @@ class MarketTable(ft.Column):
                                 src=f"https://render.albiononline.com/v1/item/{item.unique_name}",
                                 width=40,
                                 height=40,
-                                fit=ft.ImageFit.CONTAIN,
+                                fit=ft.BoxFit.CONTAIN,
                                 border_radius=5,
                             )
                         ),
@@ -1968,7 +1970,7 @@ class MarketTable(ft.Column):
                     label=ft.Text(text, size=11, color="white"),
                     on_select=callback,
                     data=data,
-                    label_padding=ft.padding.symmetric(horizontal=4),
+                    label_padding=ft.padding.Padding.symmetric(horizontal=4),
                     bgcolor=GuiStyle.Colors.INNER_BG,
                     border_side=ft.BorderSide(
                         width=0, color=ft.Colors.TRANSPARENT
@@ -2166,12 +2168,14 @@ class Dashboard(ft.Container):
         if self.bot:
             try:
                 paused = self.bot.toggle_pause()
-                if self.app.overlay:
+                try:
                     self.app.overlay.send_update(
                         status="Paused" if paused else "Running",
                         task=self.bot.current_task_name,
                         paused=paused,
                     )
+                except Exception:
+                    pass
 
                 status = "PAUSED (F1 to Resume)" if paused else "Running"
                 color = ft.Colors.ORANGE_400 if paused else ft.Colors.GREEN_400
@@ -2213,8 +2217,11 @@ class Dashboard(ft.Container):
         if self.bot != None:
             self.bot.stop()
         self.seq_panel.run_button.data = "run"
-        if self.page:
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def _run_worker_sync(self):
         try:
@@ -2237,10 +2244,12 @@ class Dashboard(ft.Container):
                     if not task_type or task_type not in COMMAND_TYPES:
                         continue
                     task_info = COMMAND_TYPES[task_type]
-                    if self.app.overlay:
+                    try:
                         self.app.overlay.send_update(
                             status="Running", task=task_info["label"], paused=False
                         )
+                    except Exception:
+                        pass
 
                     func_name = COMMAND_TYPES[item["type"]]["func"]
                     self.seq_panel.update_status(
