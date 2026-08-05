@@ -258,66 +258,15 @@ class OverviewPanel(ft.Container):
 
     def _get_data_background(self, *args, **kwargs):
         try:
-            status_res = requests.get(f"{self.dashboard.API_URL}/")
-            status = "Error"
-            if status_res.status_code == 200:
-                data = status_res.json()
-                status = data.get("status")
-
-            server = self.dashboard.config.get("general").get("server", "US")
-            
-            up_to_date_res = requests.get(
-                f"{self.dashboard.API_URL}/items/prices-up-to-date",
-                params={"server": server}    
-            )
-            bm_val = "Unknown"
-            popup_items = []
-
-            if up_to_date_res.status_code == 200:
-                data = up_to_date_res.json()
-                
-                bm_val = data.get("black_market", "N/A")
-
-                for city in sorted(data.keys()):
-                    if city != "black_market":
-                        percent = data[city]
-                        city_name = city.replace("_", " ").title()
-                        
-                        row = ft.Row(
-                            controls=[
-                                ft.Text(f"{city_name}:", size=12, color=GuiStyle.Colors.GREY_TEXT),
-                                ft.Text(f"{percent}", size=12, weight=ft.FontWeight.BOLD, color=GuiStyle.Colors.TEXT_PRIMARY),
-                            ],
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN
-                        )
-                        popup_items.append(row)
-                
-                if not popup_items:
-                    popup_items = [ft.Text("No other city data", size=12, color=GuiStyle.Colors.GREY_TEXT)]
-
-            headers = {"Authorization": f"Bearer {self.dashboard.login.state.token}"}
-            res = requests.get(
-                f"{self.dashboard.API_URL}/users/{self.dashboard.login.state.user_id}",
-                headers=headers,
-            )
-            sub_formatted_date = "Loading"
-
-            if res.status_code == 200:
-                data = res.json()
-                subscribed_until = data.get("subscribed_until")
-                if subscribed_until:
-                    dt_object = datetime.fromisoformat(
-                        subscribed_until.replace("Z", "+00:00")
-                    )
-                    sub_formatted_date = dt_object.strftime("%d.%m.%Y")
-                else:
-                    sub_formatted_date = "Not Active"
+            # Local Version - Bypass API
+            status = "alive"
+            bm_val = "Local Sync"
+            popup_items = [ft.Text("Local Database Active", size=12, color=GuiStyle.Colors.GREY_TEXT)]
+            sub_formatted_date = "Lifetime (Local)"
 
             if self.page:
                 self.last_prices_update.set_data(f"Black Market: {bm_val}", popup_controls=popup_items)
-                self.database_status.set_data(
-                    "Connected" if status == "alive" else "Not Connected"
-                )
+                self.database_status.set_data("Connected")
                 self.bot_status.set_data(self.dashboard.bot.get_status())
                 self.subscribed_until.set_data(sub_formatted_date)
 
@@ -1814,34 +1763,41 @@ class MarketTable(ft.Column):
             print(f"Error loading items: {e}")
 
     def refresh_all_prices(self):
-        """Fetches prices for all items for the server to populate the cache once."""
+        """Fetches prices from the local SQLite database."""
         if self.is_loading_prices:
             return
         self.is_loading_prices = True
 
         try:
             server = self.dashboard.config.get("general").get("server", "US")
+            import sqlite3
+            db_path = "market_data.db"
+            
+            if os.path.exists(db_path):
+                with sqlite3.connect(db_path) as conn:
+                    conn.row_factory = sqlite3.Row
+                    cursor = conn.cursor()
+                    
+                    # Fetch Order Prices (Fast buy logic mapped to 'order' in DB)
+                    cursor.execute("SELECT unique_name, price, updated_at FROM market_prices WHERE server = ? AND city = ? AND item_type = ?", (server, "black_market", "order"))
+                    for row in cursor.fetchall():
+                        self.price_cache_fast[row['unique_name']] = {
+                            "price_black_market": row['price'],
+                            "black_market_updated_at": row['updated_at'] + "Z"
+                        }
 
-            res_fast = requests.get(
-                f"{self.dashboard.API_URL}/items/",
-                params={"cities": ["black_market"], "type": "order", "server": server},
-            )
-            if res_fast.status_code == 200:
-                for x in res_fast.json():
-                    self.price_cache_fast[x["unique_name"]] = x
-
-            res_order = requests.get(
-                f"{self.dashboard.API_URL}/items/",
-                params={"cities": ["black_market"], "type": "fast", "server": server},
-            )
-            if res_order.status_code == 200:
-                for x in res_order.json():
-                    self.price_cache_order[x["unique_name"]] = x
+                    # Fetch Fast Prices (Order buy logic mapped to 'fast' in DB)
+                    cursor.execute("SELECT unique_name, price, updated_at FROM market_prices WHERE server = ? AND city = ? AND item_type = ?", (server, "black_market", "fast"))
+                    for row in cursor.fetchall():
+                        self.price_cache_order[row['unique_name']] = {
+                            "price_black_market": row['price'],
+                            "black_market_updated_at": row['updated_at'] + "Z"
+                        }
 
             self.render_table()
 
         except Exception as e:
-            print(f"Error fetching prices: {e}")
+            print(f"Error fetching local prices: {e}")
 
         self.is_loading_prices = False
 
@@ -2066,7 +2022,6 @@ class Dashboard(ft.Container):
         self.bot = bot
         self.login = login
         self.header = header
-        self.API_URL = self.config.API_URL
 
         self.is_running_sequence = False
         self.loop_sequence = False

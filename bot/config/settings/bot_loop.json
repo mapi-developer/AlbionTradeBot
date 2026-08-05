@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "type": "travel_to",
+        "data": {
+            "destination": "market",
+            "market_city": "black_market",
+            "island_name": ""
+        }
+    }
+]

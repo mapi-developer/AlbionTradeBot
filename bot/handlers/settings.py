@@ -18,9 +18,7 @@ def load_json_config(filename):
 
 class SettingsHandler:
     def __init__(self):
-        self.LOCAL_AUTH_PORT = 5000
         self.ITEMS_JSON_URL = "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json"
-        self.LOCAL_REDIRECT_URI = f"http://127.0.0.1:{self.LOCAL_AUTH_PORT}/oauth/callback"
         self.LOGS_DIR = os.path.join(BASE_DIR, "config/logs")
         self.BOT_LOOP_FILE = os.path.join(BASE_DIR, "config/settings", "bot_loop.json")
         self.SETTINGS_FILE = os.path.join(BASE_DIR, "config/settings", "settings.json")
@@ -155,9 +153,6 @@ class SettingsHandler:
             "brecilien": "Brecilien",
         }
 
-        self.API_URL = "https://trade-backend-service-1014783260724.europe-west1.run.app"
-        self.GOOGLE_CLIENT_ID = "1014783260724-k8qsvkb8nv0sasri7jsi1l5uj17ej51d.apps.googleusercontent.com"
-        self.DISCORD_CLIENT_ID = "1447721013260456058"
 
     def load_settings(self):
         if not os.path.exists(self.SETTINGS_FILE):
