@@ -271,11 +271,13 @@ class OverviewPanel(ft.Container):
             popup_items = [ft.Text("Local Database Active", size=12, color=GuiStyle.Colors.GREY_TEXT)]
             sub_formatted_date = "Lifetime (Local)"
 
-            if self.page:
+            try:
                 self.last_prices_update.set_data(f"Black Market: {bm_val}", popup_controls=popup_items)
                 self.database_status.set_data("Connected")
                 self.bot_status.set_data(self.dashboard.bot.get_status())
                 self.subscribed_until.set_data(sub_formatted_date)
+            except Exception:
+                pass
 
         except Exception as e:
             print(f"Error updating data: {e}")
@@ -1177,7 +1179,7 @@ class BotSequencePanel(RightPanel):
             self.bot_control_panel.disabled = not is_subscribed
             avaliable_functions = self.bot_control_panel.functions_avaliable_panel
 
-            avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
+            # avaliable_functions.content.controls.append(avaliable_functions.price_check_order_button)
 
             try:
                 self.update()
