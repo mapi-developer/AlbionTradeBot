@@ -503,7 +503,11 @@ class UpperRow(ft.Container):
                     3, ft.Colors.WHITE if is_active else ft.Colors.TRANSPARENT
                 )
             )
-        self.update()
+
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
 
 class ContentMain(ft.Container):

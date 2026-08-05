@@ -213,7 +213,11 @@ class InfoCard(ft.Container):
         else:
             self.popup_container.opacity = 0
             self.popup_container.visible = False
-        self.update()
+
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
     def set_data(self, new_value: str, popup_controls: list[ft.Control] = None):
         """
@@ -225,8 +229,11 @@ class InfoCard(ft.Container):
         
         if popup_controls:
             self.popup_content_col.controls = popup_controls
-        
-        self.update()
+
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
 
 class OverviewPanel(ft.Container):
@@ -629,7 +636,12 @@ class TravelToAdditionalInfo(ft.Container):
         is_market = self.destination_type.content.value == "market"
         self.market_name.visible = is_market
         self.island_name.visible = not is_market
-        self.update()
+
+        try:
+            self.update()
+        except RuntimeError:
+            pass
+
         self.trigger_save()
 
     def get_data(self):
@@ -958,8 +970,11 @@ class ExecutionSequencePanel(ft.Container):
             bgcolor=GuiStyle.Colors.RUN_BUTTON_TOGGLE,
             shape=ft.RoundedRectangleBorder(radius=8),
         )
-        if self.page:
+
+        try:
             self.run_button.update()
+        except RuntimeError:
+            pass
 
         if self.run_button.data == "run":
             self.run_button.content = ft.Row(
@@ -998,8 +1013,10 @@ class ExecutionSequencePanel(ft.Container):
             self.run_button.data = "run"
             self.run_button.disabled = False
 
-        if self.page:
+        try:
             self.run_button.update()
+        except RuntimeError:
+            pass
 
     def loop_toggle(self, e):
         if self.loop_checkbox.value:
@@ -1008,14 +1025,19 @@ class ExecutionSequencePanel(ft.Container):
         else:
             self.wait_before_loop.visible = False
             self.dashboard.loop_sequence = False
-
-        self.update()
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
     def update_status(self, text: str, color: str):
         self.status_text.value = text
         self.status_indicator.bgcolor = color
-        if self.page:
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
 
 class BotControlPanel(ft.Container):
@@ -1258,8 +1280,11 @@ class LogsView(ft.Container):
 
     def clear_logs(self):
         self.log_column.controls.clear()
-        if self.page:
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def set_logs(self, log_list: list[str]):
         self.log_column.controls.clear()
@@ -1354,8 +1379,11 @@ class ActivityLogsPanel(RightPanel):
                     self.dashboard, title, on_click=self.handle_log_click, data=f
                 )
             )
-        if self.page:
+
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def _setup_initial_view(self):
         self.scroll = ft.ScrollMode.AUTO
@@ -1392,7 +1420,10 @@ class ActivityLogsPanel(RightPanel):
             ft.Divider(color=GuiStyle.Colors.BORDER_DEFAULT),
             self.logs_list_content,
         ]
-        self.update()
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
     def show_log_details(self):
         self.scroll = None
@@ -1412,8 +1443,10 @@ class ActivityLogsPanel(RightPanel):
             self.logs_view,
         ]
 
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def refresh_logs(self):
         files = []
@@ -2079,8 +2112,10 @@ class Dashboard(ft.Container):
         self.avail_panel.disabled = locked
         self.seq_panel.execution_functions_list.disabled = locked
 
-        if self.page:
+        try:
             self.update()
+        except RuntimeError:
+            pass
 
     def check_start_requirements(self, *args):
         has_travel = False
@@ -2244,7 +2279,10 @@ class Dashboard(ft.Container):
             self.dashboard_panel.orders_graph.update_graph_data()
             self.dashboard_panel.overview_panel.update_data()
 
-        self.update()
+        try:
+            self.update()
+        except RuntimeError:
+            pass
 
 
 def main(page: ft.Page):
