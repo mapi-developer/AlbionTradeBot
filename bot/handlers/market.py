@@ -38,6 +38,7 @@ class MarketHandler(InputSender):
         market_title = self.settings.MARKET_TITLES.get(location_id)
         if market_title == None:
             raw_title = self.capture.get_text_from_screenshot(self.capture_positions["title"]).replace("marketplace", "")
+            
             if "fort" in raw_title:
                 return "fort_sterling"
             elif "lymhurst" in raw_title:

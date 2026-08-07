@@ -4,4 +4,5 @@ builddist/
 redist/
 build/
 .vscode
+.venv
 bot/config/logs/*

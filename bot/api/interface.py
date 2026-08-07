@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from .client import APIClient 
 
 class DatabaseInterface:
-    def __init__(self, db_path: str = "market_data.db"):
+    def __init__(self, db_path: str = "bot/config/market_data.db"):
         self.db_path = db_path
         self.client = APIClient(db_path=self.db_path)
         print(f"✅ Interface initialized with Local DB: {self.db_path}")

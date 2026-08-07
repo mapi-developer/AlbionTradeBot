@@ -1,6 +1,6 @@
 {
     "general": {
-        "buy_mode": "order",
+        "buy_mode": "fast",
         "game_language": "EN-US",
         "min_silver": "1000000",
         "server": "EU"

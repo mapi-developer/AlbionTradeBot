@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import urllib.request
 from ..core import WaypointGraph
 
 if getattr(sys, 'frozen', False):
@@ -9,9 +10,21 @@ else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load_json_config(filename):
-    """Loads a JSON file from the config directory."""
-    config_path = os.path.join(BASE_DIR, 'config/static', filename) 
+def load_json_config(filename, download_url=None):
+    """Loads a JSON file from the config directory, downloading it if necessary."""
+    config_path = os.path.join(BASE_DIR, 'config/static', filename)
+    
+    # Download file if it doesn't exist and a URL is provided
+    if not os.path.exists(config_path) and download_url:
+        print(f"'{filename}' not found. Downloading from {download_url}...")
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
+        try:
+            urllib.request.urlretrieve(download_url, config_path)
+            print(f"Successfully downloaded {filename}.")
+        except Exception as e:
+            print(f"Failed to download {filename}: {e}")
+            raise
+
     with open(config_path, 'r', encoding="utf-8") as f:
         return json.load(f)
 
@@ -27,7 +40,10 @@ class SettingsHandler:
         self.CAPTURE_POSITIONS = load_json_config("capture_positions.json")
         self.ITEMS_BLACK_MARKET = load_json_config('black_market_items_dictionary.json')
         self.BOT_ITEMS_FILE = os.path.join(BASE_DIR, "config/static", "bot_items.json")
-        self.ITEM_DATA = load_json_config('items.json')
+        
+        # Pass self.ITEMS_JSON_URL as the download source fallback
+        self.ITEM_DATA = load_json_config('items.json', download_url=self.ITEMS_JSON_URL)
+        
         self.MARKET_TITLES = {
             "4002": "fort_sterling",
             "1002": "lymhurst",
@@ -38,6 +54,7 @@ class SettingsHandler:
             "3003": "black_market",
             "3005": "caerleon",
             "4301": "fort_sterling",
+            "0301": "thetford",
         }
         self.DEFAULT_SETTINGS = {
             "general": {
@@ -77,71 +94,24 @@ class SettingsHandler:
         }
         self.settings = self.load_settings()
         self.SPECIAL_ITEMS_BM = {
-            "6243": 2,
-            "6444": 3,
-            "8274": 3,
-            "8879": 3,
-            "9281": 3,
-            "9080": 3,
-            "8678": 3,
-            "8073": 3,
-            "7852": 3,
-            "8477": 1,
-            "7249": 3,
-            "6645": 3,
-            "6847": 2,
-            "7048": 3,
-            "7450": 3,
-            "7651": 3,
-            "9482": 3,
-            "4629": 2,
-            "4602": 2,
-            "4656": 2,
-            "3994": 1,
-            "4022": 1,
-            "4050": 1,
-            "3387": 2,
-            "3414": 2,
-            "3441": 2,
-            "495": 1,
-            "1997": 1,
-            "2452": 1,
-            "516": 1,
+            "6243": 2, "6444": 3, "8274": 3, "8879": 3, "9281": 3,
+            "9080": 3, "8678": 3, "8073": 3, "7852": 3, "8477": 1,
+            "7249": 3, "6645": 3, "6847": 2, "7048": 3, "7450": 3,
+            "7651": 3, "9482": 3, "4629": 2, "4602": 2, "4656": 2,
+            "3994": 1, "4022": 1, "4050": 1, "3387": 2, "3414": 2,
+            "3441": 2, "495": 1, "1997": 1, "2452": 1, "516": 1,
             "2831": 1,
         }
         self.SPECIAL_ITEMS = {
-            "Shield": 1,
-            "Mercenary Hood": 1,
-            "Mercenary Jacket": 1,
-            "Mercenary Shoes": 1,
-            "Broadsword": 1,
-            "Tome of Spells": 2,
-            "Cape": 2,
-            "Bag": 2,
-            "Soldier Helmet": 2,
-            "Soldier Armor": 2,
-            "Soldier Boots": 2,
-            "Scholar Cowl": 2,
-            "Scholar Robe": 2,
-            "Scholar Sandals": 2,
-            "Bow": 2,
-            "Fire Staff": 2,
-            "Torch": 3,
-            "Crossbow": 3,
-            "Cursed Staff": 3,
-            "Fire Staff": 3,
-            "Frost Staff": 3,
-            "Arcane Staff": 3,
-            "Holy Staff": 3,
-            "Nature Staff": 3,
-            "Dagger": 3,
-            "Spear": 3,
-            "Battleaxe": 3,
-            "Quarterstaff": 3,
-            "Hammer": 3,
-            "Mace": 3,
-            "Brawler Gloves": 3,
-            "Prowling Staff": 3,
+            "Shield": 1, "Mercenary Hood": 1, "Mercenary Jacket": 1,
+            "Mercenary Shoes": 1, "Broadsword": 1, "Tome of Spells": 2,
+            "Cape": 2, "Bag": 2, "Soldier Helmet": 2, "Soldier Armor": 2,
+            "Soldier Boots": 2, "Scholar Cowl": 2, "Scholar Robe": 2,
+            "Scholar Sandals": 2, "Bow": 2, "Fire Staff": 2, "Torch": 3,
+            "Crossbow": 3, "Cursed Staff": 3, "Fire Staff": 3, "Frost Staff": 3,
+            "Arcane Staff": 3, "Holy Staff": 3, "Nature Staff": 3, "Dagger": 3,
+            "Spear": 3, "Battleaxe": 3, "Quarterstaff": 3, "Hammer": 3,
+            "Mace": 3, "Brawler Gloves": 3, "Prowling Staff": 3,
         }
         self.CITIES = {
             "caerleon": "Caerleon",
@@ -152,7 +122,6 @@ class SettingsHandler:
             "thetford": "Thetford",
             "brecilien": "Brecilien",
         }
-
 
     def load_settings(self):
         if not os.path.exists(self.SETTINGS_FILE):

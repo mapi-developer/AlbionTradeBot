@@ -1806,7 +1806,7 @@ class MarketTable(ft.Column):
         try:
             server = self.dashboard.config.get("general").get("server", "US")
             import sqlite3
-            db_path = "market_data.db"
+            db_path = "bot/config/market_data.db"
             
             if os.path.exists(db_path):
                 with sqlite3.connect(db_path) as conn:

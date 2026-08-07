@@ -27,6 +27,7 @@ class Sniffer:
         self.local_player = local_player
         self.lock = threading.Lock()
         self.frag_buffer = FragmentBuffer()
+        self.last_params = None
 
         self.on_silver_changed = []
         self.on_local_position_changed = []
@@ -128,46 +129,81 @@ class Sniffer:
             if not msg: return
 
             params = msg.decode()
-
-            if 253 in params:
-                request_code = params.get(253)
-                if request_code in [const.OP_AUCTION_GET_REQUESTS, const.OP_AUCTION_GET_MY_ORDERS]:
-                    self.handle_market_orders(params, "request")
-                elif request_code == const.OP_AUCTION_GET_OFFERS:
-                    self.handle_market_orders(params, "offer")    
-                elif request_code == const.OP_MOVE_REQUEST:
-                    self.handle_local_move(params)
-                elif request_code == const.OP_JOIN_FINISHED:
-                    # 8 current location, 9 previous location
-                    self.handle_local_player_info_changed(params)
-                elif request_code == const.OP_LOCATION_CHANGED:
-                    self.handle_location_changed(params)
-                elif request_code == const.OP_AUCTION_AVG_GET:
-                    self.handle_avg_market_data(params)
-                else:
+            print(params)
+            # -------------------------------------------------------------
+            # DYNAMIC SHAPE-BASED ROUTING (Future-Proof)
+            # -------------------------------------------------------------
+            if 253 in params:  # Operation Responses
+                # Silver Initial Request/Response
+                if len(params) == 2 and isinstance(params.get(1), int):
+                    print("silver")
+                    self.last_params = params
                     return
-            elif 252 in params:
-                event_code = params.get(252)
-                if event_code == const.OP_EVENT_UPDATE_SILVER:
-                    self.handle_silver_update(params)
-                elif event_code == const.EVENT_NEW_ITEM:
-                    self.handle_new_item(params)
-                elif event_code == const.OP_NEW_CHARACTER:
-                    self.handle_new_character(params)
-                elif event_code == const.OP_CHARACTER_EQUIPMENT_CHANGED:
+
+                # 1. MARKET DATA DETECTION
+                p0 = params.get(0)
+                if isinstance(p0, list) and len(p0) > 0 and isinstance(p0[0], str):
+                    if '"UnitPriceSilver"' in p0[0] or '"AuctionType"' in p0[0]:
+                        self.handle_market_orders(params)
+                        return
+
+                # 2. PLAYER JOIN / INFO DETECTION
+                if isinstance(params.get(2), str) and params.get(58) is not None:
+                    self.handle_local_player_info_changed(params)
+                    return
+
+                # 3. LOCATION CHANGED DETECTION (Safely Guarded)
+                p1 = params.get(1)
+                if isinstance(p0, str):
+                    is_island = isinstance(p1, str) and "ISLAND" in p1
+                    if ("@" in p0 and is_island) or (len(p0) == 4 and params.get(5) is None):
+                        self.handle_location_changed(params)
+                        return
+
+                # 4. LOCAL MOVE DETECTION
+                p3 = params.get(3)
+                p4 = params.get(4)
+                if isinstance(p1, list) and isinstance(p3, list) and isinstance(p4, (float, int)):
+                    if len(p1) == 2 and len(p3) == 2:
+                        self.handle_local_move(params)
+                        return
+
+                # 5. AVG MARKET DATA DETECTION
+                p2 = params.get(2)
+                if isinstance(p0, list) and isinstance(p1, list) and isinstance(p2, list) and isinstance(params.get(255), int):
+                    self.handle_avg_market_data(params)
+                    return
+
+            elif 252 in params:  # Event Responses
+                equipment_data = params.get(2)
+                if isinstance(equipment_data, list) and len(equipment_data) == 10:
                     self.handle_equipment_changed(params)
-                else: return 
-            else:
-                return 
+                    return
+
+                if (len(str(params.get(1))) <= 5 
+                        and isinstance(params.get(6), str) 
+                        and isinstance(params.get(0), int) 
+                        and isinstance(params.get(2), int)):
+                    self.handle_new_item(params)
+                    return
+
+                # SILVER CHANGED DETECTION (Guarded against NoneType)
+                has_last_params = isinstance(self.last_params, dict) and len(self.last_params) == 2
+                if len(params) == 3 and isinstance(params.get(0), int) and isinstance(params.get(1), int) and has_last_params:
+                    self.last_params = None
+                    print("silver changed")
+                    self.handle_silver_update(params)
+                    return
         except Exception as e:
-            pass
+            print(f"[Sniffer] >>> Process Exception: {e}")
 
     def handle_avg_market_data(self, params: dict):
-        price_sum = sum(params.get(1))
-        amount_sum = sum(params.get(0))
-        if price_sum == None or amount_sum == None:
+        price_sum = sum(params.get(1, []))
+        amount_sum = sum(params.get(0, []))
+        if not price_sum or not amount_sum:
             self.last_avg_price = 0
-        self.last_avg_price = int(price_sum/amount_sum/10000)
+        else:
+            self.last_avg_price = int(price_sum/amount_sum/10000)
 
     def handle_new_character(self, params: dict):
         character_name = params.get(1)
@@ -195,6 +231,7 @@ class Sniffer:
                     if item_index not in self.local_player.equipment.to_list():
                         for callback in self.on_new_item:
                             callback(local_item_id, item_index, "inventory")
+           
 
         except Exception as e:
             print(f"[Sniffer] >>> Handling new item Exception: {e}")
@@ -213,20 +250,27 @@ class Sniffer:
     def handle_local_player_info_changed(self, params: dict):
         local_nickname = params.get(2)
         local_id = params.get(0)
-        local_silver_balance = params.get(32)
+        
+        local_silver_balance = params.get(37) or params.get(31) 
         local_position = params.get(9)
-        self.handle_silver_update({1: local_silver_balance})
-        self.handle_local_move({1: local_position})
+        
+        if local_silver_balance is not None:
+            self.handle_silver_update({1: local_silver_balance})
+        if local_position is not None:
+            self.handle_local_move(params, specific_key=9)
+            
         for callback in self.on_local_player_nickname_changed:
             callback(local_nickname, local_id)
         for callback in self.on_join_finished:
             callback(True)
-        
-    def handle_local_move(self, params: dict):
-        current_position = params.get(1)
-        # print(f"   {current_position}", end = "               \r", flush=True)
-        for callback in self.on_local_position_changed:
-            callback(current_position)
+
+    def handle_local_move(self, params: dict, specific_key: int = None):
+        # 1. Case B: Key 1 holds [x, y]
+        if isinstance(params.get(1), list) and len(params[1]) >= 2 and isinstance(params[1][0], (int, float)):
+            current_position = [params[1][0], params[1][1]]
+            for callback in self.on_local_position_changed:
+                callback(current_position)
+            return
 
     def handle_silver_update(self, params: dict):
         silver = params.get(1)
@@ -238,16 +282,20 @@ class Sniffer:
                     callback(silver_value)
         except: pass
 
-    def handle_market_orders(self, params: dict, order_type: str):
-        market_orders = [json.loads(item) for item in params.get(0)]
-        if market_orders is None or not isinstance(market_orders, list): return
+    def handle_market_orders(self, params: dict, order_type: str = "dynamic"):
+        market_orders = [json.loads(item) for item in params.get(0, [])]
+        if not market_orders: return
+        
         try:
             with self.lock:
-                if order_type == "offer":
-                    self.offer_market_buffer.extend(market_orders)
-                else:
-                    self.request_market_buffer.extend(market_orders)
-        except: pass
+                for order in market_orders:
+                    actual_type = order.get("AuctionType", "")
+                    if actual_type == "offer":
+                        self.offer_market_buffer.append(order)
+                    elif actual_type == "request":
+                        self.request_market_buffer.append(order)
+        except Exception as e:
+            pass
 
     def get_last_avg_price(self):
         with self.lock:

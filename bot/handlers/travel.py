@@ -54,7 +54,6 @@ class TravelHandler(InputSender):
     def on_location_changed(
         self, location_id: str, location_type: str, location_name: str
     ):
-        print("Location Changed")
         if location_type != "":
             cutoff, separator, last_part = location_type.rpartition("-")
             if "GUILD" in cutoff:
