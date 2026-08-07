@@ -251,10 +251,11 @@ class Sniffer:
             callback(location_id, location_type, location_name)
 
     def handle_local_player_info_changed(self, params: dict):
+        print(params)
         local_nickname = params.get(2)
         local_id = params.get(0)
         
-        local_silver_balance = params.get(37) or params.get(31) 
+        local_silver_balance = params.get(33)
         local_position = params.get(9)
         
         if local_silver_balance is not None:

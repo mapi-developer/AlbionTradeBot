@@ -1,6 +1,6 @@
 {
     "general": {
-        "buy_mode": "fast",
+        "buy_mode": "order",
         "game_language": "EN-US",
         "min_silver": "1000000",
         "server": "EU"
@@ -28,7 +28,7 @@
             "lymhurst": "Demo Preset.json",
             "fort_sterling": "Demo Preset.json",
             "bridgewatch": "Demo Preset.json",
-            "thetford": "Demo Preset.json",
+            "thetford": "TestPreset.json",
             "brecilien": "Demo Preset.json"
         },
         "buy_logic": [
@@ -62,7 +62,7 @@
             },
             {
                 "amount_to_buy": "0",
-                "price_larger_then": "800000"
+                "price_larger_then": "150000"
             }
         ]
     },
