@@ -1,5 +1,5 @@
 [
     {
-        "type": "buy_items"
+        "type": "price_check_orders"
     }
 ]

@@ -1,16 +1,25 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import flet
 
 block_cipher = None
+
+# Dynamically locate flet resources regardless of virtualenv setup
+flet_dir = os.path.dirname(flet.__file__)
+flet_icons_json = os.path.join(flet_dir, "controls", "material", "icons.json")
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('bot\\config', 'bot\\config')],
+    datas=[
+        ('bot/config', 'bot/config'),
+        (flet_icons_json, 'flet/controls/material'),
+    ],
     hiddenimports=[
         # --- YOUR APP MODULES ---
-        'gui.pages.login',      # Fixes the crash you saw
-        'gui.pages.dashboard',  # Preventing future crashes
+        'gui.pages.login',
+        'gui.pages.dashboard',
         'gui.pages.settings',
         'gui.pages.shop',
         'gui.pages.presets',
@@ -46,13 +55,13 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,  # Set to True if you want to see the black console window for debugging
+    console=False,  # Set to True if you want to see the terminal window for debugging
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='bot\\config\\app_icon.ico',
+    icon='bot/config/app_icon.ico',
 )
 
 coll = COLLECT(

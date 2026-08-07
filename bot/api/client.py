@@ -5,7 +5,7 @@ import sqlite3
 from typing import List, Dict
 
 class APIClient:
-    def __init__(self, db_path: str = "bot/config/market_data.db", batch_size: int = 200, flush_interval: int = 60):
+    def __init__(self, db_path: str = "config/market_data.db", batch_size: int = 200, flush_interval: int = 60):
         """
         :param db_path: Path to the local SQLite database file
         :param batch_size: How many items to write to the DB at once

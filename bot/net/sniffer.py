@@ -186,7 +186,9 @@ class Sniffer:
                 if (len(str(params.get(1))) <= 5 
                         and isinstance(params.get(6), str) 
                         and isinstance(params.get(0), int) 
-                        and isinstance(params.get(2), int)):
+                        and isinstance(params.get(2), int)
+                        and params.get(3) == None
+                        and isinstance(params.get(7), int)):
                     self.handle_new_item(params)
                     return
 
@@ -232,8 +234,11 @@ class Sniffer:
             if local_item_id is not None and item_index is not None:
                 with self.lock:
                     if item_index not in self.local_player.equipment.to_list():
+                        print(item_index)
                         for callback in self.on_new_item:
                             callback(local_item_id, item_index, "inventory")
+
+
            
 
         except Exception as e:

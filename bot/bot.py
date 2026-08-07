@@ -321,7 +321,6 @@ class Bot:
 
     async def _check_bm_from_inventory(self):
         try:
-            if not self._check_subscription(): return
             for x in range(6):
                 await self.travel_handler.move_to_guild_chest()
                 if x == 0:
@@ -359,6 +358,8 @@ class Bot:
                     self.market_handler.search_item(item_name, black_market=True)
                     self.market_handler.open_item()
                     self.market_handler.sleep(0.3)
+                    print(item)
+                    print(self.settings.SPECIAL_ITEMS_BM.get(str(item)))
                     self.market_handler.check_all_item_orders(minimal_item_tier=self.settings.SPECIAL_ITEMS_BM.get(str(item), 4))
                     self.market_handler.close_item()
 
@@ -564,11 +565,10 @@ class Bot:
 
     async def check_price_orders(self):
         try:
-            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
-            self.current_task_name = f"Checking Price: 0/X"
+            self.current_task_name = f"Checking Price: 0/6"
             market_title = self.market_handler.get_market_title()
             self.overlay.start()
             self._update_overlay()
