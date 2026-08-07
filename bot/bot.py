@@ -323,7 +323,6 @@ class Bot:
         try:
             if not self._check_subscription(): return
             for x in range(6):
-                self.overlay.stop()
                 await self.travel_handler.move_to_guild_chest()
                 if x == 0:
                     self.chest_handler.take_mount()

@@ -1,1 +1,5 @@
-[]
+[
+    {
+        "type": "price_check_orders"
+    }
+]

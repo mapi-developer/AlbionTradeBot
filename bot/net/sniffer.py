@@ -129,7 +129,10 @@ class Sniffer:
             if not msg: return
 
             params = msg.decode()
-            print(params)
+            p0 = params.get(0)
+            p1 = params.get(1)
+            if (isinstance(p0, list) and len(p0) > 50) or (isinstance(p1, list) and len(p1) > 50):
+                return
             # -------------------------------------------------------------
             # DYNAMIC SHAPE-BASED ROUTING (Future-Proof)
             # -------------------------------------------------------------

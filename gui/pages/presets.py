@@ -45,7 +45,7 @@ class ItemListPanel(ft.Container):
         self.current_items = []
 
         # Fixed: Updated to 'content=ft.Text(...)' and moved button styling inside ft.ButtonStyle
-        self.action_btn = ft.ElevatedButton(
+        self.action_btn = ft.Button(
             content=ft.Text(button_text),
             icon=button_icon,
             on_click=self.trigger_action,

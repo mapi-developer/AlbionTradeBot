@@ -76,7 +76,7 @@ class LeftPanelButton(ft.Container):
         super().__init__()
         self.padding = 0
         self.col = {"sm": 12, "md": 12, "xl": 12}
-        self.content = ft.ElevatedButton(
+        self.content = ft.Button(
             content=ft.Text(text),
             data=data,
             style=ft.ButtonStyle(
@@ -894,7 +894,7 @@ class ExecutionSequencePanel(ft.Container):
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-        self.run_button = ft.ElevatedButton(
+        self.run_button = ft.Button(
             content=ft.Row(
                 [
                     ft.Icon(ft.Icons.PLAY_ARROW_ROUNDED),
@@ -1097,7 +1097,7 @@ class SubscriptionBlocker(ft.Container):
                     color=GuiStyle.Colors.TEXT_SECONDARY,
                 ),
                 ft.Container(height=20),
-                ft.ElevatedButton(
+                ft.Button(
                     content=ft.Text("Go to Shop"),
                     icon=ft.Icons.SHOPPING_BAG,
                     style=ft.ButtonStyle(
@@ -1192,7 +1192,7 @@ class ActivityLogItem(ft.Container):
         super().__init__()
         
         current = dashboard.app.logger.current_session_file
-        self.open_button = ft.ElevatedButton(
+        self.open_button = ft.Button(
             content=ft.Row(
                 controls=[
                     ft.Text(
@@ -1268,7 +1268,7 @@ class LogsView(ft.Container):
         self.padding = 10
         self.border = ft.Border.all(1, ft.Colors.OUTLINE_VARIANT)
         self.border_radius = 8
-        self.bgcolor = ft.Colors.BLACK12
+        self.bgcolor = ft.Colors.BLACK_12
         self.expand = True
 
         self.log_column = ft.Column(

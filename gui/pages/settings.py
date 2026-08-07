@@ -202,7 +202,7 @@ class BuyLogic(ft.Container):
         )
 
         # Updated: Modern Button parameters & ButtonStyle
-        self.add_button = ft.ElevatedButton(
+        self.add_button = ft.Button(
             content=ft.Text("Add New Logic"),
             icon=ft.Icons.ADD,
             on_click=self.add_item,
@@ -435,7 +435,7 @@ class UpperRow(ft.Container):
         def create_tab_button(text, tab_id):
             is_active = self.active_tab == tab_id
             return ft.Container(
-                content=ft.ElevatedButton(
+                content=ft.Button(
                     content=ft.Text(text),  # Fixed: 'text' -> 'content=ft.Text(...)'
                     style=GuiStyle.SETTINGS_TOP_BAR_BUTTON,
                     on_click=lambda _: self.set_active(tab_id),

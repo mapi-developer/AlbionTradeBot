@@ -43,7 +43,7 @@ def run_flet_overlay(status_queue):
         page.window.bgcolor = ft.Colors.TRANSPARENT
         page.bgcolor = ft.Colors.TRANSPARENT
         page.window.width = 350
-        page.window.height = 250
+        page.window.height = 150
         page.window.skip_task_bar = True
 
         status_text = ft.Text("BOT ACTIVE", color=ft.Colors.GREEN_ACCENT, weight="bold", size=14)
