@@ -94,13 +94,15 @@ class SettingsHandler:
         }
         self.settings = self.load_settings()
         self.SPECIAL_ITEMS_BM = {
-            "6243": 2, "6444": 3, "8274": 3, "8879": 3, "9281": 3,
-            "9080": 3, "8678": 3, "8073": 3, "7852": 3, "8477": 1,
-            "7249": 3, "6645": 3, "6847": 2, "7048": 3, "7450": 3,
-            "7651": 3, "9482": 3, "4629": 2, "4602": 2, "4656": 2,
-            "3994": 1, "4022": 1, "4050": 1, "3387": 2, "3414": 2,
-            "3441": 2, "495": 1, "1997": 1, "2452": 1, "516": 1,
-            "2831": 1,
+            "1995": 1, "3993": 1, "4021": 1,
+            "4049": 1, "8476": 1, "2148": 2,
+            "2451": 2, "2830": 2, "3387": 2, "3414": 2,
+            "3441": 2, "4602": 2, "4629": 2,
+            "4656": 2, "6243": 2, "6847": 2, "2300": 3,
+            "6445": 3, "6646": 3, "7049": 3,
+            "7250": 3, "7451": 3, "7652": 3, "7853": 3,
+            "8074": 3, "8275": 3, "8679": 3, "8880": 3,
+            "9081": 3, "9282": 3, "9483": 3,
         }
         self.SPECIAL_ITEMS = {
             "Shield": 1, "Mercenary Hood": 1, "Mercenary Jacket": 1,
@@ -108,7 +110,7 @@ class SettingsHandler:
             "Cape": 2, "Bag": 2, "Soldier Helmet": 2, "Soldier Armor": 2,
             "Soldier Boots": 2, "Scholar Cowl": 2, "Scholar Robe": 2,
             "Scholar Sandals": 2, "Bow": 2, "Fire Staff": 2, "Torch": 3,
-            "Crossbow": 3, "Cursed Staff": 3, "Fire Staff": 3, "Frost Staff": 3,
+            "Crossbow": 3, "Cursed Staff": 3, "Frost Staff": 3,
             "Arcane Staff": 3, "Holy Staff": 3, "Nature Staff": 3, "Dagger": 3,
             "Spear": 3, "Battleaxe": 3, "Quarterstaff": 3, "Hammer": 3,
             "Mace": 3, "Brawler Gloves": 3, "Prowling Staff": 3,

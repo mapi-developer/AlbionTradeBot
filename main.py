@@ -43,18 +43,25 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         except Exception:
             pass
+        
         assets_path = get_asset_path("config")
         
         if not os.path.exists(assets_path):
             with open("asset_error.txt", "w") as f:
                 f.write(f"Could not find assets at: {assets_path}")
 
+        # Use ft.run to satisfy Flet >=0.80.0 without deprecation warnings
         ft.run(main=gui_main, assets_dir=assets_path)
+
+        # Force terminate all background daemon threads (Sniffer/Overlay) when Flet exits
+        os._exit(0)
 
     except Exception:
         error_path = "crash_log.txt"
         with open(error_path, "w") as f:
             f.write(traceback.format_exc())
+        
+        os._exit(1)
 
 if __name__ == "__main__":
     import multiprocessing

@@ -11,6 +11,7 @@ from gui.components.style import GuiStyle
 
 from bot import Bot, SettingsHandler, LocalPlayer, Sniffer
 
+
 class GuiApp:
     overlay: BotOverlay
 
@@ -41,8 +42,8 @@ class GuiApp:
         self.logger.start_session()
         self.logger.add_log("app", "Local Application started")
 
-        # Initialize UI Components (Removed Login/Shop/Subscription)
-        self.presets = self.config.get_presets_list()
+        # Initialize UI Components
+        self.presets_list = self.config.get_presets_list()
         self.header = Header(page=self.page, on_nav_click=self.on_nav_click, settings=self.config)
         
         self.settings = Settings(page=self.page, config=self.config)
@@ -103,9 +104,15 @@ class GuiApp:
         elif event.control.data == "dashboard":
             self.body.content = self.dashboard
         else:
+            button_label = (
+                event.control.content.value 
+                if hasattr(event.control, "content") and hasattr(event.control.content, "value") 
+                else "View"
+            )
             self.body.content = ft.Container(
-                content=ft.Text(f"{event.control.text} View Placeholder", size=24, color=ft.Colors.GREY_500),
-                alignment=ft.Alignment.CENTER, padding=50
+                content=ft.Text(f"{button_label} Placeholder", size=24, color=ft.Colors.GREY_500),
+                alignment=ft.Alignment.CENTER, 
+                padding=50
             )
         try:
             self.page.update()
@@ -118,24 +125,38 @@ class GuiApp:
         except RuntimeError:
             pass
 
+
+# REMOVE "async" from the main definition
 def main(page: ft.Page):
     app = GuiApp(page=page)
     page.window.prevent_close = True
 
+    # REMOVE "async" from the event handler so Flet runs it in a background thread
     def on_window_event(e):
-        if e.data == "close":
+        if e.type == ft.WindowEventType.CLOSE:
+            
+            # 1. Stop the bot so background sequences terminate
+            if hasattr(app, 'bot') and app.bot:
+                app.bot.stop()
+            
+            # 2. Stop the overlay
             if hasattr(app, 'overlay') and app.overlay:
                 app.overlay.stop()
+                
+            # 3. Stop the logger
             if hasattr(app, 'logger'):
                 app.logger.add_log("app", "Application closing")
                 app.logger.end_session()
-            page.window.destroy()
+                
+            # 4. Safely schedule the asynchronous destroy coroutine onto the event loop
+            e.page.run_task(e.page.window.destroy)
 
     page.window.on_event = on_window_event
     try:
-        app.page.update()
+        page.update()
     except RuntimeError:
         pass
 
 if __name__ == "__main__":
+    # Ensure this matches the non-async requirement
     ft.run(main=main)

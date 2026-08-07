@@ -49,6 +49,7 @@ class TravelHandler(InputSender):
 
     def on_join_finished(self, status: bool):
         self.sleep(2)
+        self.click(self.mouse_positions["character_middle"])
         self.can_move = status
 
     def on_location_changed(

@@ -67,7 +67,10 @@ def run_flet_overlay(status_queue):
             )
         )
 
-        page.update()
+        try:
+            page.update()
+        except Exception:
+            pass
 
         # Non-blocking async UI loop
         while True:
@@ -90,6 +93,7 @@ def run_flet_overlay(status_queue):
                     
                     if data == "STOP":
                         await page.window.destroy()
+                        os._exit(0)  # Force exit the multiprocessing child process to prevent hanging
                         return
 
                     if isinstance(data, dict):
@@ -121,6 +125,7 @@ def run_flet_overlay(status_queue):
                 
             await asyncio.sleep(0.3)
 
+    # Removed port/host args to avoid socket deadlocks in Flet 0.86.5
     ft.app(target=overlay_main, assets_dir=get_asset_path("assets"))
 
 
@@ -147,8 +152,10 @@ class BotOverlay:
                 self.status_queue.put("STOP")
                 self.process.join(timeout=1.0)
                 
+                # Forcefully terminate and reap the process if it hangs
                 if self.process.is_alive():
                     self.process.terminate()
+                    self.process.join(timeout=0.5) 
             except Exception as e:
                 print(f"Error stopping overlay: {e}")
             finally:
@@ -161,8 +168,8 @@ class BotOverlay:
         if self.process and self.process.is_alive():
             try:
                 self.status_queue.put_nowait({
-                    "status": status, 
-                    "task": task, 
+                    "status": status,
+                    "task": task,
                     "paused": paused,
                     "recent_items": self.last_items
                 })
