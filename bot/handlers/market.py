@@ -138,6 +138,7 @@ class MarketHandler(InputSender):
 
         if fast_buy == True:
             self.click(self.mouse_positions["button_change_price"])
+            self.click(self.mouse_positions["button_change_price"])
             self.typewrite(fast_buy_price)
         else:
             self.click(self.mouse_positions["button_one_silver_more"])

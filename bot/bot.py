@@ -784,7 +784,6 @@ class Bot:
 
     async def update_orders(self):
         try:
-            if not self._check_subscription(): return
             change_keyboard_layout()
             self.capture.set_foreground_window()
             self.status = "Running"
